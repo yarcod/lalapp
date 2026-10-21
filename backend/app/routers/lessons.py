@@ -16,6 +16,7 @@ from app.core.deps import (
     get_redis,
 )
 from app.core.limiter import limiter
+from app.lalapp.learner import hooks as lalapp_hooks  # lalapp-hook
 from app.models.lesson import Exercise, Lesson
 from app.models.study_plan import StudyPlan
 from app.models.user import User
@@ -569,6 +570,9 @@ async def answer_exercise(
         skill=lesson.lesson_type,
         skill_score=exercise.score,
         study_plan_id=lesson.study_plan_id,
+    )
+    await lalapp_hooks.on_lesson_exercise_answered(  # lalapp-hook
+        db, lesson=lesson, exercise=exercise, target_language=target_language
     )
 
     return ExerciseAnswerResponse(

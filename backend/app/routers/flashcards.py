@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.core.limiter import limiter
+from app.lalapp.learner import hooks as lalapp_hooks  # lalapp-hook
 from app.models.flashcard import Flashcard, FlashcardReviewReceipt
 from app.models.study_plan import StudyPlan
 from app.models.user import User
@@ -296,6 +297,7 @@ async def review_flashcard(
         )
     )
     await db.commit()
+    await lalapp_hooks.on_flashcard_review(db, card=card, quality=data.quality)  # lalapp-hook
     return response
 
 

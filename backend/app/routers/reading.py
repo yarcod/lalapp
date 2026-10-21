@@ -17,6 +17,7 @@ from app.core.deps import (
     require_subscription_or_freemium_readonly,
 )
 from app.core.limiter import limiter
+from app.lalapp.learner import hooks as lalapp_hooks  # lalapp-hook
 from app.models.reading import ReadingExercise
 from app.models.study_plan import StudyPlan
 from app.models.user import User
@@ -257,6 +258,9 @@ async def submit_reading_attempt(
                 status_code=status.HTTP_409_CONFLICT, detail="already_attempted"
             ) from exc
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail) from exc
+    await lalapp_hooks.on_practice_attempt(  # lalapp-hook
+        db, kind="reading", attempt=attempt, exercise=exercise, is_replay=body.replay
+    )
 
     enqueue_analytics(
         request,

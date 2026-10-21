@@ -60,7 +60,7 @@ from app.services.tts_service import KokoroTTSService, OpenAITTSService
 
 def _run_migrations() -> None:
     alembic_cfg = Config("/app/alembic.ini")
-    command.upgrade(alembic_cfg, "head")
+    command.upgrade(alembic_cfg, "heads")  # lalapp-hook: Lalapp migrations form their own branch
 
 
 @asynccontextmanager
@@ -173,3 +173,7 @@ if settings.STRIPE_ENABLED:
 
     _stripe.api_key = settings.STRIPE_SECRET_KEY
     app.include_router(billing_router.router)
+
+from app.lalapp.router import router as lalapp_router  # lalapp-hook
+
+app.include_router(lalapp_router)  # lalapp-hook

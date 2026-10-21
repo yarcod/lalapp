@@ -13,6 +13,7 @@ from app.core.deps import (
     require_not_maintenance,
 )
 from app.core.limiter import limiter
+from app.lalapp.learner import hooks as lalapp_hooks  # lalapp-hook
 from app.models.game import GameSession
 from app.models.study_plan import StudyPlan
 from app.models.user import User
@@ -130,6 +131,9 @@ async def submit_answer(
     result = await answer_game(db, user.id, str(session_id), body)
     session = result.session
     if result.answer_number is not None:
+        await lalapp_hooks.on_game_answer(  # lalapp-hook
+            db, session=session, correct=result.correct
+        )
         enqueue_analytics(
             request,
             record_game_answer,
