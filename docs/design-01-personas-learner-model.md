@@ -177,12 +177,11 @@ failure is logged and never fails the request.
 | 4 | Adaptive "next activity" selector and auto level-up | new endpoint, dashboard card hook |
 | 5 | Scenario NPCs, missions, gamification changes | — |
 
-## Open decisions
-1. **Persona file format:** YAML (needs PyYAML, a new dependency), JSON (stdlib), or Python
-   modules (matches upstream's `app/data` pattern).
-2. **Lingu:** keep it as the app's mascot and brand with the new characters alongside, or
-   retire it?
-   - Retiring it touches about 8 upstream components and about 53 strings per locale, which
-     means heavy conflicts.
-3. **Order:** learner model first (it is the foundation) or personas first (the more visible
-   win)?
+## Decisions (2026-10-21)
+1. **Persona file format:** Python modules, in the style of upstream's `app/data` (typed dataclasses,
+   no new dependency). The paths above become `backend/app/lalapp/personas/<lang>.py` and
+   `backend/app/lalapp/roles.py`.
+2. **Lingu:** stays as the app's mascot and brand. The new characters handle conversations
+   alongside it, and upstream's frontend Lingu copy and avatar are left untouched.
+3. **Order:** learner model first. The sequence is Phase 0, then 1 (shadow mode), then 2
+   (placement), then 3 (personas).
