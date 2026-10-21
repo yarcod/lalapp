@@ -8,7 +8,10 @@ export default defineConfig({
     include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
     globals: true,
     // lalapp-hook: upstream's tests cover upstream behavior; Lalapp tests enable features explicitly.
-    env: { NEXT_PUBLIC_LALAPP_PLACEMENT: 'false' },
+    env: {
+      NEXT_PUBLIC_LALAPP_PLACEMENT: 'false',
+      NEXT_PUBLIC_LALAPP_PERSONAS: 'false',
+    },
   },
   resolve: {
     alias: {

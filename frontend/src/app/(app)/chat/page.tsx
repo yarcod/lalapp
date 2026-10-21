@@ -24,6 +24,7 @@ import { MemorySavedToast } from '@/components/memory/MemorySavedToast'
 import { useTransientToast } from '@/hooks/useTransientToast'
 import { readSseData } from '@/lib/sse'
 import LinguAvatar from '@/components/lingu/LinguAvatar'
+import { ConversationPersona } from '@/lalapp/personas/ConversationPersona' // lalapp-hook
 
 interface Message {
   role: 'user' | 'assistant'
@@ -444,6 +445,8 @@ export default function ChatPage() {
                   t('title'))
                 : t('newConversation')}
             </span>
+            {/* lalapp-hook */}
+            <ConversationPersona conversationId={activeId} />
             {sending ? (
               <div className="ml-auto flex shrink-0 flex-col items-end gap-0.5">
                 <span className="text-fl-hint text-fl-muted-3 animate-pulse font-mono tracking-widest uppercase">

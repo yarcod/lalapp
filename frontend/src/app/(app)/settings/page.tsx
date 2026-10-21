@@ -19,6 +19,7 @@ import { useLogout } from '@/hooks/useLogout'
 import { ProfileSection } from '@/components/settings/ProfileSection'
 import { ConversationSection } from '@/components/settings/ConversationSection'
 import { VoiceSection } from '@/components/settings/VoiceSection'
+import { PersonaSection } from '@/lalapp/personas/PersonaSection' // lalapp-hook
 import { UsageLimitsSection } from '@/components/settings/UsageLimitsSection'
 import { AppearanceSection } from '@/components/settings/AppearanceSection'
 import { BillingSection } from '@/components/settings/BillingSection'
@@ -126,6 +127,8 @@ export default function SettingsPage() {
           <div className="grid gap-4 xl:grid-cols-2">
             <ConversationSection title={t('cardConversationTiming')} />
             <VoiceSection title={t('cardTutorVoice')} />
+            {/* lalapp-hook */}
+            <PersonaSection />
           </div>
         </SettingsPanel>
 
