@@ -159,3 +159,31 @@ class ScenarioRun(Base):
     last_checked_message_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=_now)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class RhythmGoal(Base):
+    """The learner's own weekly rhythm: how many active days a week they aim for."""
+
+    __tablename__ = "lalapp_rhythm_goals"
+
+    user_language_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("user_languages.id", ondelete="CASCADE"), primary_key=True
+    )
+    days_per_week: Mapped[int] = mapped_column(Integer, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=_now)
+
+
+class Milestone(Base):
+    """An informational first, shown once: a skill reaching a level, a finished scene."""
+
+    __tablename__ = "lalapp_milestones"
+    __table_args__ = (UniqueConstraint("user_language_id", "key", name="uq_lalapp_milestone_key"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_language_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("user_languages.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    key: Mapped[str] = mapped_column(String(100), nullable=False)
+    data: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=_now)
+    seen_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

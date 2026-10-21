@@ -63,6 +63,19 @@ const MESSAGES = {
     arc_cdmx: 'Mexico City',
     arc_leeds: 'Leeds',
     arc_portland: 'Portland',
+    rhythmTitle: 'Your rhythm',
+    rhythmThisWeek: '{done} of {goal} days this week',
+    rhythmMet: 'Goal met for this week. Anything more is a bonus.',
+    rhythmKept: 'Rhythm kept {kept} of the last {weeks} weeks',
+    rhythmGoalLabel: 'Days per week',
+    rhythmTurns: '{turns} turns of your own this week',
+    rhythmStretch: '{count} longer than usual',
+    milestone_turns:
+      'You have now said or written {count} things in conversation.',
+    milestone_skill_level:
+      'Your {skill} is now estimated at {level}, above your plan.',
+    milestone_scene_done: 'You completed the scene “{title}” with {npc}.',
+    dismiss: 'Got it',
   },
   sv: {
     personaCardTitle: 'Samtalspartner',
@@ -124,6 +137,18 @@ const MESSAGES = {
     arc_cdmx: 'Mexico City',
     arc_leeds: 'Leeds',
     arc_portland: 'Portland',
+    rhythmTitle: 'Din rytm',
+    rhythmThisWeek: '{done} av {goal} dagar den här veckan',
+    rhythmMet: 'Veckans mål är nått. Allt utöver är bonus.',
+    rhythmKept: 'Rytmen hölls {kept} av de senaste {weeks} veckorna',
+    rhythmGoalLabel: 'Dagar per vecka',
+    rhythmTurns: '{turns} egna repliker den här veckan',
+    rhythmStretch: '{count} längre än vanligt',
+    milestone_turns: 'Du har nu sagt eller skrivit {count} repliker i samtal.',
+    milestone_skill_level:
+      'Uppskattningen för {skill} ligger nu på {level}, över din plan.',
+    milestone_scene_done: 'Du klarade scenen ”{title}” med {npc}.',
+    dismiss: 'Uppfattat',
   },
   es: {
     personaCardTitle: 'Compañero de conversación',
@@ -187,6 +212,18 @@ const MESSAGES = {
     arc_cdmx: 'Ciudad de México',
     arc_leeds: 'Leeds',
     arc_portland: 'Portland',
+    rhythmTitle: 'Tu ritmo',
+    rhythmThisWeek: '{done} de {goal} días esta semana',
+    rhythmMet: 'Objetivo de la semana cumplido. Lo demás es un extra.',
+    rhythmKept: 'Ritmo mantenido {kept} de las últimas {weeks} semanas',
+    rhythmGoalLabel: 'Días por semana',
+    rhythmTurns: '{turns} intervenciones tuyas esta semana',
+    rhythmStretch: '{count} más largas de lo habitual',
+    milestone_turns: 'Ya llevas {count} intervenciones en conversación.',
+    milestone_skill_level:
+      'Tu nivel estimado de {skill} ya es {level}, por encima de tu plan.',
+    milestone_scene_done: 'Completaste la escena «{title}» con {npc}.',
+    dismiss: 'Entendido',
   },
 } as const
 

@@ -10,6 +10,7 @@ from app.lalapp.config import lalapp_settings
 from app.lalapp.learner import rating
 from app.lalapp.models import ItemRating, LearnerResponse, LearnerSkill
 from app.lalapp.placement.service import latest_placement_estimate
+from app.lalapp.rhythm.service import SKILL_MILESTONE_MIN_N, add_milestone
 from app.models.study_plan import StudyPlan
 
 logger = logging.getLogger(__name__)
@@ -117,6 +118,21 @@ async def _record(
     learner_row.theta, learner_row.theta_sd = new_learner.mean, new_learner.sd
     learner_row.n += 1
     learner_row.updated_at = now
+    # Informational first: the skill's estimate is above the plan's level for the first time at
+    # this level, once there is enough evidence.
+    level_after = rating.cefr_from_theta(new_learner.mean)
+    plan_level = rating.normalize_level(plan.cefr_level)
+    if (
+        learner_row.n >= SKILL_MILESTONE_MIN_N
+        and plan_level is not None
+        and rating.CEFR_LEVELS.index(level_after) > rating.CEFR_LEVELS.index(plan_level)
+    ):
+        await add_milestone(
+            db,
+            plan.user_language_id,
+            f"skill_level:{skill}:{level_after}",
+            {"skill": skill, "level": level_after},
+        )
     item_row.difficulty, item_row.difficulty_sd = new_item.mean, new_item.sd
     item_row.n += 1
     item_row.updated_at = now

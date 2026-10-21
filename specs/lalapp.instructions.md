@@ -39,11 +39,11 @@ Lalapp is a long-lived fork of FreeLingo. This spec describes current behavior o
   - `frontend/src/app/(app)/scenarios/page.tsx`: a new route rendering `ScenarioList`.
     `frontend/src/app/(app)/layout.tsx` adds its navigation entry through `useLalappNavItems`, and
     `frontend/src/middleware.ts` lists it as a protected route.
-  - `frontend/src/app/(app)/dashboard/page.tsx`: renders `LalappNextUp` (the adaptive next lesson and
-    level-up offer) after today's lessons.
+  - `frontend/src/app/(app)/dashboard/page.tsx`: renders `LalappDashboard` after today's lessons: the
+    adaptive next lesson with the level-up offer, and the rhythm card.
   - `frontend/vitest.config.mts`: upstream's tests run with Lalapp frontend features switched off
     (`NEXT_PUBLIC_LALAPP_PLACEMENT`, `NEXT_PUBLIC_LALAPP_PERSONAS`, `NEXT_PUBLIC_LALAPP_ADAPTIVE`,
-    `NEXT_PUBLIC_LALAPP_SCENARIOS`). Lalapp frontend tests live in
+    `NEXT_PUBLIC_LALAPP_SCENARIOS`, `NEXT_PUBLIC_LALAPP_RHYTHM`). Lalapp frontend tests live in
     `frontend/tests/lalapp/` and enable features explicitly.
 - Lalapp interface strings live in `frontend/src/lalapp/i18n.ts` (English, Swedish, Spanish; other
   interface languages fall back to English) rather than in upstream's message catalogs.
@@ -56,7 +56,8 @@ Lalapp is a long-lived fork of FreeLingo. This spec describes current behavior o
   `00NN_` chain stays untouched.
 - Startup runs `alembic upgrade heads` so both branches are applied.
 - Upstream's migration tests that assert a single head ignore `l0` revisions (`lalapp-hook` lines in
-  `tests/test_progress_migration.py` and `tests/test_flashcard_receipt_migration.py`). The lalapp
+  `tests/test_progress_migration.py`, `test_flashcard_receipt_migration.py`,
+  `test_flashcard_management_migration.py` and `test_sentence_order_migration.py`). The lalapp
   branch has its own offline checks in `tests/lalapp/test_migrations.py`: one linear chain on top of
   upstream, DDL for every `lalapp_` table and index matching the models, and a downgrade that drops
   every table.
@@ -216,6 +217,27 @@ Lalapp is a long-lived fork of FreeLingo. This spec describes current behavior o
   fall back to the preferred partner. `NEXT_PUBLIC_LALAPP_SCENARIOS=false` hides the page, its
   navigation entry and the chat panel.
 
+## Rhythm, turns and milestones
+
+- Instead of a daily streak, the learner sets a weekly goal of active days (1 to 7, default 3) per
+  language. Upstream's streak and XP are unchanged.
+- An active day (UTC, like upstream's progress) has any learner-model response or any learner
+  message in the language's conversations (chat or voice).
+- Each week runs Monday to Sunday and is judged on its own. The summary shows this week's active
+  days and how many of the last 8 completed weeks met the current goal. Nothing is framed as a
+  loss.
+- Turns are the learner's own messages in the language's conversations. A stretch turn this week
+  has more words than the median of the previous 4 weeks' turns, counted only with at least 10
+  earlier turns.
+- Milestones are informational firsts, each recorded once per language and shown until dismissed:
+  - `turns:{n}` when the total number of turns reaches 25, 100, 500, 1000 or 5000 (only the
+    highest level reached is recorded);
+  - `skill_level:{skill}:{level}` when a skill with at least 10 responses is estimated above the
+    plan's level, once per level;
+  - `scene_done:{scenario}` when a scene is completed.
+- `LALAPP_RHYTHM_ENABLED` (default `true`) turns the API off; `NEXT_PUBLIC_LALAPP_RHYTHM=false`
+  hides the card. Milestones are recorded either way.
+
 ## Persistence
 
 - `lalapp_learner_skills`: one row per user language and skill. It is owned by `user_languages`, not
@@ -232,6 +254,9 @@ Lalapp is a long-lived fork of FreeLingo. This spec describes current behavior o
 - `lalapp_scenario_runs`: per scene attempt, the user language, the conversation (set to null when
   the conversation is deleted), scene id and version, status `active` or `done`, mission evidence
   (mission id to quote), and the last judged learner message.
+- `lalapp_rhythm_goals`: per user language, the weekly goal of active days.
+- `lalapp_milestones`: per user language, unique milestone keys with display data, creation time
+  and when they were dismissed.
 - `lalapp_learner_responses`: an append-only log of every response, with the expected score and the
   estimates before the update, so ratings can be refitted offline.
 
@@ -271,5 +296,11 @@ loaded objects.
 - `GET /api/lalapp/scenarios/runs/{conversation_id}` (60/minute) returns a run's state, and
   `POST .../check` (30/minute) judges it and also returns `newly_done`. Conversations that are not
   the user's scenes return 404, and a failed judgement 503.
+- `GET /api/lalapp/rhythm` (60/minute) returns `days_per_week`, `week_start`, this week's
+  `active_days`, `weeks_kept` of `weeks_counted`, `turns_this_week`, `stretch_turns_this_week` and
+  undismissed `milestones` (`id`, `key`, `data`, `created_at`). `PUT /api/lalapp/rhythm`
+  (20/minute) sets `days_per_week` (1 to 7, otherwise 422) and returns the same.
+  `POST /api/lalapp/milestones/{id}/seen` (60/minute) dismisses a milestone (204, or 404 for
+  another user's or an unknown one).
 - `GET /api/lalapp/learner` (authenticated, 30/minute) returns the current user's skill estimates per
   target language: `skill`, `theta`, `theta_sd`, the derived `cefr` level, and the response count `n`.

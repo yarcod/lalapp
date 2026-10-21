@@ -13,6 +13,7 @@ export default defineConfig({
       NEXT_PUBLIC_LALAPP_PERSONAS: 'false',
       NEXT_PUBLIC_LALAPP_ADAPTIVE: 'false',
       NEXT_PUBLIC_LALAPP_SCENARIOS: 'false',
+      NEXT_PUBLIC_LALAPP_RHYTHM: 'false',
     },
   },
   resolve: {

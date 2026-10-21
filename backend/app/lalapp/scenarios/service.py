@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.lalapp.models import ScenarioRun
 from app.lalapp.personas.registry import language_family
 from app.lalapp.personas.types import Persona
+from app.lalapp.rhythm.service import add_milestone
 from app.lalapp.scenarios import catalog_en, catalog_es
 from app.lalapp.scenarios.types import Scenario
 from app.models.chat_history import ChatHistory
@@ -289,5 +290,11 @@ async def check_missions(db: AsyncSession, run: ScenarioRun, user_id: int) -> li
     if all(m.id in done for m in scenario.missions):
         run.status = "done"
         run.completed_at = _now()
+        await add_milestone(
+            db,
+            run.user_language_id,
+            f"scene_done:{scenario.id}",
+            {"title": scenario.title, "npc": scenario.npc.name},
+        )
     await db.commit()
     return newly

@@ -185,6 +185,11 @@ async def test_scene_flow_from_start_to_unlocking_the_next_scene(client, test_us
     scenes = _by_id((await client.get("/api/lalapp/scenarios", headers=headers)).json())
     assert scenes["en-leeds-1-cafe"]["status"] == "done"
     assert scenes["en-leeds-2-flat"]["status"] == "available"
+    milestones = (await client.get("/api/lalapp/rhythm", headers=headers)).json()["milestones"]
+    assert {"key": "scene_done:en-leeds-1-cafe", "title": "Breakfast at Sandra's"} == {
+        "key": milestones[0]["key"],
+        "title": milestones[0]["data"]["title"],
+    }
 
     # A finished scene is not judged again.
     await _say(client, headers, conversation_id, "Thanks, bye!")

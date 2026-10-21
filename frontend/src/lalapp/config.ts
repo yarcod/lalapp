@@ -7,3 +7,5 @@ export const LALAPP_ADAPTIVE_ENABLED =
   process.env.NEXT_PUBLIC_LALAPP_ADAPTIVE !== 'false'
 export const LALAPP_SCENARIOS_ENABLED =
   process.env.NEXT_PUBLIC_LALAPP_SCENARIOS !== 'false'
+export const LALAPP_RHYTHM_ENABLED =
+  process.env.NEXT_PUBLIC_LALAPP_RHYTHM !== 'false'

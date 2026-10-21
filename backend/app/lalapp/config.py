@@ -12,6 +12,8 @@ class LalappSettings(BaseSettings):
     ADAPTIVE_ENABLED: bool = True
     # Role-play scenes with NPCs and missions checked by an LLM judge.
     SCENARIOS_ENABLED: bool = True
+    # Self-set weekly rhythm, target-language turn counts and informational milestones.
+    RHYTHM_ENABLED: bool = True
 
 
 lalapp_settings = LalappSettings()

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import date, datetime
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import select
@@ -17,6 +19,7 @@ from app.lalapp.personas import service as persona_service
 from app.lalapp.personas.types import Persona
 from app.lalapp.placement import engine
 from app.lalapp.placement import service as placement
+from app.lalapp.rhythm import service as rhythm
 from app.lalapp.scenarios import service as scenarios
 from app.lalapp.scenarios.types import Scenario
 from app.models.conversation import Conversation
@@ -531,3 +534,93 @@ async def check_scenario_run(
         scenarios.logger.exception("Mission check failed for conversation %s", conversation_id)
         raise HTTPException(status_code=503, detail="mission_check_failed") from exc
     return _run_out(run, scenario, newly_done)
+
+
+class MilestoneOut(BaseModel):
+    id: int
+    key: str
+    data: dict
+    created_at: datetime
+
+
+class RhythmOut(BaseModel):
+    target_language: str
+    days_per_week: int
+    week_start: date
+    active_days: list[date]
+    weeks_kept: int
+    weeks_counted: int
+    turns_this_week: int
+    stretch_turns_this_week: int
+    milestones: list[MilestoneOut]
+
+
+class RhythmGoalIn(BaseModel):
+    days_per_week: int = Field(ge=1, le=7)
+
+
+def _require_rhythm() -> None:
+    if not lalapp_settings.RHYTHM_ENABLED:
+        raise HTTPException(status_code=404, detail="rhythm_disabled")
+
+
+async def _active_user_language(db: AsyncSession, user: User) -> UserLanguage:
+    user_language = await get_active_language(db, user.id)
+    if user_language is None:
+        raise HTTPException(status_code=404, detail="no_active_language")
+    return user_language
+
+
+@router.get("/rhythm", response_model=RhythmOut)
+@limiter.limit("60/minute")
+async def get_rhythm(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> RhythmOut:
+    """This week against the learner's own goal, recent weeks kept, turns, and new milestones."""
+    _require_rhythm()
+    user_language = await _active_user_language(db, current_user)
+    state = await rhythm.summary(db, user_language)
+    return RhythmOut(
+        target_language=user_language.target_language,
+        days_per_week=state.days_per_week,
+        week_start=state.week_start,
+        active_days=state.active_days,
+        weeks_kept=state.weeks_kept,
+        weeks_counted=state.weeks_counted,
+        turns_this_week=state.turns_this_week,
+        stretch_turns_this_week=state.stretch_turns_this_week,
+        milestones=[
+            MilestoneOut(id=m.id, key=m.key, data=m.data or {}, created_at=m.created_at)
+            for m in state.milestones
+        ],
+    )
+
+
+@router.put("/rhythm", response_model=RhythmOut)
+@limiter.limit("20/minute")
+async def set_rhythm_goal(
+    request: Request,
+    data: RhythmGoalIn,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> RhythmOut:
+    _require_rhythm()
+    user_language = await _active_user_language(db, current_user)
+    await rhythm.set_goal(db, user_language.id, data.days_per_week)
+    return await get_rhythm(request, current_user, db)
+
+
+@router.post("/milestones/{milestone_id}/seen", status_code=204)
+@limiter.limit("60/minute")
+async def mark_milestone_seen(
+    request: Request,
+    milestone_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    _require_rhythm()
+    user_language = await _active_user_language(db, current_user)
+    if not await rhythm.mark_seen(db, user_language.id, milestone_id):
+        raise HTTPException(status_code=404, detail="milestone_not_found")
