@@ -9,11 +9,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.lalapp.config import lalapp_settings
 from app.lalapp.learner import rating
 from app.lalapp.models import ItemRating, LearnerResponse, LearnerSkill
+from app.lalapp.placement.service import latest_placement_estimate
 from app.models.study_plan import StudyPlan
 
 logger = logging.getLogger(__name__)
 
-SKILLS = ("vocabulary", "grammar", "reading", "listening", "speaking", "writing")
+SKILLS = rating.SKILLS
 
 
 def _now() -> datetime:
@@ -71,7 +72,9 @@ async def _record(
         .with_for_update()
     )
     if learner_row is None:
-        prior = rating.learner_prior(plan.cefr_level)
+        prior = await latest_placement_estimate(
+            db, plan.user_id, plan.target_language, skill
+        ) or rating.learner_prior(plan.cefr_level)
         learner_row = LearnerSkill(
             user_language_id=plan.user_language_id,
             skill=skill,

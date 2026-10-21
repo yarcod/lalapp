@@ -13,6 +13,7 @@ import math
 from dataclasses import dataclass
 
 CEFR_LEVELS = ("A1", "A2", "B1", "B2", "C1", "C2")
+SKILLS = ("vocabulary", "grammar", "reading", "listening", "speaking", "writing")
 
 # Typical difficulty of an item written for each CEFR level.
 CEFR_ITEM_DIFFICULTY = {"A1": -2.5, "A2": -1.5, "B1": -0.5, "B2": 0.5, "C1": 1.5, "C2": 2.5}
@@ -86,16 +87,16 @@ def normalize_level(level: str | None) -> str | None:
     return level if level in CEFR_ITEM_DIFFICULTY else None
 
 
-def item_prior(level: str | None) -> Estimate:
+def item_prior(level: str | None, sd: float = ITEM_PRIOR_SD) -> Estimate:
     level = normalize_level(level)
     mean = CEFR_ITEM_DIFFICULTY[level] if level else 0.0
-    return Estimate(mean, ITEM_PRIOR_SD)
+    return Estimate(mean, sd)
 
 
-def learner_prior(level: str | None) -> Estimate:
+def learner_prior(level: str | None, sd: float = LEARNER_PRIOR_SD) -> Estimate:
     level = normalize_level(level)
     mean = CEFR_ITEM_DIFFICULTY[level] + MASTERY_OFFSET if level else 0.0
-    return Estimate(mean, LEARNER_PRIOR_SD)
+    return Estimate(mean, sd)
 
 
 def cefr_from_theta(theta: float) -> str:

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import JSON, DateTime, Float, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -63,3 +63,21 @@ class LearnerResponse(Base):
     theta_before: Mapped[float] = mapped_column(Float, nullable=False)
     difficulty_before: Mapped[float] = mapped_column(Float, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=_now)
+
+
+class PlacementSession(Base):
+    """An adaptive placement test in progress or completed."""
+
+    __tablename__ = "lalapp_placement_sessions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    target_language: Mapped[str] = mapped_column(String(10), nullable=False)
+    status: Mapped[str] = mapped_column(String(10), nullable=False, default="active")
+    state: Mapped[dict] = mapped_column(JSON, nullable=False)
+    pending_item_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    result: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=_now)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
