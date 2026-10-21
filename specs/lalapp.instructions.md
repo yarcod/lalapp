@@ -5,8 +5,7 @@ applyTo: "backend/app/lalapp/**, backend/tests/lalapp/**, backend/alembic/versio
 
 # Lalapp Extensions
 
-Lalapp is a long-lived fork of FreeLingo. Background research and design notes live in
-`docs/lalapp/`; this spec describes current behavior only.
+Lalapp is a long-lived fork of FreeLingo. This spec describes current behavior only.
 
 ## Boundary and upstream hooks
 
