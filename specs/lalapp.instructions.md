@@ -34,8 +34,10 @@ Lalapp is a long-lived fork of FreeLingo. This spec describes current behavior o
   - `frontend/src/app/(app)/chat/page.tsx`: renders `ConversationPersona` in the chat header. It shows
     the preferred partner for a new conversation, and for an existing one a selector to switch
     character.
+  - `frontend/src/app/(app)/dashboard/page.tsx`: renders `LalappNextUp` (the adaptive next lesson and
+    level-up offer) after today's lessons.
   - `frontend/vitest.config.mts`: upstream's tests run with Lalapp frontend features switched off
-    (`NEXT_PUBLIC_LALAPP_PLACEMENT`, `NEXT_PUBLIC_LALAPP_PERSONAS`). Lalapp frontend tests live in
+    (`NEXT_PUBLIC_LALAPP_PLACEMENT`, `NEXT_PUBLIC_LALAPP_PERSONAS`, `NEXT_PUBLIC_LALAPP_ADAPTIVE`). Lalapp frontend tests live in
     `frontend/tests/lalapp/` and enable features explicitly.
 - Lalapp interface strings live in `frontend/src/lalapp/i18n.ts` (English, Swedish, Spanish; other
   interface languages fall back to English) rather than in upstream's message catalogs.
@@ -50,8 +52,9 @@ Lalapp is a long-lived fork of FreeLingo. This spec describes current behavior o
 
 ## Learner model
 
-- The learner model runs in shadow mode: it records estimates but does not change user-facing
-  behavior. `LALAPP_LEARNER_MODEL_ENABLED` (default `true`) turns recording off.
+- The learner model records estimates from every scored activity. Its estimates drive only Lalapp
+  features (adaptive next lesson, level-up offer); upstream's day grid and level test are unchanged.
+  `LALAPP_LEARNER_MODEL_ENABLED` (default `true`) turns recording off.
 - Each scored response is a match between a learner skill and an item on a logistic (Rasch) scale,
   with `P(success) = sigmoid(theta - difficulty)`.
   - Both sides keep a standard deviation. Each update is a single Laplace step whose size equals the
@@ -129,6 +132,44 @@ Lalapp is a long-lived fork of FreeLingo. This spec describes current behavior o
 - `LALAPP_PERSONAS_ENABLED` (default `true`) turns characters off.
 - Upstream's Lingu remains the app mascot in the interface.
 
+## Adaptive next lesson and level-up
+
+- The selector (`app/lalapp/adaptive/selector.py`) is pure; the service reads its inputs from the
+  learner model, the response log, the item ratings and the plan's curriculum.
+- Skill: among the plan's goal skills (all lesson skills when none match), the one with the highest
+  priority. Priority is the gap between plan-level mastery and the skill estimate, plus 0.5 times its
+  standard deviation, minus 0.4 when it was the skill of the plan's previous adaptive lesson. A skill
+  without a row counts as the plan-level prior.
+- Lesson level: the plan level. It steps down one level when the predicted success there is below
+  55%, and up one level when the predicted success one level higher is at least 75%.
+  - Predicted success uses the calibrated difficulty of generated lessons of that type and level:
+    the evidence-weighted mean of the matching lesson template ratings, shrunk toward the CEFR
+    anchor with a weight of 10 responses. Without ratings, the anchor is used.
+- Content:
+  - For grammar and writing, a weak grammar point is reviewed first. A point is weak with at least 3
+    recent lesson responses and a posterior mean below 60% (a Beta prior worth 2 responses at 70%).
+    Only points of units up to the current unit count, weakest first.
+  - Grammar more than 0.5 above plan-level mastery, after subtracting one standard deviation,
+    previews the next unit.
+  - Otherwise the lesson practises the current unit: the unit of the plan's current day, else the
+    plan's `current_unit`, else the first unit.
+- Generation calls upstream's `generate_lesson` with the chosen level, the skill as lesson type, the
+  unit's title, vocabulary sets and the focus grammar points, and the unit's existing lessons as
+  history.
+- Adaptive lessons are ordinary `lessons` rows with `week_number` 1000 and `day_number` numbering
+  them within the plan. They are therefore never part of the day grid, today's lessons, pending
+  lessons or the level-test gate, but completing one counts for progress, streaks and unit
+  competency like any lesson.
+- A plan has at most one open adaptive lesson. Requesting the next lesson while one is open returns
+  it instead of generating another.
+- Level-up is offered when at least two of the plan's goal skills have 20 or more responses, and
+  every goal skill with that much evidence is above mastery of the next level by one standard
+  deviation. There is no offer at C2. Accepting it creates a plan at the next level through
+  upstream's `POST /api/study-plan/generate`, with the current plan's goals, duration and days per
+  week. Skill estimates carry over because they belong to the user language.
+- `LALAPP_ADAPTIVE_ENABLED` (default `true`) turns the API off; `NEXT_PUBLIC_LALAPP_ADAPTIVE=false`
+  hides the dashboard card.
+
 ## Persistence
 
 - `lalapp_learner_skills`: one row per user language and skill. It is owned by `user_languages`, not
@@ -139,6 +180,9 @@ Lalapp is a long-lived fork of FreeLingo. This spec describes current behavior o
 - `lalapp_conversation_personas`: the character and its version per conversation, cascading with
   the conversation.
 - `lalapp_language_preferences`: per user language, the chosen conversation partner.
+- `lalapp_adaptive_lessons`: per adaptive lesson, the plan, skill, level, unit, focus grammar points,
+  reason (`practice`, `review` or `preview`) and predicted success, so predictions can be checked
+  against outcomes. It cascades with the lesson and the plan.
 - `lalapp_learner_responses`: an append-only log of every response, with the expected score and the
   estimates before the update, so ratings can be refitted offline.
 
@@ -162,5 +206,13 @@ loaded objects.
   returns 422 for anything other than a partner of the active language.
 - `GET` and `PUT /api/lalapp/conversations/{id}/persona` (60/minute and 20/minute) read or switch a
   conversation's character. Foreign conversations and unavailable characters return 404.
+- `GET /api/lalapp/next` (60/minute) returns null without an active plan. Otherwise it returns the
+  current suggestion (`skill`, `cefr_level`, `reason`, `focus`, `unit_title`,
+  `predicted_success`), the open adaptive `lesson` if any, and `level_up` (`next_level` and the
+  current plan's goals, duration, days per week and target language) when earned. It generates
+  nothing.
+- `POST /api/lalapp/next` (10/minute) generates the suggested lesson, or keeps the open one, and
+  returns the same shape. It returns 503 when generation fails and 404 without an active plan.
+  Both return 404 when `LALAPP_ADAPTIVE_ENABLED` is off.
 - `GET /api/lalapp/learner` (authenticated, 30/minute) returns the current user's skill estimates per
   target language: `skill`, `theta`, `theta_sd`, the derived `cefr` level, and the response count `n`.

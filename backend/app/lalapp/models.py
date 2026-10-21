@@ -106,3 +106,26 @@ class LanguagePreference(Base):
     )
     peer_persona_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=_now)
+
+
+class AdaptiveLesson(Base):
+    """Why an adaptive lesson was generated, kept to check predictions against outcomes.
+
+    The lesson itself is an ordinary upstream ``lessons`` row placed outside the plan's day grid.
+    """
+
+    __tablename__ = "lalapp_adaptive_lessons"
+
+    lesson_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("lessons.id", ondelete="CASCADE"), primary_key=True
+    )
+    study_plan_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("study_plans.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    skill: Mapped[str] = mapped_column(String(20), nullable=False)
+    cefr_level: Mapped[str] = mapped_column(String(2), nullable=False)
+    unit_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    focus: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    reason: Mapped[str] = mapped_column(String(20), nullable=False)
+    predicted_success: Mapped[float] = mapped_column(Float, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=_now)

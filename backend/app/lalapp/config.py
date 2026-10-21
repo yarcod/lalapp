@@ -8,6 +8,8 @@ class LalappSettings(BaseSettings):
     LEARNER_MODEL_ENABLED: bool = True
     # Characters replace the single upstream tutor in text chat and voice conversations.
     PERSONAS_ENABLED: bool = True
+    # Adaptive "next up" lessons and level-up suggestions driven by the learner model.
+    ADAPTIVE_ENABLED: bool = True
 
 
 lalapp_settings = LalappSettings()

@@ -20,6 +20,7 @@ import WhatsNew from '@/components/whats-new/WhatsNew'
 import { PageLoading } from '@/components/ui/page-loading'
 import { SubscriptionPlanButtons } from '@/components/billing/SubscriptionPlanButtons'
 import { DashboardAnnouncement } from '@/components/dashboard/DashboardAnnouncement'
+import { LalappNextUp } from '@/lalapp/adaptive/NextUp' // lalapp-hook
 import {
   ProgressOverview,
   type ActivityDay,
@@ -659,6 +660,9 @@ export default function DashboardPage() {
               </div>
             )}
           </div>
+
+          {/* lalapp-hook: adaptive next-up card */}
+          <LalappNextUp />
 
           {/* Recent performance */}
           <div className="bg-fl-surface p-5 sm:col-span-2">

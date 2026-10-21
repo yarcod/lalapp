@@ -6,8 +6,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.deps import get_current_user
+from app.core.deps import get_active_study_plan, get_active_study_plan_optional, get_current_user
 from app.core.limiter import limiter
+from app.lalapp.adaptive import service as adaptive
+from app.lalapp.config import lalapp_settings
 from app.lalapp.learner.rating import cefr_from_theta
 from app.lalapp.models import LearnerSkill, PlacementSession
 from app.lalapp.personas import registry as persona_registry
@@ -16,6 +18,7 @@ from app.lalapp.personas.types import Persona
 from app.lalapp.placement import engine
 from app.lalapp.placement import service as placement
 from app.models.conversation import Conversation
+from app.models.study_plan import StudyPlan
 from app.models.user import User
 from app.models.user_language import UserLanguage
 from app.schemas.auth import SUPPORTED_TARGET_LANGUAGES
@@ -247,3 +250,112 @@ async def set_conversation_persona(
     if persona is None:
         raise HTTPException(status_code=404, detail="persona_or_conversation_not_found")
     return _persona_out(persona)
+
+
+class NextLessonOut(BaseModel):
+    id: int
+    title: str
+    lesson_type: str
+    cefr_level: str
+    reason: str
+    focus: list[str]
+    predicted_success: float
+
+
+class LevelUpOut(BaseModel):
+    next_level: str
+    goals: list[str]
+    duration_weeks: int
+    days_per_week: int
+    target_language: str
+
+
+class NextUpOut(BaseModel):
+    plan_id: int
+    skill: str
+    cefr_level: str
+    reason: str
+    focus: list[str]
+    unit_title: str | None
+    predicted_success: float
+    lesson: NextLessonOut | None
+    level_up: LevelUpOut | None
+
+
+def _require_adaptive() -> None:
+    if not lalapp_settings.ADAPTIVE_ENABLED:
+        raise HTTPException(status_code=404, detail="adaptive_disabled")
+
+
+async def _next_up(db: AsyncSession, plan: StudyPlan) -> NextUpOut:
+    recommendation = await adaptive.recommend(db, plan)
+    existing = await adaptive.open_lesson(db, plan.id)
+    next_level = await adaptive.level_up(db, plan)
+    lesson = None
+    if existing:
+        row, meta = existing
+        lesson = NextLessonOut(
+            id=row.id,
+            title=row.title,
+            lesson_type=row.lesson_type,
+            cefr_level=row.cefr_level,
+            reason=meta.reason,
+            focus=list(meta.focus or []),
+            predicted_success=meta.predicted_success,
+        )
+    return NextUpOut(
+        plan_id=plan.id,
+        skill=recommendation.skill,
+        cefr_level=recommendation.cefr_level,
+        reason=recommendation.reason,
+        focus=list(recommendation.focus),
+        unit_title=recommendation.unit.title if recommendation.unit else None,
+        predicted_success=round(recommendation.predicted_success, 3),
+        lesson=lesson,
+        level_up=(
+            LevelUpOut(
+                next_level=next_level,
+                goals=list(plan.goals or []),
+                duration_weeks=plan.duration_weeks,
+                days_per_week=plan.days_per_week,
+                target_language=plan.target_language,
+            )
+            if next_level
+            else None
+        ),
+    )
+
+
+@router.get("/next", response_model=NextUpOut | None)
+@limiter.limit("60/minute")
+async def get_next_up(
+    request: Request,
+    plan: StudyPlan | None = Depends(get_active_study_plan_optional),
+    db: AsyncSession = Depends(get_db),
+) -> NextUpOut | None:
+    """What the learner model suggests next for the active plan; generates nothing."""
+    _require_adaptive()
+    if plan is None:
+        return None
+    return await _next_up(db, plan)
+
+
+@router.post("/next", response_model=NextUpOut)
+@limiter.limit("10/minute")
+async def create_next_lesson(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    plan: StudyPlan = Depends(get_active_study_plan),
+    db: AsyncSession = Depends(get_db),
+) -> NextUpOut:
+    """Generate the suggested lesson, or keep the one already waiting."""
+    _require_adaptive()
+    plan_id = plan.id
+    try:
+        await adaptive.create_lesson(db, plan, native_language=current_user.native_language)
+    except Exception as exc:
+        await db.rollback()
+        adaptive.logger.exception("Adaptive lesson generation failed for plan %s", plan_id)
+        raise HTTPException(status_code=503, detail="lesson_generation_failed") from exc
+    plan = await db.get(StudyPlan, plan_id)
+    return await _next_up(db, plan)

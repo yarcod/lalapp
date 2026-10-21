@@ -11,6 +11,7 @@ export default defineConfig({
     env: {
       NEXT_PUBLIC_LALAPP_PLACEMENT: 'false',
       NEXT_PUBLIC_LALAPP_PERSONAS: 'false',
+      NEXT_PUBLIC_LALAPP_ADAPTIVE: 'false',
     },
   },
   resolve: {
