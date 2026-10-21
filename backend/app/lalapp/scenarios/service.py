@@ -88,12 +88,12 @@ async def scene_states(db: AsyncSession, user_language: UserLanguage) -> list[Sc
         own = [r for r in runs if r.scenario_id == scenario.id]
         latest = own[-1] if own else None
         previous = previous_in_arc(scenario)
-        if scenario.id in completed:
+        if latest is not None and latest.status == "active" and latest.conversation_id:
+            status = "active"  # Includes replays of a completed scene.
+        elif scenario.id in completed:
             status = "done"
         elif previous is not None and previous.id not in completed:
             status = "locked"
-        elif latest is not None and latest.status == "active" and latest.conversation_id:
-            status = "active"
         else:
             status = "available"
         states.append(

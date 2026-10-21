@@ -12,6 +12,7 @@ export default defineConfig({
       NEXT_PUBLIC_LALAPP_PLACEMENT: 'false',
       NEXT_PUBLIC_LALAPP_PERSONAS: 'false',
       NEXT_PUBLIC_LALAPP_ADAPTIVE: 'false',
+      NEXT_PUBLIC_LALAPP_SCENARIOS: 'false',
     },
   },
   resolve: {

@@ -25,6 +25,8 @@ import { useTransientToast } from '@/hooks/useTransientToast'
 import { readSseData } from '@/lib/sse'
 import LinguAvatar from '@/components/lingu/LinguAvatar'
 import { ConversationPersona } from '@/lalapp/personas/ConversationPersona' // lalapp-hook
+import { ScenarioPanel } from '@/lalapp/scenarios/ScenarioPanel' // lalapp-hook
+import { requestedConversation } from '@/lalapp/scenarios/api' // lalapp-hook
 
 interface Message {
   role: 'user' | 'assistant'
@@ -157,7 +159,7 @@ export default function ChatPage() {
         return
       }
       if (data.length > 0) {
-        selectConversation(data[0].id)
+        selectConversation(requestedConversation(data) ?? data[0].id) // lalapp-hook
       } else {
         setActiveId(null)
         setMessages([])
@@ -467,6 +469,9 @@ export default function ChatPage() {
               </button>
             ) : null}
           </div>
+
+          {/* lalapp-hook: goals of a role-play scene */}
+          <ScenarioPanel conversationId={activeId} busy={sending} />
 
           <FreemiumQuotaBanner feature="chat" />
 

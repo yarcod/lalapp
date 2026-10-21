@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/page-loading-boundary'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
 import { AuthAvatarImage } from '@/components/AuthAvatarImage'
+import { useLalappNavItems } from '@/lalapp/nav' // lalapp-hook
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -33,6 +34,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const tCommon = useTranslations('common')
   const tBilling = useTranslations('billing')
   const pathname = usePathname()
+  const lalappNavItems = useLalappNavItems() // lalapp-hook
 
   const mainNavItems = [
     { href: '/dashboard', label: tNav('home') },
@@ -43,6 +45,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     { href: '/listening', label: tNav('listening') },
     { href: '/reading', label: tNav('reading') },
     { href: '/conversation', label: tNav('conversation') },
+    ...lalappNavItems, // lalapp-hook
     { href: '/games', label: tNav('games') },
     { href: '/assessment', label: tNav('assessment') },
   ]

@@ -63,7 +63,8 @@ function PersonaSwitcher({
     null
   if (!shown) return null
 
-  if (conversationId === null) {
+  // A role-play scene's character is fixed by the scene.
+  if (conversationId === null || shown.role === 'npc') {
     return (
       <span className="text-fl-hint text-fl-muted-2 shrink-0 font-mono tracking-widest uppercase">
         {t('talkingWith', { name: shown.name })}

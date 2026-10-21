@@ -32,12 +32,18 @@ Lalapp is a long-lived fork of FreeLingo. This spec describes current behavior o
   - `frontend/src/app/(app)/settings/page.tsx`: renders `PersonaSection` (choice of conversation
     partner) next to the voice settings.
   - `frontend/src/app/(app)/chat/page.tsx`: renders `ConversationPersona` in the chat header. It shows
-    the preferred partner for a new conversation, and for an existing one a selector to switch
-    character.
+    the preferred partner for a new conversation, for an existing one a selector to switch
+    character, and for a scene only the NPC's name. It renders `ScenarioPanel` (a scene's goals,
+    checked after each finished reply) below the header, and on load it opens the conversation
+    named by `?conversation=` when it is among the user's conversations.
+  - `frontend/src/app/(app)/scenarios/page.tsx`: a new route rendering `ScenarioList`.
+    `frontend/src/app/(app)/layout.tsx` adds its navigation entry through `useLalappNavItems`, and
+    `frontend/src/middleware.ts` lists it as a protected route.
   - `frontend/src/app/(app)/dashboard/page.tsx`: renders `LalappNextUp` (the adaptive next lesson and
     level-up offer) after today's lessons.
   - `frontend/vitest.config.mts`: upstream's tests run with Lalapp frontend features switched off
-    (`NEXT_PUBLIC_LALAPP_PLACEMENT`, `NEXT_PUBLIC_LALAPP_PERSONAS`, `NEXT_PUBLIC_LALAPP_ADAPTIVE`). Lalapp frontend tests live in
+    (`NEXT_PUBLIC_LALAPP_PLACEMENT`, `NEXT_PUBLIC_LALAPP_PERSONAS`, `NEXT_PUBLIC_LALAPP_ADAPTIVE`,
+    `NEXT_PUBLIC_LALAPP_SCENARIOS`). Lalapp frontend tests live in
     `frontend/tests/lalapp/` and enable features explicitly.
 - Lalapp interface strings live in `frontend/src/lalapp/i18n.ts` (English, Swedish, Spanish; other
   interface languages fall back to English) rather than in upstream's message catalogs.
@@ -187,7 +193,9 @@ Lalapp is a long-lived fork of FreeLingo. This spec describes current behavior o
   - two or three missions: a learner-facing goal per interface language and an English rubric for
     the judge.
 - Scenes belong to story arcs with recurring NPCs and are numbered from 1 within the arc. A scene
-  is locked until the previous scene of its arc is completed; its CEFR level is advisory.
+  is locked until the previous scene of its arc is completed; its CEFR level is advisory. A scene
+  whose latest run is still active (including a replay of a completed scene) is listed as
+  `active`.
 - Starting a scene creates an ordinary upstream conversation titled after the scene, with the
   NPC's opening line stored as its first assistant message, and a run in `lalapp_scenario_runs`.
   Starting again creates a new run; completion is kept per run, so it survives deleting the
@@ -205,7 +213,8 @@ Lalapp is a long-lived fork of FreeLingo. This spec describes current behavior o
     in what the learner wrote. Quotes shorter than three characters never count.
   - When every mission has evidence, the run is `done` and the next scene of the arc unlocks.
 - `LALAPP_SCENARIOS_ENABLED` (default `true`) turns the API off; existing scene conversations then
-  fall back to the preferred partner.
+  fall back to the preferred partner. `NEXT_PUBLIC_LALAPP_SCENARIOS=false` hides the page, its
+  navigation entry and the chat panel.
 
 ## Persistence
 

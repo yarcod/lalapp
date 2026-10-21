@@ -3,7 +3,7 @@ import { apiFetch } from '@/lib/api'
 export interface Persona {
   id: string
   name: string
-  role: 'guide' | 'peer' | 'examiner'
+  role: 'guide' | 'peer' | 'examiner' | 'npc'
   dialect: string
   age: number
   backstory: string

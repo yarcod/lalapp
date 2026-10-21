@@ -23,6 +23,7 @@ const PROTECTED_ROUTES = [
   '/plan',
   '/progress',
   '/reading',
+  '/scenarios', // lalapp-hook
   '/settings',
   '/vocabulary',
 ]

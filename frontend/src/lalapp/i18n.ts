@@ -44,6 +44,25 @@ const MESSAGES = {
     skill_writing: 'writing',
     skill_listening: 'listening',
     skill_speaking: 'speaking',
+    navScenarios: 'Role-plays',
+    scenariosIntro:
+      'Step into a scene and reach the goals by talking. Finishing a scene opens the next one in its story.',
+    scenarioStart: 'Start scene',
+    scenarioContinue: 'Continue',
+    scenarioReplay: 'Play again',
+    scenarioLocked: 'Finish the previous scene first',
+    scenarioDone: 'Completed',
+    scenarioLevel: 'Written for {level}',
+    scenarioStartFailed: 'The scene could not be started. Please try again.',
+    missionsTitle: 'Your goals',
+    missionReached: 'Goal reached: {goal}',
+    sceneComplete: 'Scene complete!',
+    moreScenes: 'More scenes',
+    missionCheckFailed: 'Your goals could not be checked right now.',
+    arc_valencia: 'Valencia',
+    arc_cdmx: 'Mexico City',
+    arc_leeds: 'Leeds',
+    arc_portland: 'Portland',
   },
   sv: {
     personaCardTitle: 'Samtalspartner',
@@ -86,6 +105,25 @@ const MESSAGES = {
     skill_writing: 'skrivande',
     skill_listening: 'hörförståelse',
     skill_speaking: 'tal',
+    navScenarios: 'Rollspel',
+    scenariosIntro:
+      'Kliv in i en scen och nå målen genom att prata. När du klarar en scen öppnas nästa i berättelsen.',
+    scenarioStart: 'Starta scenen',
+    scenarioContinue: 'Fortsätt',
+    scenarioReplay: 'Spela igen',
+    scenarioLocked: 'Gör klart föregående scen först',
+    scenarioDone: 'Klar',
+    scenarioLevel: 'Skriven för {level}',
+    scenarioStartFailed: 'Scenen kunde inte startas. Försök igen.',
+    missionsTitle: 'Dina mål',
+    missionReached: 'Mål nått: {goal}',
+    sceneComplete: 'Scenen är klar!',
+    moreScenes: 'Fler scener',
+    missionCheckFailed: 'Dina mål kunde inte kontrolleras just nu.',
+    arc_valencia: 'Valencia',
+    arc_cdmx: 'Mexico City',
+    arc_leeds: 'Leeds',
+    arc_portland: 'Portland',
   },
   es: {
     personaCardTitle: 'Compañero de conversación',
@@ -129,6 +167,26 @@ const MESSAGES = {
     skill_writing: 'escritura',
     skill_listening: 'comprensión auditiva',
     skill_speaking: 'expresión oral',
+    navScenarios: 'Juegos de rol',
+    scenariosIntro:
+      'Entra en una escena y consigue los objetivos hablando. Al terminar una escena se abre la siguiente de su historia.',
+    scenarioStart: 'Empezar la escena',
+    scenarioContinue: 'Continuar',
+    scenarioReplay: 'Volver a jugar',
+    scenarioLocked: 'Termina antes la escena anterior',
+    scenarioDone: 'Completada',
+    scenarioLevel: 'Pensada para {level}',
+    scenarioStartFailed:
+      'No se ha podido empezar la escena. Inténtalo de nuevo.',
+    missionsTitle: 'Tus objetivos',
+    missionReached: 'Objetivo conseguido: {goal}',
+    sceneComplete: '¡Escena completada!',
+    moreScenes: 'Más escenas',
+    missionCheckFailed: 'No se han podido comprobar tus objetivos ahora.',
+    arc_valencia: 'Valencia',
+    arc_cdmx: 'Ciudad de México',
+    arc_leeds: 'Leeds',
+    arc_portland: 'Portland',
   },
 } as const
 
@@ -145,6 +203,11 @@ export function lalappMessage(
   return template.replace(/\{(\w+)\}/g, (_, name: string) =>
     String(values[name] ?? `{${name}}`)
   )
+}
+
+/** Pick the interface-language entry of a localized text, falling back to English. */
+export function localized(texts: Record<string, string>, locale: string) {
+  return texts[locale] ?? texts.en ?? Object.values(texts)[0] ?? ''
 }
 
 export function useLalappT() {
