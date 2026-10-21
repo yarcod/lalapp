@@ -24,6 +24,8 @@ Lalapp is a long-lived fork of FreeLingo. This spec describes current behavior o
   - `frontend/src/app/(app)/assessment/page.tsx`: when `NEXT_PUBLIC_LALAPP_PLACEMENT` is not
     `false`, starting the quiz renders `LalappPlacementQuiz` instead of the client-side staircase.
     Its result feeds upstream's result, duration and plan-creation steps unchanged.
+  - `frontend/vitest.config.mts`: upstream's tests run with Lalapp frontend features switched off.
+    Lalapp frontend tests live in `frontend/tests/lalapp/`.
 
 ## Migrations
 

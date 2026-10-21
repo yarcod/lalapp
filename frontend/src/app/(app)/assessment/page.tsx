@@ -18,6 +18,8 @@ import { buildAnswerRecord, type AnswerRecord } from '@/lib/assessment-answers'
 import { CEFR_LEVELS } from '@/data/curriculum'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { PageLoading } from '@/components/ui/page-loading'
+import { LALAPP_PLACEMENT_ENABLED } from '@/lalapp/config' // lalapp-hook
+import LalappPlacementQuiz from '@/lalapp/placement/LalappPlacementQuiz' // lalapp-hook
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -80,6 +82,7 @@ type FlowStep =
   | 'result'
   | 'duration'
   | 'voice-trial-offer'
+  | 'lalapp-quiz' // lalapp-hook
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -314,6 +317,10 @@ export default function AssessmentPage() {
   function startQuiz() {
     const flow = flowRef.current
     if (!isCurrentFlow(flow)) return
+    if (LALAPP_PLACEMENT_ENABLED) {
+      setStep('lalapp-quiz') // lalapp-hook
+      return
+    }
     if (bank.length === 0) {
       setError(tCommon('errorMessage'))
       return
@@ -762,6 +769,21 @@ export default function AssessmentPage() {
           onCancel={() => setShowStartWarning(false)}
         />
       </>
+    )
+  }
+
+  // lalapp-hook: adaptive placement replaces the quiz step and reuses the result step.
+  if (step === 'lalapp-quiz' && activeLanguage) {
+    return (
+      <LalappPlacementQuiz
+        language={activeLanguage.code}
+        languageCode={activeLanguage.code}
+        onResult={(r) => {
+          setResult(r)
+          setSelectedLevel(r.cefr_level as CEFRLevel)
+          setStep('result')
+        }}
+      />
     )
   }
 
