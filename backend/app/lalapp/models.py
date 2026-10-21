@@ -81,3 +81,28 @@ class PlacementSession(Base):
     result: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=_now)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class ConversationPersona(Base):
+    """The character speaking in a conversation, fixed when the conversation starts."""
+
+    __tablename__ = "lalapp_conversation_personas"
+
+    conversation_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("conversations.id", ondelete="CASCADE"), primary_key=True
+    )
+    persona_id: Mapped[str] = mapped_column(String(50), nullable=False)
+    persona_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=_now)
+
+
+class LanguagePreference(Base):
+    """Per-language learner preferences, such as the chosen conversation partner."""
+
+    __tablename__ = "lalapp_language_preferences"
+
+    user_language_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("user_languages.id", ondelete="CASCADE"), primary_key=True
+    )
+    peer_persona_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=_now)

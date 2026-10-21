@@ -21,6 +21,11 @@ Lalapp is a long-lived fork of FreeLingo. This spec describes current behavior o
   - `routers/flashcards.py`: after a flashcard review is committed (not on idempotent replays).
   - `routers/listening.py` and `routers/reading.py`: after a comprehension attempt is committed.
   - `routers/games.py`: after a newly persisted game answer.
+  - `routers/chat.py` and `services/conversation_pipeline.py`: their tutor-prompt wrappers pass the
+    upstream prompt through `personas.service.apply`; `chat` activates the conversation's character
+    before building prompts.
+  - `routers/conversation.py`: before creating the voice pipeline, activates the conversation's
+    character and uses its TTS voice instead of the client's voice preference.
   - `frontend/src/app/(app)/assessment/page.tsx`: when `NEXT_PUBLIC_LALAPP_PLACEMENT` is not
     `false`, starting the quiz renders `LalappPlacementQuiz` instead of the client-side staircase.
     Its result feeds upstream's result, duration and plan-creation steps unchanged.
@@ -86,6 +91,36 @@ Lalapp is a long-lived fork of FreeLingo. This spec describes current behavior o
   of at least 0.8. If the user has no `user_languages` row yet, the stored result seeds the skill
   rows when they are first created. Otherwise new rows start from the active plan's level.
 
+## Personas
+
+- Characters and roles are Python modules in `app/lalapp/personas/`. Personas hold voice,
+  background and personality (`cast_en.py`, `cast_es.py`); roles hold pedagogical behaviour
+  (`roles.py`). Each carries a `version`.
+- Launch cast per target-language family (`en`, `es`): a bilingual Swedish-speaking guide, two
+  conversation partners in different dialects (en-GB and en-US; es-ES and es-MX), and an examiner.
+  The examiner is not selectable for conversations.
+- Each persona maps to a TTS voice per provider (`openai`, `local`). Humour varies by learner level.
+- Prompt composition keeps upstream's prompt (mandatory rules, student context, memories, language
+  overlay). It replaces the identity line and the upstream tutor name, then appends:
+  - a character block;
+  - a role block, including the native-language policy;
+  - an honesty block (an AI-voiced fictional character; never claims to be human, never flirts,
+    never guilt-trips);
+  - a precedence note: the character and role instructions override the earlier guidelines but
+    never the mandatory rules.
+  If upstream's identity line changes, the identity is prepended instead.
+- Conversation character:
+  - It is fixed per conversation in `lalapp_conversation_personas` when the conversation is first
+    used.
+  - It defaults to the learner's preferred partner for that language, otherwise the partner whose
+    dialect matches the target language, otherwise the first partner.
+  - The learner can switch a conversation to any selectable character of its language.
+- The active character is held in a context variable for the request or voice session. Prompts
+  built without an activated character are left unchanged, and activation failures fall back to
+  upstream's tutor.
+- `LALAPP_PERSONAS_ENABLED` (default `true`) turns characters off.
+- Upstream's Lingu remains the app mascot in the interface.
+
 ## Persistence
 
 - `lalapp_learner_skills`: one row per user language and skill. It is owned by `user_languages`, not
@@ -93,6 +128,9 @@ Lalapp is a long-lived fork of FreeLingo. This spec describes current behavior o
 - `lalapp_item_ratings`: difficulty and uncertainty per item key.
 - `lalapp_placement_sessions`: per-user placement state (estimates, asked items, responses), the
   pending question id, status `active` or `done`, and the result.
+- `lalapp_conversation_personas`: the character and its version per conversation, cascading with
+  the conversation.
+- `lalapp_language_preferences`: per user language, the chosen conversation partner.
 - `lalapp_learner_responses`: an append-only log of every response, with the expected score and the
   estimates before the update, so ratings can be refitted offline.
 
@@ -111,5 +149,10 @@ loaded objects.
   `answer` and returns the next step. When finished, `question` is null and `result` is set. A
   foreign or unknown session returns 404. An answer to a question that is not pending, or to a
   finished session, returns 409.
+- `GET /api/lalapp/personas` (60/minute) returns the active language's selectable characters and
+  `preferred_peer_id`. `PUT /api/lalapp/personas/peer` (20/minute) sets the preferred partner and
+  returns 422 for anything other than a partner of the active language.
+- `GET` and `PUT /api/lalapp/conversations/{id}/persona` (60/minute and 20/minute) read or switch a
+  conversation's character. Foreign conversations and unavailable characters return 404.
 - `GET /api/lalapp/learner` (authenticated, 30/minute) returns the current user's skill estimates per
   target language: `skill`, `theta`, `theta_sd`, the derived `cefr` level, and the response count `n`.

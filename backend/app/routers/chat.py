@@ -16,6 +16,7 @@ from app.core.deps import (
     require_subscription_or_freemium_readonly,
 )
 from app.core.limiter import limiter
+from app.lalapp.personas import service as lalapp_personas  # lalapp-hook
 from app.models.chat_history import ChatHistory
 from app.models.conversation import Conversation
 from app.models.llm_usage import LLMUsage
@@ -69,7 +70,7 @@ def _build_tutor_system_prompt(
     language_prompt_overlay: str = "",
     memory_tools_enabled: bool = True,
 ) -> str:
-    return build_tutor_system_prompt(
+    prompt = build_tutor_system_prompt(
         student_name=student_name,
         cefr_level=cefr_level,
         native_language=native_language,
@@ -83,6 +84,7 @@ def _build_tutor_system_prompt(
         language_prompt_overlay=language_prompt_overlay,
         memory_tools_enabled=memory_tools_enabled,
     )
+    return lalapp_personas.apply(prompt)  # lalapp-hook
 
 
 MAX_HISTORY = 30
@@ -331,6 +333,14 @@ async def chat(
     target_language_name = get_language_name(target_language)
     native_language_name = get_native_language_name(current_user.native_language)
     language_prompt_overlay = get_language_prompt_overlay(target_language)
+    await lalapp_personas.activate(  # lalapp-hook
+        db,
+        user_id=current_user.id,
+        conversation_id=conversation_id,
+        target_language=target_language,
+        cefr_level=cefr_level,
+        native_language_name=native_language_name,
+    )
 
     system_prompt = _build_tutor_system_prompt(
         student_name=current_user.display_name,

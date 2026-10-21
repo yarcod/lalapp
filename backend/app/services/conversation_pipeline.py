@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from app.core.app_logger import get_logger
+from app.lalapp.personas import service as lalapp_personas  # lalapp-hook
 from app.models.user import User
 from app.services.language_helpers import (
     get_iso639,
@@ -57,7 +58,7 @@ def _build_conversation_system_prompt(
     memory_tools_enabled: bool = True,
     lesson_practice_context: str = "",
 ) -> str:
-    return build_conversation_system_prompt(
+    prompt = build_conversation_system_prompt(
         student_name=student_name,
         cefr_level=cefr_level,
         native_language=native_language,
@@ -68,6 +69,7 @@ def _build_conversation_system_prompt(
         memory_tools_enabled=memory_tools_enabled,
         lesson_practice_context=lesson_practice_context,
     )
+    return lalapp_personas.apply(prompt)  # lalapp-hook
 
 
 class ConversationPipeline:

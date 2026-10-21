@@ -19,6 +19,7 @@ from app.core.deps import (
 )
 from app.core.limiter import limiter
 from app.core.security import decode_access_token
+from app.lalapp.personas import service as lalapp_personas  # lalapp-hook
 from app.models.conversation import Conversation as ConversationModel
 from app.models.study_plan import StudyPlan
 from app.models.user import User
@@ -536,6 +537,16 @@ async def conversation_ws(
         except Exception:
             pass
 
+        voice_pref = (  # lalapp-hook
+            await lalapp_personas.activate_voice_session(
+                user_id=user_id,
+                conversation_id=conversation_id,
+                target_language=target_language,
+                cefr_level=cefr_level,
+                native_language=native_language,
+            )
+            or voice_pref
+        )
         pipeline = ConversationPipeline(
             llm=llm_adapter,
             tts=tts_service,
