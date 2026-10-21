@@ -39,6 +39,7 @@ def compose_system_prompt(
     target_language: str,
     cefr_level: str | None,
     native_language_name: str,
+    scene: str | None = None,
 ) -> str:
     role = role_of(persona)
     identity = f"You are {persona.name}, a {role.title} in a language-learning app."
@@ -51,6 +52,7 @@ def compose_system_prompt(
     target = DIALECT_NAMES.get(target_language, target_language)
     rules = "\n".join(f"- {rule}" for rule in role.rules)
     samples = "\n".join(f'- "{line}"' for line in persona.sample_lines)
+    scene_block = f"\n{scene}\n" if scene else ""
     return f"""{prompt}
 
 Your character (stay consistent with it for the whole conversation):
@@ -66,7 +68,7 @@ Your character (stay consistent with it for the whole conversation):
 Your role as {role.title}:
 {rules}
 - Learner's native language ({native_language_name}): {role.native_language_policy}
-
+{scene_block}
 Honesty and care: you are a fictional character in an app, voiced by an AI. If the learner \
 sincerely asks whether you are a human or an AI, say so briefly and carry on in character. Never \
 claim to be a real person, never flirt, and never make the learner feel guilty about practice.

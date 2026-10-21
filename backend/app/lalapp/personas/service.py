@@ -33,6 +33,7 @@ class ActivePersona:
     target_language: str
     cefr_level: str | None
     native_language_name: str
+    scene: str | None = None
 
 
 _active: ContextVar[ActivePersona | None] = ContextVar("lalapp_active_persona", default=None)
@@ -93,10 +94,24 @@ async def _owned_conversation(
     return conversation
 
 
+async def _scene(db: AsyncSession, conversation_id: int) -> tuple[Persona, str] | None:
+    from app.lalapp.scenarios.service import npc_for_conversation  # noqa: PLC0415
+
+    if not lalapp_settings.SCENARIOS_ENABLED:
+        return None
+    return await npc_for_conversation(db, conversation_id)
+
+
 async def conversation_persona(
     db: AsyncSession, user_id: int, conversation_id: int, target_language: str
 ) -> Persona | None:
-    """The conversation's character, assigning the preferred partner on first use."""
+    """The conversation's character, assigning the preferred partner on first use.
+
+    A role-play scene's conversation always has the scene's NPC.
+    """
+    scene = await _scene(db, conversation_id)
+    if scene is not None:
+        return scene[0]
     row = await db.get(ConversationPersona, conversation_id)
     if row is not None:
         persona = registry.get(row.persona_id)
@@ -127,6 +142,8 @@ async def set_conversation_persona(
     persona = registry.get(persona_id)
     if conversation is None or persona is None:
         return None
+    if await _scene(db, conversation_id) is not None:
+        return None
     if not registry.is_selectable(persona_id, conversation.target_language or ""):
         return None
     row = await db.get(ConversationPersona, conversation_id)
@@ -155,13 +172,26 @@ async def activate(
     if not lalapp_settings.PERSONAS_ENABLED:
         return None
     try:
-        persona = await conversation_persona(db, user_id, conversation_id, target_language)
+        scene = await _scene(db, conversation_id)
+        persona = (
+            scene[0]
+            if scene
+            else await conversation_persona(db, user_id, conversation_id, target_language)
+        )
     except Exception:
         logger.exception("Persona activation failed for conversation %s", conversation_id)
         await db.rollback()
         return None
     if persona is not None:
-        _active.set(ActivePersona(persona, target_language, cefr_level, native_language_name))
+        _active.set(
+            ActivePersona(
+                persona,
+                target_language,
+                cefr_level,
+                native_language_name,
+                scene=scene[1] if scene else None,
+            )
+        )
     return persona
 
 
@@ -208,4 +238,5 @@ def apply(prompt: str) -> str:
         target_language=active.target_language,
         cefr_level=active.cefr_level,
         native_language_name=active.native_language_name,
+        scene=active.scene,
     )

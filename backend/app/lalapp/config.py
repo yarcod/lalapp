@@ -10,6 +10,8 @@ class LalappSettings(BaseSettings):
     PERSONAS_ENABLED: bool = True
     # Adaptive "next up" lessons and level-up suggestions driven by the learner model.
     ADAPTIVE_ENABLED: bool = True
+    # Role-play scenes with NPCs and missions checked by an LLM judge.
+    SCENARIOS_ENABLED: bool = True
 
 
 lalapp_settings = LalappSettings()

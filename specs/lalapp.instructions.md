@@ -135,6 +135,7 @@ Lalapp is a long-lived fork of FreeLingo. This spec describes current behavior o
   built without an activated character are left unchanged, and activation failures fall back to
   upstream's tutor.
 - `LALAPP_PERSONAS_ENABLED` (default `true`) turns characters off.
+- Roles are `guide`, `peer`, `examiner` and `npc`; only peers are selectable as partners.
 - Upstream's Lingu remains the app mascot in the interface.
 
 ## Adaptive next lesson and level-up
@@ -175,6 +176,37 @@ Lalapp is a long-lived fork of FreeLingo. This spec describes current behavior o
 - `LALAPP_ADAPTIVE_ENABLED` (default `true`) turns the API off; `NEXT_PUBLIC_LALAPP_ADAPTIVE=false`
   hides the dashboard card.
 
+## Role-play scenarios
+
+- Scenes are Python modules per target-language family (`app/lalapp/scenarios/catalog_en.py`,
+  `catalog_es.py`), each with a `version`. A scene has:
+  - one NPC: a persona with role `npc`, not selectable as a partner;
+  - a setting and the NPC's own goal (English, for the prompt);
+  - a title in the target language (the conversation title), a summary per interface language
+    (`en`, `sv`, `es`), and the NPC's opening line;
+  - two or three missions: a learner-facing goal per interface language and an English rubric for
+    the judge.
+- Scenes belong to story arcs with recurring NPCs and are numbered from 1 within the arc. A scene
+  is locked until the previous scene of its arc is completed; its CEFR level is advisory.
+- Starting a scene creates an ordinary upstream conversation titled after the scene, with the
+  NPC's opening line stored as its first assistant message, and a run in `lalapp_scenario_runs`.
+  Starting again creates a new run; completion is kept per run, so it survives deleting the
+  conversation.
+- In a scene's conversation, persona activation uses the NPC and appends a scene block after the
+  role block. The block lists the setting, the NPC's goal and the learner's open goals. It tells
+  the NPC to create chances without doing the work, to close the scene once all goals are
+  reached, and that the scene is an app instruction while the persona lock still applies to
+  learner requests. The conversation's character cannot be switched.
+- Mission judge:
+  - It runs on request, only when the learner has written since the last check, and only for
+    open missions.
+  - It sees the last 40 messages and must quote, for each achieved goal, an excerpt of a learner
+    message. A goal counts only if the quote, with case, accents and punctuation folded, occurs
+    in what the learner wrote. Quotes shorter than three characters never count.
+  - When every mission has evidence, the run is `done` and the next scene of the arc unlocks.
+- `LALAPP_SCENARIOS_ENABLED` (default `true`) turns the API off; existing scene conversations then
+  fall back to the preferred partner.
+
 ## Persistence
 
 - `lalapp_learner_skills`: one row per user language and skill. It is owned by `user_languages`, not
@@ -188,6 +220,9 @@ Lalapp is a long-lived fork of FreeLingo. This spec describes current behavior o
 - `lalapp_adaptive_lessons`: per adaptive lesson, the plan, skill, level, unit, focus grammar points,
   reason (`practice`, `review` or `preview`) and predicted success, so predictions can be checked
   against outcomes. It cascades with the lesson and the plan.
+- `lalapp_scenario_runs`: per scene attempt, the user language, the conversation (set to null when
+  the conversation is deleted), scene id and version, status `active` or `done`, mission evidence
+  (mission id to quote), and the last judged learner message.
 - `lalapp_learner_responses`: an append-only log of every response, with the expected score and the
   estimates before the update, so ratings can be refitted offline.
 
@@ -219,5 +254,13 @@ loaded objects.
 - `POST /api/lalapp/next` (10/minute) generates the suggested lesson, or keeps the open one, and
   returns the same shape. It returns 503 when generation fails and 404 without an active plan.
   Both return 404 when `LALAPP_ADAPTIVE_ENABLED` is off.
+- `GET /api/lalapp/scenarios` (60/minute) lists the active language's scenes with `status`
+  (`locked`, `available`, `active` or `done`), the latest run's conversation, the NPC, and missions
+  with `done` flags, plus `plan_level`.
+- `POST /api/lalapp/scenarios/{id}/start` (10/minute) returns the new run. Scenes of another
+  language or unknown ids return 404, and locked scenes 409.
+- `GET /api/lalapp/scenarios/runs/{conversation_id}` (60/minute) returns a run's state, and
+  `POST .../check` (30/minute) judges it and also returns `newly_done`. Conversations that are not
+  the user's scenes return 404, and a failed judgement 503.
 - `GET /api/lalapp/learner` (authenticated, 30/minute) returns the current user's skill estimates per
   target language: `skill`, `theta`, `theta_sd`, the derived `cefr` level, and the response count `n`.

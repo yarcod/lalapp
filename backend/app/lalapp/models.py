@@ -129,3 +129,33 @@ class AdaptiveLesson(Base):
     reason: Mapped[str] = mapped_column(String(20), nullable=False)
     predicted_success: Mapped[float] = mapped_column(Float, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=_now)
+
+
+class ScenarioRun(Base):
+    """One attempt at a role-play scene, played in an upstream conversation.
+
+    Mission evidence survives when the conversation is deleted, so completed scenes stay
+    completed and keep unlocking the rest of their arc.
+    """
+
+    __tablename__ = "lalapp_scenario_runs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_language_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("user_languages.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    conversation_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("conversations.id", ondelete="SET NULL"),
+        nullable=True,
+        unique=True,
+    )
+    scenario_id: Mapped[str] = mapped_column(String(50), nullable=False)
+    scenario_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="active")
+    # Mission id -> the learner's words that achieved it.
+    missions: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    # Last learner message the judge has seen, so unchanged transcripts are not re-judged.
+    last_checked_message_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=_now)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
