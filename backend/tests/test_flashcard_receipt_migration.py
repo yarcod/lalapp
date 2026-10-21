@@ -33,7 +33,8 @@ def test_receipt_revision_is_additive_and_matches_postgres_model(monkeypatch):
     config = Config(str(backend / "alembic.ini"), output_buffer=output)
     config.set_main_option("script_location", str(backend / "alembic"))
     scripts = ScriptDirectory.from_config(config)
-    assert scripts.get_heads() == ["0057_flashcard_review_receipts"]
+    heads = [h for h in scripts.get_heads() if not h.startswith("l0")]  # lalapp-hook
+    assert heads == ["0057_flashcard_review_receipts"]
     assert (
         scripts.get_revision("0057_flashcard_review_receipts").down_revision
         == "0056_flashcard_management"

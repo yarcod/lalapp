@@ -49,6 +49,11 @@ Lalapp is a long-lived fork of FreeLingo. This spec describes current behavior o
 - The branch base depends on the upstream revision whose tables it references, so upstream's linear
   `00NN_` chain stays untouched.
 - Startup runs `alembic upgrade heads` so both branches are applied.
+- Upstream's migration tests that assert a single head ignore `l0` revisions (`lalapp-hook` lines in
+  `tests/test_progress_migration.py` and `tests/test_flashcard_receipt_migration.py`). The lalapp
+  branch has its own offline checks in `tests/lalapp/test_migrations.py`: one linear chain on top of
+  upstream, DDL for every `lalapp_` table and index matching the models, and a downgrade that drops
+  every table.
 
 ## Learner model
 
