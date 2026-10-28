@@ -1,0 +1,17 @@
+# Lalapp: build the backend and frontend from this fork instead of pulling upstream's published
+# FreeLingo images, which do not contain Lalapp's code. Use together with docker-compose.yml:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.lalapp.yml up -d --build
+services:
+  backend:
+    image: lalapp-backend:local
+    pull_policy: build
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+  frontend:
+    image: lalapp-frontend:local
+    pull_policy: build
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile

@@ -33,8 +33,9 @@ services:
     pull_policy: always
     container_name: freelingo-backend
     restart: unless-stopped
+    # lalapp-hook: `heads` applies upstream's and Lalapp's migration branches.
     command: >
-      sh -c "cd /tmp && PYTHONPATH=/app alembic -c /app/alembic.ini upgrade head && cd /app && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers ${UVICORN_WORKERS:-4}"
+      sh -c "cd /tmp && PYTHONPATH=/app alembic -c /app/alembic.ini upgrade heads && cd /app && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers ${UVICORN_WORKERS:-4}"
     volumes:
       - ${DATA_PATH}/avatars:/app/avatars
       - ${DATA_PATH}/audio:/data/audio

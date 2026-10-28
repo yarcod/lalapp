@@ -54,7 +54,12 @@ Lalapp is a long-lived fork of FreeLingo. This spec describes current behavior o
   example `l0001_lalapp_learner_model`).
 - The branch base depends on the upstream revision whose tables it references, so upstream's linear
   `00NN_` chain stays untouched.
-- Startup runs `alembic upgrade heads` so both branches are applied.
+- Startup runs `alembic upgrade heads` so both branches are applied: in `main.py`, and in the backend
+  `command` of `docker-compose.yml` and `docker-compose.dev.yml` (`lalapp-hook` comments). A plain
+  `upgrade head` fails with more than one head.
+- `docker-compose.lalapp.yml` is an override for `docker-compose.yml` that builds the backend and
+  frontend from this repository instead of pulling upstream's published images, which lack Lalapp:
+  `docker compose -f docker-compose.yml -f docker-compose.lalapp.yml up -d --build`.
 - Upstream's migration tests that assert a single head ignore `l0` revisions (`lalapp-hook` lines in
   `tests/test_progress_migration.py`, `test_flashcard_receipt_migration.py`,
   `test_flashcard_management_migration.py` and `test_sentence_order_migration.py`). The lalapp
