@@ -346,4 +346,4 @@ async def test_kokoro_tts_sends_language():
         assert await service.synthesize("Hej.", language="sv") == b"mp3"
         assert client.post.await_args.kwargs["json"]["language"] == "sv"
         await service.synthesize("Hi.")
-        assert "language" not in client.post.await_args.kwargs["json"]
+        assert client.post.await_args.kwargs["json"]["language"] == "en"

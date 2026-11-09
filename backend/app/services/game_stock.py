@@ -3,6 +3,7 @@
 import asyncio
 import hashlib
 import logging
+import time
 from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
 from datetime import timedelta
@@ -25,9 +26,18 @@ STOCK_TARGET = 3
 DAILY_NEW_GAMES_PER_PLAN = 3
 PASS_INTERVAL_SECONDS = 600
 GENERATION_TIMEOUT_SECONDS = 600
+STATE_POLL_SECONDS = 5
+FAILED_BUCKET_COOLDOWN_SECONDS = 3600
 MODES = ("review", "prepare", "free")
 GAME_TYPES = ("detective", "sentence-order", "vocabulary-pairs")
 RECENT_GAMES = 5
+
+# (plan id, mode, game type) -> monotonic time a failed bucket may be tried again. Per process.
+bucket_cooldowns: dict[tuple[int, str, str], float] = {}
+
+
+def _now() -> float:
+    return time.monotonic()
 
 
 async def gateway_state() -> str:
@@ -100,7 +110,31 @@ async def plan_buckets(db: AsyncSession, plan: StudyPlan, user: User) -> list[Bu
     return buckets
 
 
+def bucket_key(bucket: Bucket) -> tuple[int, str, str]:
+    return bucket.plan.id, bucket.mode, bucket.game_type
+
+
+def bucket_cooling(bucket: Bucket) -> bool:
+    return _now() < bucket_cooldowns.get(bucket_key(bucket), 0.0)
+
+
 MADE, SKIPPED, STOP = "made", "skipped", "stop"
+
+
+async def generate_while_off(request: GenerationRequest, deadline: float):  # noqa: ANN201
+    """Generate beside a status poll. Returns None when the gateway leaves `off`, so a child
+    opening the app never waits for a game that nobody asked for."""
+    task = asyncio.create_task(generate_content(request, deadline))
+    try:
+        while not task.done():
+            await asyncio.wait({task}, timeout=STATE_POLL_SECONDS)
+            if not task.done() and await gateway_state() != "off":
+                return None
+        return task.result()
+    finally:
+        if not task.done():
+            task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
 
 
 async def generate_item(db: AsyncSession, bucket: Bucket, *, replacement: bool) -> str:
@@ -122,10 +156,13 @@ async def generate_item(db: AsyncSession, bucket: Bucket, *, replacement: bool) 
     try:
         deadline = asyncio.get_running_loop().time() + GENERATION_TIMEOUT_SECONDS
         async with asyncio.timeout_at(deadline):
-            content = await generate_content(request, deadline)
+            content = await generate_while_off(request, deadline)
     except Exception:
         logger.exception("Game stock generation failed: plan %s %s", plan.id, bucket.mode)
+        bucket_cooldowns[bucket_key(bucket)] = _now() + FAILED_BUCKET_COOLDOWN_SECONDS
         return SKIPPED
+    if content is None:
+        return STOP
     db.add(
         GameStock(
             study_plan_id=plan.id,
@@ -179,7 +216,7 @@ async def refill_plan(
     db: AsyncSession, plan: StudyPlan, user: User, first_fill: bool
 ) -> tuple[int, bool]:
     """Generate for one plan; returns (games made, whether the pass must stop)."""
-    buckets = await plan_buckets(db, plan, user)
+    buckets = [b for b in await plan_buckets(db, plan, user) if not bucket_cooling(b)]
     made = 0
     for bucket in buckets:
         # Replacing a stale game is not new generation and does not use the daily cap.

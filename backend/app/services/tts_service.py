@@ -33,8 +33,8 @@ class KokoroTTSService:
             "voice": voice or self.voice,
             "response_format": "mp3",
         }
-        if language:
-            payload["language"] = get_iso639(language) or language
+        # The speech gateway requires a language; previews and warm-ups do not have one.
+        payload["language"] = get_iso639(language) or language if language else "en"
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 f"{self.base_url}/v1/audio/speech",

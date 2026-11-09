@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 from datetime import timedelta
 from unittest.mock import AsyncMock
@@ -16,6 +17,13 @@ from tests.conftest import make_study_plan
 from tests.test_games import content, finish, ready_game
 
 BUCKETS_FREE = 3  # detective, sentence-order, vocabulary-pairs
+
+
+@pytest.fixture(autouse=True)
+def clear_cooldowns():
+    game_stock.bucket_cooldowns.clear()
+    yield
+    game_stock.bucket_cooldowns.clear()
 
 
 @pytest.fixture
@@ -176,6 +184,55 @@ async def test_refill_yields_during_speech_session(
 async def test_failed_generation_is_skipped(db_session, test_user_with_plan, gateway, generate):
     generate.side_effect = [games.LLMResponseError("bad"), content(), content()]
     assert await game_stock.refill_once(db_session) == 2
+
+
+async def test_failed_bucket_is_skipped_for_an_hour(
+    db_session, test_user_with_plan, gateway, generate, monkeypatch
+):
+    monkeypatch.setattr(game_stock, "DAILY_NEW_GAMES_PER_PLAN", 100)
+    now = [1000.0]
+    monkeypatch.setattr(game_stock, "_now", lambda: now[0])
+    failed = "detective"
+
+    async def fail_one(request, _deadline):
+        if request.game_type == failed:
+            raise games.LLMResponseError("bad")
+        return content()
+
+    generate.side_effect = fail_one
+    await game_stock.refill_once(db_session)
+    assert failed in [c.args[0].game_type for c in generate.call_args_list]
+
+    generate.reset_mock()
+    await game_stock.refill_once(db_session)
+    assert failed not in [c.args[0].game_type for c in generate.call_args_list]
+
+    now[0] += game_stock.FAILED_BUCKET_COOLDOWN_SECONDS + 1
+    generate.reset_mock()
+    await game_stock.refill_once(db_session)
+    assert failed in [c.args[0].game_type for c in generate.call_args_list]
+
+
+async def test_generation_cancelled_when_state_leaves_off(
+    db_session, test_user_with_plan, gateway, generate, monkeypatch
+):
+    monkeypatch.setattr(game_stock, "STATE_POLL_SECONDS", 0.01)
+    cancelled = asyncio.Event()
+
+    async def hang(_request, _deadline):
+        try:
+            await asyncio.sleep(60)
+        except asyncio.CancelledError:
+            cancelled.set()
+            raise
+
+    generate.side_effect = hang
+    # The pass check, the item check, one poll while generating, then a session opens.
+    gateway.side_effect = ["off", "off", "off", "switching"]
+    assert await game_stock.refill_once(db_session) == 0
+    assert cancelled.is_set()
+    assert await stock_count(db_session) == 0
+    assert not game_stock.bucket_cooldowns  # a preempted bucket did not fail
 
 
 async def stock_item(db, plan, mode="free", game_type="detective", sentence_prefix="A"):
