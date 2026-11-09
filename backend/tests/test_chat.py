@@ -116,3 +116,33 @@ async def test_chat_reply_has_no_tags_shown(client, test_user, db_session):
     assert len(rows) == 1
     assert "[" not in rows[0].content
     assert "I went home." in rows[0].content
+    assert "Bra jobbat!\nI went home.\ngo → went" == rows[0].content
+
+
+@pytest.mark.asyncio
+async def test_non_tagged_target_keeps_streaming(client, test_user, db_session):
+    """A Swedish A1 learner of a non en/es target gets raw, token-by-token streaming."""
+    user, headers = test_user
+    user.native_language = "sv"
+    await db_session.commit()
+    async def fake_stream():
+        for token in ("Bonjour", "\n- ami"):
+            yield token
+
+    with (
+        patch(
+            "app.routers.chat._resolve_chat_context",
+            new_callable=AsyncMock,
+            return_value=("A1", "fr-FR", None),
+        ),
+        patch(
+            "app.routers.chat.llm_adapter.chat",
+            new_callable=AsyncMock,
+            return_value=fake_stream(),
+        ),
+    ):
+        response = await client.post("/api/chat", headers=headers, json={"message": "Salut"})
+
+    assert response.status_code == 200
+    assert '"token": "Bonjour"' in response.text
+    assert '"token": "\\n- ami"' in response.text

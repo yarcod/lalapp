@@ -124,7 +124,7 @@ class ConversationPipeline:
         self._voice = voice
         self._stt_language = get_iso639(target_language)
         self._target_language = target_language
-        self._tagged_lines = tagged_replies_enabled(native_language, cefr_level)
+        self._tagged_lines = tagged_replies_enabled(native_language, cefr_level, target_language)
         self._user_id = user_id
         self._conversation_id = conversation_id
         self._study_plan_id = study_plan_id

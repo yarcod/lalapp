@@ -406,7 +406,7 @@ async def chat(
         {"role": m.role, "content": m.content} for m in db_messages
     ]
 
-    tagged_lines = tagged_replies_enabled(current_user.native_language, cefr_level)
+    tagged_lines = tagged_replies_enabled(current_user.native_language, cefr_level, target_language)
 
     async def event_stream():
         full_response = ""
@@ -454,7 +454,7 @@ async def chat(
 
             if tagged_lines:
                 # Tags can be split across chunks, so the cleaned reply is sent once complete.
-                full_response = display_text(parse_reply(full_response, target_language))
+                full_response = display_text(parse_reply(full_response, target_language), sep="\n")
                 if full_response:
                     yield f"data: {json.dumps({'token': full_response})}\n\n"
 

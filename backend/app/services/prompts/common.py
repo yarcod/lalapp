@@ -1,7 +1,7 @@
 """Shared prompt fragments used across LLM-backed services."""
 
 from app.services.language_helpers import get_language_name
-from app.services.spoken_lines import TAGGED_LEVELS
+from app.services.spoken_lines import tagged_replies_enabled
 
 PLAIN_TEXT_OUTPUT_INSTRUCTION = (
     "OUTPUT FORMAT: The interface displays text literally and does not render Markdown. "
@@ -142,11 +142,9 @@ def child_instruction() -> str:
 
 def instruction_language_rules(level: str, native_code: str, target_code: str) -> str:
     """Return the tagged-line rules for Swedish A1-A2 learners, otherwise an empty string."""
-    if native_code.lower().split("-")[0] != "sv" or level.upper() not in TAGGED_LEVELS:
+    if not tagged_replies_enabled(native_code, level, target_code):
         return ""
     code = target_code.lower().split("-")[0]
-    if code not in ("en", "es"):
-        return ""
     return _INSTRUCTION_LANGUAGE_RULES.format(
         target=get_language_name(target_code), level=level.upper(), code=code
     )

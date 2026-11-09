@@ -34,9 +34,16 @@ _FOREIGN_CHARS = frozenset("ñ¿¡áíóúÁÍÓÚ")
 TAGGED_LEVELS = frozenset({"A1", "A2"})
 
 
-def tagged_replies_enabled(native_code: str, cefr_level: str) -> bool:
-    """Whether replies use spoken-line tags: Swedish native language at A1 or A2."""
-    return native_code.lower().split("-")[0] == "sv" and cefr_level.upper() in TAGGED_LEVELS
+TAGGED_TARGETS = frozenset({"en", "es"})
+
+
+def tagged_replies_enabled(native_code: str, cefr_level: str, target_code: str) -> bool:
+    """Whether replies use spoken-line tags: Swedish native at A1/A2 learning English or Spanish."""
+    return (
+        native_code.lower().split("-")[0] == "sv"
+        and cefr_level.upper() in TAGGED_LEVELS
+        and target_code.lower().split("-")[0] in TAGGED_TARGETS
+    )
 
 
 @dataclass
@@ -90,6 +97,6 @@ def invalid_swedish_lines(lines: list[SpokenLine]) -> list[SpokenLine]:
     ]
 
 
-def display_text(lines: list[SpokenLine]) -> str:
+def display_text(lines: list[SpokenLine], sep: str = " ") -> str:
     """Text shown and saved: tags removed, screen and spoken lines included."""
-    return " ".join(line.text for line in lines)
+    return sep.join(line.text for line in lines)
