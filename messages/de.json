@@ -1421,7 +1421,13 @@
       "Wochendpläne",
       "Arbeit und Karriereziele",
       "Homeoffice"
-    ]
+    ],
+    "heardLabel": "Lingu hat gehört:",
+    "redo": "Nochmal versuchen",
+    "speechSwitching": "Lingus Stimme wird vorbereitet. Das dauert einen Moment.",
+    "speechBusy": "Lingus Stimme ist gerade kurz beschäftigt.",
+    "speechAway": "Lingu ist gerade weg, deshalb gibt es keine Stimme.",
+    "speechUseText": "Stattdessen Lingu schreiben"
   },
   "voiceRecorder": {
     "record": "Aufnehmen",

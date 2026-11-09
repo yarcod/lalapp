@@ -1421,7 +1421,13 @@
       "Helgplaner",
       "Arbete och karriärmål",
       "Att arbeta hemifrån"
-    ]
+    ],
+    "heardLabel": "Lingu hörde:",
+    "redo": "Försök igen",
+    "speechSwitching": "Lingus röst gör sig redo. Det tar en liten stund.",
+    "speechBusy": "Lingus röst är upptagen en stund.",
+    "speechAway": "Lingu är borta just nu, så det finns ingen röst.",
+    "speechUseText": "Skriv till Lingu istället"
   },
   "voiceRecorder": {
     "record": "Spela in",

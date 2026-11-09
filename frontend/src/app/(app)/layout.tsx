@@ -9,6 +9,7 @@ import { useConfigStore } from '@/store/config'
 import { apiFetch, requestAccessToken } from '@/lib/api'
 import { mapUser } from '@/lib/mappers'
 import { useLogout } from '@/hooks/useLogout'
+import { useSpeechSession } from '@/hooks/useSpeechSession'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { ContactFormModal } from '@/components/ui/contact-form-modal'
 import { LoadingBar } from '@/components/ui/loading-bar'
@@ -74,6 +75,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const [contactOpen, setContactOpen] = useState(false)
   const [resendSent, setResendSent] = useState(false)
   const [feedbackUnreadCount, setFeedbackUnreadCount] = useState(0)
+  useSpeechSession(!initializing && !!user)
 
   const PREMIUM_HREFS = new Set([
     '/chat',

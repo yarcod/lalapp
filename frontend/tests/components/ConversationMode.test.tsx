@@ -96,6 +96,7 @@ vi.mock('@/components/conversation/StatusIndicator', async (importOriginal) => {
 
 import ConversationMode from '@/components/conversation/ConversationMode'
 import { useAuthStore } from '@/store/auth'
+import { useSpeechSessionStore } from '@/store/speech-session'
 import { mapUser } from '@/lib/mappers'
 
 class MockWebSocket {
@@ -200,6 +201,7 @@ beforeEach(() => {
   })
   Element.prototype.scrollIntoView = vi.fn()
   useAuthStore.setState({ accessToken: 'token', user: null })
+  useSpeechSessionStore.setState({ state: null })
 })
 
 afterEach(() => {
@@ -971,5 +973,61 @@ describe('ConversationMode session lifecycle', () => {
     const current = await start('startNew')
     act(() => speak())
     expect(current.send).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('ConversationMode heard text and speech session', () => {
+  it('shows what Lingu heard with a redo that discards the turn', async () => {
+    render(<ConversationMode />)
+    const ws = await start()
+    act(() => speak())
+    act(() =>
+      ws.message({ type: 'transcript', role: 'user', text: 'I has a dog' })
+    )
+    act(() =>
+      ws.message({
+        type: 'transcript',
+        role: 'assistant',
+        text: 'Nice dog!',
+        final: true,
+      })
+    )
+    expect(screen.getByText('heardLabel')).toBeInTheDocument()
+    expect(screen.getByText('I has a dog')).toBeInTheDocument()
+
+    ws.send.mockClear()
+    fireEvent.click(screen.getByRole('button', { name: 'redo' }))
+
+    expect(JSON.parse(ws.send.mock.calls[0][0])).toEqual({ type: 'interrupt' })
+    expect(mocks.cancel).toHaveBeenCalled()
+    expect(screen.queryByText('I has a dog')).not.toBeInTheDocument()
+    expect(screen.queryByText('Nice dog!')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'redo' })).toBeNull()
+  })
+
+  it('offers redo only on the latest heard text', async () => {
+    render(<ConversationMode />)
+    const ws = await start()
+    for (const text of ['first', 'second']) {
+      act(() => ws.message({ type: 'transcript', role: 'user', text }))
+    }
+    expect(screen.getAllByRole('button', { name: 'redo' })).toHaveLength(1)
+  })
+
+  it.each([
+    ['switching', 'speechSwitching'],
+    ['busy', 'speechBusy'],
+    ['away', 'speechAway'],
+  ])('explains the %s speech state and keeps text working', (state, key) => {
+    useSpeechSessionStore.setState({ state: state as 'busy' })
+    render(<ConversationMode />)
+    expect(screen.getByText(key)).toBeInTheDocument()
+    expect(screen.queryByText(/errorConnection/)).toBeNull()
+  })
+
+  it('shows no speech notice when the voice is ready', () => {
+    useSpeechSessionStore.setState({ state: 'ready' })
+    render(<ConversationMode />)
+    expect(screen.queryByText(/^speech(Switching|Busy|Away)$/)).toBeNull()
   })
 })

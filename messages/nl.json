@@ -1421,7 +1421,13 @@
       "Weekendplannen",
       "Werk en carrièredoelen",
       "Thuiswerken"
-    ]
+    ],
+    "heardLabel": "Lingu hoorde:",
+    "redo": "Probeer opnieuw",
+    "speechSwitching": "Lingus stem wordt klaargemaakt. Dat duurt even.",
+    "speechBusy": "Lingus stem is heel even bezet.",
+    "speechAway": "Lingu is er nu niet, dus er is geen stem.",
+    "speechUseText": "Schrijf in plaats daarvan naar Lingu"
   },
   "voiceRecorder": {
     "record": "Opnemen",

@@ -1421,7 +1421,13 @@
       "Viikonlopun suunnitelmat",
       "Työ ja uratavoitteet",
       "Etätyö"
-    ]
+    ],
+    "heardLabel": "Lingu kuuli:",
+    "redo": "Yritä uudelleen",
+    "speechSwitching": "Lingun ääni valmistautuu. Se kestää hetken.",
+    "speechBusy": "Lingun ääni on hetken varattu.",
+    "speechAway": "Lingu on nyt poissa, joten ääntä ei ole.",
+    "speechUseText": "Kirjoita Linguille sen sijaan"
   },
   "voiceRecorder": {
     "record": "Nauhoita",

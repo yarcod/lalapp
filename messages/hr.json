@@ -1421,7 +1421,13 @@
       "Planovi za vikend",
       "Posao i ciljevi u karijeri",
       "Rad od kuće"
-    ]
+    ],
+    "heardLabel": "Lingu je čuo:",
+    "redo": "Pokušaj ponovno",
+    "speechSwitching": "Lingov glas se priprema. To traje trenutak.",
+    "speechBusy": "Lingov glas je na trenutak zauzet.",
+    "speechAway": "Lingu je trenutno odsutan pa nema glasa.",
+    "speechUseText": "Umjesto toga napiši Linguu"
   },
   "voiceRecorder": {
     "record": "Snimi",

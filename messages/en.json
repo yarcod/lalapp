@@ -1421,7 +1421,13 @@
       "Weekend plans",
       "Work & career goals",
       "Working from home"
-    ]
+    ],
+    "heardLabel": "Lingu heard:",
+    "redo": "Try again",
+    "speechSwitching": "Lingu's voice is getting ready. This takes a moment.",
+    "speechBusy": "Lingu's voice is busy for a moment.",
+    "speechAway": "Lingu is away right now, so there is no voice.",
+    "speechUseText": "Write to Lingu instead"
   },
   "voiceRecorder": {
     "record": "Record",

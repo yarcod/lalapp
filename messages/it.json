@@ -1421,7 +1421,13 @@
       "Piani per il weekend",
       "Lavoro e obiettivi di carriera",
       "Lavorare da casa"
-    ]
+    ],
+    "heardLabel": "Lingu ha sentito:",
+    "redo": "Riprova",
+    "speechSwitching": "La voce di Lingu si sta preparando. Ci vuole un momento.",
+    "speechBusy": "La voce di Lingu è occupata per un momento.",
+    "speechAway": "Lingu non c'è in questo momento, quindi non c'è la voce.",
+    "speechUseText": "Scrivi a Lingu invece"
   },
   "voiceRecorder": {
     "record": "Registra",

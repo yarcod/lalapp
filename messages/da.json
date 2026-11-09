@@ -1421,7 +1421,13 @@
       "Weekendplaner",
       "Arbejde og karrieremål",
       "At arbejde hjemmefra"
-    ]
+    ],
+    "heardLabel": "Lingu hørte:",
+    "redo": "Prøv igen",
+    "speechSwitching": "Lingus stemme gør sig klar. Det tager et øjeblik.",
+    "speechBusy": "Lingus stemme er optaget et øjeblik.",
+    "speechAway": "Lingu er væk lige nu, så der er ingen stemme.",
+    "speechUseText": "Skriv til Lingu i stedet"
   },
   "voiceRecorder": {
     "record": "Optag",

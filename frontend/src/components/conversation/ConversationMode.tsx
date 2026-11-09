@@ -1,6 +1,13 @@
 'use client'
 
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
+import {
+  Fragment,
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  useMemo,
+} from 'react'
 import { useMicVAD } from '@ricky0123/vad-react'
 import { useRouter } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
@@ -21,6 +28,8 @@ import {
 } from '@/lib/conversation-ws'
 import StatusIndicator, { type ConvStatus } from './StatusIndicator'
 import TranscriptBubble from './TranscriptBubble'
+import Link from 'next/link'
+import { useSpeechSessionStore } from '@/store/speech-session'
 import SessionTimeoutBanner from './SessionTimeoutBanner'
 import MicButton from './MicButton'
 import { WordTooltip, useWordSave } from '@/components/ui/WordTooltip'
@@ -302,6 +311,7 @@ export default function ConversationMode({
   const accessToken = useAuthStore((s) => s.accessToken)
   const user = useAuthStore((s) => s.user)
   const setUser = useAuthStore((s) => s.setUser)
+  const speechState = useSpeechSessionStore((s) => s.state)
 
   // ─── UI State ────────────────────────────────────────────────────────────
   const [status, setStatus] = useState<ConvStatus>('loading')
@@ -709,6 +719,24 @@ export default function ConversationMode({
     },
     [dismissTooltip]
   )
+
+  // Redo: drop what Lingu heard and everything after it, stop any reply in
+  // progress, and let the child speak again. The backend discards an unfinished
+  // turn on `interrupt`; a finished turn stays in its history.
+  const handleRedo = useCallback(() => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'interrupt' }))
+    }
+    audioQueueRef.current?.cancel()
+    assistantTurnActiveRef.current = false
+    setAssistantThinking(false)
+    setAssistantSpeaking(false)
+    setStreamingText(null)
+    setTranscript((prev) => {
+      const last = prev.map((e) => e.role).lastIndexOf('user')
+      return last === -1 ? prev : prev.slice(0, last)
+    })
+  }, [])
 
   // Auto-scroll transcript to bottom. Any transcript mutation moves the bubbles,
   // so a word tooltip anchored to old viewport coordinates is dropped with it.
@@ -1270,6 +1298,28 @@ export default function ConversationMode({
 
       <MemorySavedToast visible={memoryToast} announcementId={memoryToastId} />
 
+      {(speechState === 'switching' ||
+        speechState === 'busy' ||
+        speechState === 'away') && (
+        <div
+          role="status"
+          className="border-fl-border bg-fl-surface text-fl-muted-1 mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 border px-4 py-3 font-sans text-sm"
+        >
+          <span>
+            {speechState === 'switching'
+              ? t('speechSwitching')
+              : speechState === 'busy'
+                ? t('speechBusy')
+                : t('speechAway')}
+          </span>
+          {speechState !== 'switching' && (
+            <Link href="/chat" className="text-fl-accent underline">
+              {t('speechUseText')}
+            </Link>
+          )}
+        </div>
+      )}
+
       {/* Transcript area */}
       <div className="mb-4 min-h-0 flex-1 space-y-3 overflow-y-auto px-2">
         {transcript.length === 0 && !streamingText && status === 'live' && (
@@ -1283,23 +1333,38 @@ export default function ConversationMode({
             -1
           )
           return transcript.map((entry, i) => (
-            <TranscriptBubble
-              key={entry.id}
-              role={entry.role}
-              text={entry.text}
-              speaking={
-                entry.role === 'user' && userSpeaking && i === lastUserIdx
-              }
-              userAvatar={user?.avatar}
-              userInitial={(user?.displayName || user?.username || '?')[0]}
-              languageCode={targetLanguage}
-              onPointerUp={
-                entry.role === 'assistant'
-                  ? () =>
-                      handleTextSelection(entry.text, cefrLevel ?? undefined)
-                  : undefined
-              }
-            />
+            <Fragment key={entry.id}>
+              <TranscriptBubble
+                role={entry.role}
+                text={entry.text}
+                speaking={
+                  entry.role === 'user' && userSpeaking && i === lastUserIdx
+                }
+                userAvatar={user?.avatar}
+                userInitial={(user?.displayName || user?.username || '?')[0]}
+                languageCode={targetLanguage}
+                onPointerUp={
+                  entry.role === 'assistant'
+                    ? () =>
+                        handleTextSelection(entry.text, cefrLevel ?? undefined)
+                    : undefined
+                }
+              />
+              {i === lastUserIdx && status === 'live' && (
+                <div className="flex items-center justify-end gap-3 pr-9">
+                  <span className="text-fl-caption text-fl-muted-2 font-sans">
+                    {t('heardLabel')}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleRedo}
+                    className="text-fl-muted-1 border-fl-border hover:border-fl-border-2 hover:text-fl-fg border px-3 py-1 font-mono text-xs tracking-wide transition-colors"
+                  >
+                    {t('redo')}
+                  </button>
+                </div>
+              )}
+            </Fragment>
           ))
         })()}
         {streamingText !== null && (

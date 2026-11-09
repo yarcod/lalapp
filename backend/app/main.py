@@ -47,6 +47,7 @@ from app.routers import (
     progress,
     reading,
     reviews,
+    speech_session,
     stt,
     study_plan,
     tts,
@@ -152,6 +153,7 @@ app.include_router(reading.router)
 app.include_router(reviews.router)
 app.include_router(tts.router)
 app.include_router(stt.router)
+app.include_router(speech_session.router)
 app.include_router(conversation.router)
 app.include_router(config_router.router)
 app.include_router(contact.router)

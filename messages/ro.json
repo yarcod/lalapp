@@ -1421,7 +1421,13 @@
       "Planuri de weekend",
       "Muncă și obiective de carieră",
       "Munca de acasă"
-    ]
+    ],
+    "heardLabel": "Lingu a auzit:",
+    "redo": "Încearcă din nou",
+    "speechSwitching": "Vocea lui Lingu se pregătește. Durează un moment.",
+    "speechBusy": "Vocea lui Lingu este ocupată o clipă.",
+    "speechAway": "Lingu este plecat acum, așa că nu există voce.",
+    "speechUseText": "Scrie-i lui Lingu în schimb"
   },
   "voiceRecorder": {
     "record": "Înregistrează",

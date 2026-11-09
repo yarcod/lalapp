@@ -1421,7 +1421,13 @@
       "Plany na weekend",
       "Praca i cele zawodowe",
       "Praca zdalna"
-    ]
+    ],
+    "heardLabel": "Lingu usłyszał:",
+    "redo": "Spróbuj ponownie",
+    "speechSwitching": "Głos Lingu się przygotowuje. To chwilę potrwa.",
+    "speechBusy": "Głos Lingu jest na chwilę zajęty.",
+    "speechAway": "Lingu jest teraz nieobecny, więc nie ma głosu.",
+    "speechUseText": "Napisz do Lingu zamiast tego"
   },
   "voiceRecorder": {
     "record": "Nagraj",
