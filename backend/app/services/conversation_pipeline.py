@@ -235,25 +235,39 @@ class ConversationPipeline:
     def _extract_speech_text(raw_text: str) -> str:
         return ConversationPipeline._clean_sentence(raw_text).strip()
 
+    async def _collect_reply(self, messages: list[dict]) -> str:
+        stream = await self.llm.chat(messages, stream=True)
+        text = ""
+        async for chunk in stream:
+            text += self._stream_text(chunk)
+        return text.strip()
+
+    @staticmethod
+    def _tagged_text(lines: list[SpokenLine]) -> str:
+        """Tagged reply kept in history so the model keeps tagging later turns."""
+        return "\n".join(f"[{line.language}] {line.text}" for line in lines)
+
     async def _build_spoken_lines(self, messages: list[dict], reply: str) -> list[SpokenLine]:
         """Parse a tagged reply; ask for one rewrite of invalid Swedish, then move the rest."""
         target_code = get_iso639(self._target_language)
         lines = parse_reply(reply, target_code)
+        if not lines:
+            reply = await self._collect_reply(messages)
+            lines = parse_reply(reply, target_code)
+            if not lines:
+                raise LLMError("The model returned an empty reply")
         invalid = invalid_swedish_lines(lines)
         if not invalid:
             return lines
         rewritten = ""
         try:
-            stream = await self.llm.chat(
+            rewritten = await self._collect_reply(
                 [
                     *messages,
                     {"role": "assistant", "content": reply},
                     {"role": "user", "content": REWRITE_REQUEST},
-                ],
-                stream=True,
+                ]
             )
-            async for chunk in stream:
-                rewritten += self._stream_text(chunk)
         except LLMError as exc:
             logger.warning("[pipeline] Swedish rewrite failed: %s", self._fmt_exc(exc))
         if rewritten.strip():
@@ -502,9 +516,11 @@ class ConversationPipeline:
                 full_response += token
             clean_full_response = self._extract_speech_text(full_response)
             spoken_lines = None
-            if clean_full_response and self._tagged_lines:
+            history_text = clean_full_response
+            if self._tagged_lines:
                 spoken_lines = await self._build_spoken_lines(messages, clean_full_response)
                 clean_full_response = display_text(spoken_lines)
+                history_text = self._tagged_text(spoken_lines)
             if not clean_full_response:
                 return
             await self._send_status(ws, turn_id, "thinking")
@@ -530,7 +546,7 @@ class ConversationPipeline:
             if send_aborted or not transcript_sent:
                 return
 
-            self.history.append({"role": "assistant", "content": clean_full_response})
+            self.history.append({"role": "assistant", "content": history_text})
             self._pending_saves.append(
                 asyncio.create_task(self._save_message("assistant", clean_full_response))
             )
@@ -704,6 +720,7 @@ class ConversationPipeline:
 
         full_response = ""
         clean_full_response = ""
+        history_text = ""
         memory_updated = False
         llm_stream = None
         try:
@@ -764,9 +781,11 @@ class ConversationPipeline:
 
             clean_full_response = self._extract_speech_text(full_response)
             spoken_lines = None
-            if clean_full_response and self._tagged_lines:
+            history_text = clean_full_response
+            if self._tagged_lines:
                 spoken_lines = await self._build_spoken_lines(messages, clean_full_response)
                 clean_full_response = display_text(spoken_lines)
+                history_text = self._tagged_text(spoken_lines)
             if clean_full_response:
                 tts_send_t0 = time.perf_counter()
                 (
@@ -869,7 +888,7 @@ class ConversationPipeline:
                     self._memory_tools_available = False
                 self._pending_saves.append(asyncio.create_task(self._save_usage(llm_stream)))
 
-        self.history.append({"role": "assistant", "content": clean_full_response})
+        self.history.append({"role": "assistant", "content": history_text})
         # Persist both sides of the turn together — only reached on success.
         self._pending_saves.append(
             asyncio.create_task(

@@ -20,7 +20,7 @@ _WORD_RE = re.compile(r"[^\W\d_]+(?:'[^\W\d_]+)?", re.UNICODE)
 _FOREIGN_WORDS = frozenset(
     {
         "the", "you", "your", "hello", "please", "thanks", "thank", "apple", "how", "are",
-        "what", "my", "name", "good", "morning", "yes", "and", "with", "this", "that",
+        "what", "my", "name", "good", "morning", "yes", "with", "this", "that",
         "i'm", "it's", "where", "when", "why", "who", "we", "they", "he", "she", "would",
         "could", "have", "has", "do", "does", "goodbye", "sorry", "welcome",
         "hola", "gracias", "buenos", "buenas", "días", "dias", "por", "favor", "cómo",

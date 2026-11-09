@@ -1998,7 +1998,9 @@ async def test_pipeline_speaks_each_line_in_its_language() -> None:
 
     assert calls == [("Säg så här.", "sv"), ("Good morning.", "en")]
     assert _assistant_transcripts(ws)[0]["text"] == "Säg så här. Good morning. God morgon"
-    assert pipeline.history[-1]["content"] == "Säg så här. Good morning. God morgon"
+    assert pipeline.history[-1]["content"] == (
+        "[sv] Säg så här.\n[en] Good morning.\n[screen] God morgon"
+    )
     assert "turn_complete" in ws.types()
 
 
@@ -2107,3 +2109,57 @@ async def test_tagging_not_applied_at_b1_or_for_other_native_language(level, nat
     await pipeline._process(b"audio", ws)
     pipeline.tts.synthesize.assert_awaited_once_with("[sv] Hello there.", None, "en-GB")
     assert pipeline.llm.chat.await_count == 1
+
+
+@pytest.mark.asyncio
+async def test_empty_reply_retried_once() -> None:
+    pipeline = _tagged_pipeline()
+    pipeline.stt.transcribe = AsyncMock(return_value="Hej")
+    pipeline.tts.synthesize = AsyncMock(return_value=b"audio")
+    pipeline.llm.chat = AsyncMock(side_effect=[_stream_of("  "), _stream_of("[sv] Hej!")])
+    ws = FakeWS()
+    await pipeline._process(b"audio", ws)
+
+    assert pipeline.llm.chat.await_count == 2
+    assert (
+        pipeline.llm.chat.await_args_list[1].args[0] == pipeline.llm.chat.await_args_list[0].args[0]
+    )
+    assert _assistant_transcripts(ws)[0]["text"] == "Hej!"
+    assert "turn_complete" in ws.types()
+
+
+@pytest.mark.asyncio
+async def test_empty_reply_twice_shows_nothing() -> None:
+    pipeline = _tagged_pipeline()
+    pipeline.stt.transcribe = AsyncMock(return_value="Hej")
+    pipeline.tts.synthesize = AsyncMock(return_value=b"audio")
+    pipeline.llm.chat = AsyncMock(side_effect=[_stream_of(""), _stream_of("[sv]")])
+    ws = FakeWS()
+    await pipeline._process(b"audio", ws)
+
+    assert pipeline.llm.chat.await_count == 2
+    assert _assistant_transcripts(ws) == []
+    assert [m["code"] for m in ws.json_messages() if m.get("type") == "error"] == ["llm_failed"]
+    assert "turn_complete" not in ws.types()
+    assert not [kind for kind, _ in ws.sent if kind == "bytes"]
+    assert all(m["role"] != "assistant" for m in pipeline.history)
+
+
+@pytest.mark.asyncio
+async def test_history_keeps_tags_for_next_turn() -> None:
+    pipeline = _tagged_pipeline()
+    pipeline.stt.transcribe = AsyncMock(return_value="Hej")
+    pipeline.tts.synthesize = AsyncMock(return_value=b"audio")
+    pipeline.llm.chat = AsyncMock(
+        side_effect=[_stream_of("[sv] Säg så här.\n[en] Good morning."), _stream_of("[sv] Bra!")]
+    )
+    ws = FakeWS()
+    await pipeline._process(b"audio", ws)
+    await pipeline._process(b"audio", ws)
+
+    second_messages = pipeline.llm.chat.await_args_list[1].args[0]
+    assert {
+        "role": "assistant",
+        "content": "[sv] Säg så här.\n[en] Good morning.",
+    } in second_messages
+    assert _assistant_transcripts(ws)[0]["text"] == "Säg så här. Good morning."
