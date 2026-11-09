@@ -48,7 +48,14 @@ class FileModeControl:
         return {**_DEFAULT_READ, **data}
 
 
+RETRY_EVERY = 30.0
+
+
 class SessionManager:
+    """The host script is the only authority on busy: every desired mode is written and the
+    script accepts or refuses it. A refusal reads as mode != desired with busy and state ready;
+    the write is repeated at most every 30 s until accepted."""
+
     def __init__(
         self,
         mode: ModeControl,
@@ -59,14 +66,21 @@ class SessionManager:
         self._clock = clock
         self._release_after = release_after
         self._active = False
-        self._requested = False
+        self._wrote_speech = False  # a speech write may still take effect
+        self._written: str | None = None
+        self._force = False
+        self._last_write = 0.0
         self._last_seen = 0.0
         self.state = SessionState.OFF
 
     async def open(self) -> SessionState:
+        if self._mode.read().get("mode") == "shared":
+            self.state = SessionState.SHARED
+            return self.state
         self._active = True
         self._last_seen = self._clock()
-        self._sync()
+        self._force = True  # open always writes
+        self._sync(trust_failed=False)
         return self.state
 
     async def keepalive(self) -> SessionState:
@@ -78,36 +92,56 @@ class SessionManager:
     async def tick(self) -> None:
         self._sync()
 
-    def _sync(self) -> None:
+    def _write(self, mode: str) -> None:
+        self._mode.request(mode)
+        self._written = mode
+        self._force = False
+        self._last_write = self._clock()
+        if mode == "speech":
+            self._wrote_speech = True
+
+    def _sync(self, trust_failed: bool = True) -> None:
         info = self._mode.read()
         if info.get("mode") == "shared":
-            self._requested = False
+            self._active = self._wrote_speech = False
             self.state = SessionState.SHARED
             return
-        busy = bool(info.get("busy"))
-        expired = self._clock() - self._last_seen >= self._release_after
-
-        if not self._active:
+        now = self._clock()
+        if self._active and now - self._last_seen >= self._release_after:
+            self._active = False
+        if trust_failed and info.get("state") == "failed":
+            self._active = self._wrote_speech = False
+            self._written = None
+            self.state = SessionState.OFF
+            return
+        if not self._active and not self._wrote_speech:
             self.state = SessionState.OFF
             return
 
-        if expired:
-            if busy and self._requested:
-                return  # never switch back while busy; try again next tick
-            if self._requested:
-                self._mode.request("full")
-            self._active = self._requested = False
-            self.state = SessionState.OFF
-            return
+        desired = "speech" if self._active else "full"
+        mode, status = info.get("mode"), info.get("state")
+        reopened = False  # speech re-requested while a full write is outstanding
+        if self._force or self._written != desired or (
+            mode != desired and status != "switching" and now - self._last_write >= RETRY_EVERY
+        ):
+            reopened = desired == "speech" and self._written == "full"
+            self._write(desired)
+            info = self._mode.read()
+            mode, status = info.get("mode"), info.get("state")
 
-        if info.get("mode") == "speech" and info.get("state") == "ready":
-            self._requested = True
-            self.state = SessionState.READY
-        elif self._requested:
-            self.state = SessionState.SWITCHING
-        elif busy:
+        refused = bool(info.get("busy")) and status == "ready" and mode != desired
+        if desired == "full":
+            if mode == "full" and status == "ready":
+                self._wrote_speech = False
+                self._written = None
+                self.state = SessionState.OFF
+            elif status == "switching":
+                self.state = SessionState.SWITCHING
+            else:
+                self.state = SessionState.READY  # speech stays usable until accepted
+        elif refused:
             self.state = SessionState.BUSY
+        elif mode == "speech" and status == "ready" and not reopened:
+            self.state = SessionState.READY
         else:
-            self._mode.request("speech")
-            self._requested = True
             self.state = SessionState.SWITCHING

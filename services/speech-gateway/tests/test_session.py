@@ -8,18 +8,31 @@ from gateway.session import FileModeControl, SessionManager, SessionState
 
 
 class FakeMode:
+    """Mimics ninfer-mode: a write is accepted when idle and refused (busy flag) when busy."""
+
     def __init__(self, mode="full", busy=False):
         self.mode = mode
-        self.busy = busy
+        self.busy = busy  # actual ninfer load
+        self.flag = False  # busy as of the script's last run
+        self.state = "ready"
+        self.fail = False
         self.requests = []
 
     def request(self, mode):
         self.requests.append(mode)
-        if not self.busy and self.mode != "shared":
-            self.mode = mode
+        if self.mode == "shared":
+            return
+        if mode == self.mode:
+            self.flag = False
+        elif self.busy:
+            self.flag = True
+        elif self.fail:
+            self.flag, self.state = False, "failed"
+        else:
+            self.mode, self.flag = mode, False
 
     def read(self):
-        return {"mode": self.mode, "state": "ready", "busy": self.busy}
+        return {"mode": self.mode, "state": self.state, "busy": self.flag}
 
 
 class Clock:
@@ -53,21 +66,36 @@ async def test_open_when_idle_switches_to_speech():
 
 
 @sync
-async def test_open_when_busy_reports_busy_and_does_not_request():
+async def test_open_when_busy_reports_busy_and_leaves_ninfer_alone():
     fake, _, mgr = make(busy=True)
     assert await mgr.open() == SessionState.BUSY
-    assert fake.requests == []
+    assert fake.mode == "full"
 
 
 @sync
-async def test_busy_retries_when_idle_on_tick():
-    fake, _, mgr = make(busy=True)
+async def test_stale_busy_flag_does_not_block_open():
+    fake, _, mgr = make()
+    fake.flag = True
+    assert await mgr.open() != SessionState.BUSY
+    assert fake.mode == "speech"
+
+
+@sync
+async def test_busy_refusal_retries_every_30s_until_idle():
+    fake, clock, mgr = make(busy=True)
     await mgr.open()
-    await mgr.tick()
-    assert fake.requests == []
-    fake.busy = False
+    clock.now += 29
     await mgr.tick()
     assert fake.requests == ["speech"]
+    clock.now += 1
+    await mgr.tick()
+    assert fake.requests == ["speech", "speech"]
+    assert mgr.state == SessionState.BUSY
+    fake.busy = False
+    clock.now += 30
+    await mgr.tick()
+    assert fake.requests == ["speech"] * 3
+    assert fake.mode == "speech"
     await mgr.tick()
     assert mgr.state == SessionState.READY
 
@@ -98,17 +126,45 @@ async def test_release_after_600s_requests_full():
 
 
 @sync
-async def test_release_waits_while_busy():
+async def test_release_retries_until_idle():
     fake, clock, mgr = make()
     await mgr.open()
     clock.now += 700
     fake.busy = True
     await mgr.tick()
-    assert fake.requests == ["speech"]
-    fake.busy = False
+    assert fake.requests == ["speech", "full"]
+    assert fake.mode == "speech"
+    assert mgr.state == SessionState.READY  # voice stays usable
+    clock.now += 29
     await mgr.tick()
     assert fake.requests == ["speech", "full"]
+    clock.now += 1
+    await mgr.tick()
+    assert fake.requests == ["speech", "full", "full"]
+    fake.busy = False
+    clock.now += 30
+    await mgr.tick()
+    assert fake.requests == ["speech", "full", "full", "full"]
+    assert fake.mode == "full"
     assert mgr.state == SessionState.OFF
+    clock.now += 100
+    await mgr.tick()
+    assert len(fake.requests) == 4
+
+
+@sync
+async def test_open_during_pending_release_requests_speech_again():
+    fake, clock, mgr = make()
+    await mgr.open()
+    clock.now += 700
+    fake.busy = True
+    await mgr.tick()
+    fake.busy = False
+    assert await mgr.open() == SessionState.SWITCHING
+    assert fake.requests == ["speech", "full", "speech"]
+    await mgr.tick()
+    assert mgr.state == SessionState.READY
+    assert fake.mode == "speech"
 
 
 @sync
@@ -123,15 +179,23 @@ async def test_small_slice_is_shared_and_never_switches():
 
 
 @sync
-async def test_abandoned_busy_session_drops_without_request():
+async def test_abandoned_busy_session_drops():
     fake, clock, mgr = make(busy=True)
     await mgr.open()
     clock.now += 700
     await mgr.tick()
-    fake.busy = False
-    await mgr.tick()
-    assert fake.requests == []
     assert mgr.state == SessionState.OFF
+    assert fake.mode == "full"
+
+
+@sync
+async def test_failed_switch_reports_off():
+    fake, _, mgr = make()
+    fake.fail = True
+    await mgr.open()
+    await mgr.tick()
+    assert mgr.state == SessionState.OFF
+    assert fake.mode == "full"
 
 
 def test_file_mode_control_missing_state_is_full_not_busy(tmp_path):

@@ -21,4 +21,64 @@ check "non-throughput line is idle" 1 "[2026-11-05 22:06:30.852] [info] ninfer-s
 check "one busy line among idle is busy" 0 "$L running=0 prefilling=0 decode_ready=0 waiting=0
 $L running=1 prefilling=0 decode_ready=0 waiting=0"
 check "prefill=4.4tok/s alone is not a count" 1 "$L running=0 prefilling=0 decode_ready=0 waiting=0"
+
+# --- full runs of main with stubbed systemctl, docker, curl, sleep ---
+T="$(mktemp -d)"; trap 'rm -rf "$T"' EXIT
+mkdir -p "$T/bin"
+cat > "$T/bin/systemctl" <<'STUB'
+#!/usr/bin/env bash
+echo "$*" >> "$STUB_DIR/calls"
+[[ "$*" == "start $STUB_FAIL_START" ]] && exit 1
+exit 0
+STUB
+cat > "$T/bin/docker" <<'STUB'
+#!/usr/bin/env bash
+cat "$STUB_DIR/dockerlog" 2>/dev/null
+STUB
+cat > "$T/bin/curl" <<'STUB'
+#!/usr/bin/env bash
+n=$(cat "$STUB_DIR/curlcount" 2>/dev/null || echo 0); echo $((n + 1)) > "$STUB_DIR/curlcount"
+(( n < ${STUB_CURL_FAILS:-0} )) && exit 22
+exit 0
+STUB
+printf '#!/usr/bin/env bash\nexit 0\n' > "$T/bin/sleep"
+chmod +x "$T/bin/"*
+
+run_main() { # name desired start_mode ; extra env via caller
+  rm -f "$T/calls" "$T/curlcount" "$T/state/mode-state.json"
+  mkdir -p "$T/state"
+  echo "$2" > "$T/state/desired-mode"
+  [[ -n "$3" ]] && echo "{\"mode\":\"$3\",\"state\":\"ready\",\"busy\":false}" > "$T/state/mode-state.json"
+  STUB_DIR="$T" SPEECH_GATEWAY_STATE_DIR="$T/state" PATH="$T/bin:$PATH" NINFER_HEALTH_TIMEOUT=4 \
+    bash "$script"
+}
+expect() { # name want_state_json want_calls
+  local got calls
+  got="$(cat "$T/state/mode-state.json")"; calls="$(paste -sd'|' "$T/calls" 2>/dev/null)"
+  if [[ "$got" == "$2" && "$calls" == "$3" ]]; then echo "ok: $1"
+  else echo "FAIL: $1"; echo "  state: $got"; echo "  calls: $calls"; fail=1; fi
+}
+
+: > "$T/dockerlog"
+STUB_FAIL_START="" run_main x speech full
+expect "idle full to speech" '{"mode":"speech","state":"ready","busy":false}' \
+  "stop ninfer.service|start ninfer-speech.service"
+
+STUB_FAIL_START="" run_main x full speech
+expect "idle speech to full" '{"mode":"full","state":"ready","busy":false}' \
+  "stop ninfer-speech.service|start ninfer.service"
+
+echo "$L running=1 prefilling=0 decode_ready=0 waiting=0" > "$T/dockerlog"
+STUB_FAIL_START="" run_main x speech full
+expect "busy refuses without touching units" '{"mode":"full","state":"ready","busy":true}' ""
+
+: > "$T/dockerlog"
+STUB_FAIL_START="ninfer-speech.service" run_main x speech full
+expect "failed start rolls back" '{"mode":"full","state":"failed","busy":false}' \
+  "stop ninfer.service|start ninfer-speech.service|stop ninfer-speech.service|start ninfer.service"
+
+STUB_FAIL_START="" STUB_CURL_FAILS=2 run_main x speech full
+expect "health timeout rolls back" '{"mode":"full","state":"failed","busy":false}' \
+  "stop ninfer.service|start ninfer-speech.service|stop ninfer-speech.service|start ninfer.service"
+
 exit $fail

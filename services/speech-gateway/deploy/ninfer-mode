@@ -29,32 +29,42 @@ current_mode() {
 
 unit_for() { [[ "$1" == speech ]] && echo ninfer-speech.service || echo ninfer.service; }
 
+wait_healthy() {
+  local waited=0
+  until curl -fsS -o /dev/null "$HEALTH_URL"; do
+    sleep 2; waited=$((waited + 2))
+    (( waited >= HEALTH_TIMEOUT )) && return 1
+  done
+  return 0
+}
+
 main() {
-  local want cur other
+  local want cur
   want="$(tr -d '[:space:]' < "$STATE_DIR/desired-mode" 2>/dev/null)"
   [[ "$want" == speech || "$want" == full ]] || { echo "bad desired-mode: $want" >&2; exit 2; }
   cur="$(current_mode)"
   if [[ "$cur" == shared ]]; then exit 0; fi
   if [[ "$want" == "$cur" ]]; then write_state "$cur" ready false; exit 0; fi
 
+  # Refuse while busy. The gateway re-writes desired-mode to retry.
   if docker logs --since 15s ninfer 2>&1 | is_busy_text; then
     write_state "$cur" ready true
     exit 0
   fi
 
   write_state "$cur" switching false
-  other="$(unit_for "$cur")"
-  systemctl stop "$other"
-  systemctl start "$(unit_for "$want")"
-  local waited=0
-  until curl -fsS -o /dev/null "$HEALTH_URL"; do
-    sleep 2; waited=$((waited + 2))
-    if (( waited >= HEALTH_TIMEOUT )); then
-      write_state "$want" failed false
-      exit 1
-    fi
-  done
-  write_state "$want" ready false
+  if systemctl stop "$(unit_for "$cur")" \
+    && systemctl start "$(unit_for "$want")" && wait_healthy; then
+    write_state "$want" ready false
+    exit 0
+  fi
+
+  # Failed: put the previous mode back so some ninfer is running.
+  systemctl stop "$(unit_for "$want")"
+  systemctl start "$(unit_for "$cur")"
+  wait_healthy
+  write_state "$cur" failed false
+  exit 1
 }
 
 if [[ "${1:-}" == "--busy-from-stdin" ]]; then
