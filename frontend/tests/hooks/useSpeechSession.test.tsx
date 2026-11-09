@@ -72,6 +72,42 @@ describe('useSpeechSession', () => {
     expect(calls('/api/speech-session/keepalive')).toBe(2)
   })
 
+  it.each(['switching', 'busy'])('polls every 5s while %s', async (state) => {
+    answer(state)
+    renderHook(() => useSpeechSession(true))
+    await act(async () => {})
+
+    await act(async () => {
+      vi.advanceTimersByTime(5_000)
+    })
+    expect(calls('/api/speech-session/keepalive')).toBe(1)
+
+    await act(async () => {
+      vi.advanceTimersByTime(5_000)
+    })
+    expect(calls('/api/speech-session/keepalive')).toBe(2)
+  })
+
+  it('falls back to 60s polling once ready', async () => {
+    answer('switching')
+    renderHook(() => useSpeechSession(true))
+    await act(async () => {})
+    answer('ready')
+    await act(async () => {
+      vi.advanceTimersByTime(5_000)
+    })
+    expect(calls('/api/speech-session/keepalive')).toBe(1)
+
+    await act(async () => {
+      vi.advanceTimersByTime(30_000)
+    })
+    expect(calls('/api/speech-session/keepalive')).toBe(1)
+    await act(async () => {
+      vi.advanceTimersByTime(30_000)
+    })
+    expect(calls('/api/speech-session/keepalive')).toBe(2)
+  })
+
   it('stops keeping alive after unmount', async () => {
     const { unmount } = renderHook(() => useSpeechSession(true))
     await act(async () => {})

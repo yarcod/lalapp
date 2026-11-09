@@ -322,6 +322,7 @@ export default function ConversationMode({
   const user = useAuthStore((s) => s.user)
   const setUser = useAuthStore((s) => s.setUser)
   const speechState = useSpeechSessionStore((s) => s.state)
+  const canStartVoice = speechState === 'ready' || speechState === 'shared'
 
   // ─── UI State ────────────────────────────────────────────────────────────
   const [status, setStatus] = useState<ConvStatus>('loading')
@@ -403,6 +404,7 @@ export default function ConversationMode({
   const utteranceFramesRef = useRef<Float32Array[]>([])
   const silenceMsRef = useRef(0)
   const provisionalSentRef = useRef(false)
+  const provisionalTailRef = useRef(false)
   const sessionActiveRef = useRef(false)
   const ttsChunkIndexRef = useRef(0)
   const lastAssistantAudioAtRef = useRef(0)
@@ -461,11 +463,13 @@ export default function ConversationMode({
     utteranceFramesRef.current = []
     silenceMsRef.current = 0
     provisionalSentRef.current = false
+    provisionalTailRef.current = false
   }, [])
 
   const abortProvisional = useCallback(() => {
     if (!provisionalSentRef.current) return
     provisionalSentRef.current = false
+    provisionalTailRef.current = false
     const ws = wsRef.current
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(turnControl('abort'))
@@ -512,7 +516,12 @@ export default function ConversationMode({
       abortProvisional()
       return
     }
-    if (speech >= VAD_NEGATIVE_SPEECH_THRESHOLD) return
+    if (speech >= VAD_NEGATIVE_SPEECH_THRESHOLD) {
+      // Below the speech threshold but not silence: a quiet trailing word the
+      // provisional audio does not contain.
+      if (provisionalSentRef.current) provisionalTailRef.current = true
+      return
+    }
     const before = silenceMsRef.current
     const after = before + (frame.length / VAD_SAMPLE_RATE) * 1000
     silenceMsRef.current = after
@@ -568,6 +577,7 @@ export default function ConversationMode({
     onSpeechEnd: (audio: Float32Array) => {
       if (!mountedRef.current) return
       const provisionalSent = provisionalSentRef.current
+      const provisionalHasTail = provisionalTailRef.current
       const minUtteranceMs = assistantTurnActiveRef.current
         ? INTERRUPTION_MIN_UTTERANCE_MS
         : MIN_UTTERANCE_MS
@@ -614,10 +624,17 @@ export default function ConversationMode({
         }
       }
 
-      // The audio already went out provisionally, so the pause only confirms it.
       if (provisionalSent) {
-        sendTurn((ws) => ws.send(turnControl('confirm')))
-        return
+        // The audio already went out provisionally, so the pause only confirms it.
+        if (!provisionalHasTail) {
+          sendTurn((ws) => ws.send(turnControl('confirm')))
+          return
+        }
+        // Quiet speech followed it: drop the shorter audio and send the full turn.
+        const ws = wsRef.current
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(turnControl('abort'))
+        }
       }
 
       // Never interrupt the tutor turn. While the backend is generating or
@@ -864,13 +881,14 @@ export default function ConversationMode({
       !vad.loading &&
       !vad.errored &&
       !!accessToken &&
-      !sessionActive
+      !sessionActive &&
+      canStartVoice
     ) {
       pendingAutoStartRef.current = false
       void handleStart()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vad.loading, vad.errored, accessToken])
+  }, [vad.loading, vad.errored, accessToken, canStartVoice])
 
   // ─── WebSocket ────────────────────────────────────────────────────────────
   const connectWs = useCallback(
@@ -1146,6 +1164,7 @@ export default function ConversationMode({
   // ─── Session lifecycle ────────────────────────────────────────────────────
   async function handleStart(topicContext?: ChatContextItem[]) {
     if (
+      !canStartVoice ||
       !accessToken ||
       vad.loading ||
       vad.errored ||
@@ -1402,6 +1421,7 @@ export default function ConversationMode({
       <MemorySavedToast visible={memoryToast} announcementId={memoryToastId} />
 
       {(speechState === 'switching' ||
+        speechState === 'off' ||
         speechState === 'busy' ||
         speechState === 'away') && (
         <div
@@ -1409,13 +1429,13 @@ export default function ConversationMode({
           className="border-fl-border bg-fl-surface text-fl-muted-1 mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 border px-4 py-3 font-sans text-sm"
         >
           <span>
-            {speechState === 'switching'
+            {speechState === 'switching' || speechState === 'off'
               ? t('speechSwitching')
               : speechState === 'busy'
                 ? t('speechBusy')
                 : t('speechAway')}
           </span>
-          {speechState !== 'switching' && (
+          {speechState !== 'switching' && speechState !== 'off' && (
             <Link href="/chat" className="text-fl-accent underline">
               {t('speechUseText')}
             </Link>
@@ -1516,6 +1536,7 @@ export default function ConversationMode({
                     {row.map((topic) => (
                       <button
                         key={topic}
+                        disabled={!canStartVoice}
                         onClick={() =>
                           void handleStart([
                             {
@@ -1524,7 +1545,7 @@ export default function ConversationMode({
                             },
                           ])
                         }
-                        className="text-fl-muted-1 border-fl-border hover:border-fl-border-2 hover:text-fl-fg border px-3 py-2 font-mono text-xs tracking-wide transition-colors"
+                        className="text-fl-muted-1 border-fl-border hover:border-fl-border-2 hover:text-fl-fg border px-3 py-2 font-mono text-xs tracking-wide transition-colors disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         {topic}
                       </button>
@@ -1572,6 +1593,7 @@ export default function ConversationMode({
           <MicButton
             status={status}
             sessionActive={sessionActive}
+            canStart={canStartVoice}
             onStart={handleStart}
             onStop={handleStop}
           />

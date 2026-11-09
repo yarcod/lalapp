@@ -7,6 +7,7 @@ import {
 } from '@/store/speech-session'
 
 const KEEPALIVE_INTERVAL_MS = 60_000
+const SETTLING_POLL_INTERVAL_MS = 5_000
 
 async function call(path: string, method: 'POST' | 'GET') {
   const setState = useSpeechSessionStore.getState().setState
@@ -24,9 +25,17 @@ async function call(path: string, method: 'POST' | 'GET') {
   }
 }
 
+function nextPollDelay() {
+  const current = useSpeechSessionStore.getState().state
+  return current === 'switching' || current === 'busy'
+    ? SETTLING_POLL_INTERVAL_MS
+    : KEEPALIVE_INTERVAL_MS
+}
+
 /**
- * Opens the speech session once enabled, keeps it alive every 60 s while the
- * page is visible, and returns the gateway state.
+ * Opens the speech session once enabled and returns the gateway state. Keeps it
+ * alive while the page is visible: every 5 s while the voice is switching or
+ * busy, otherwise every 60 s.
  */
 export function useSpeechSession(enabled: boolean) {
   const state = useSpeechSessionStore((s) => s.state)
@@ -38,17 +47,27 @@ export function useSpeechSession(enabled: boolean) {
       const current = useSpeechSessionStore.getState().state
       const needsOpen =
         current === null || current === 'off' || current === 'away'
-      void call(needsOpen ? 'open' : 'keepalive', 'POST')
+      return call(needsOpen ? 'open' : 'keepalive', 'POST')
     }
-    tick()
-    const keepAlive = () => {
-      if (document.visibilityState === 'visible') tick()
+    let timer: ReturnType<typeof setTimeout>
+    let stopped = false
+    const schedule = () => {
+      clearTimeout(timer)
+      if (!stopped) timer = setTimeout(poll, nextPollDelay())
     }
-    const timer = setInterval(keepAlive, KEEPALIVE_INTERVAL_MS)
-    document.addEventListener('visibilitychange', keepAlive)
+    const poll = async () => {
+      if (document.visibilityState === 'visible') await tick()
+      schedule()
+    }
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') void tick().finally(schedule)
+    }
+    void tick().finally(schedule)
+    document.addEventListener('visibilitychange', onVisibilityChange)
     return () => {
-      clearInterval(timer)
-      document.removeEventListener('visibilitychange', keepAlive)
+      stopped = true
+      clearTimeout(timer)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
     }
   }, [enabled])
 

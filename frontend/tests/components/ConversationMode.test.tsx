@@ -201,7 +201,7 @@ beforeEach(() => {
   })
   Element.prototype.scrollIntoView = vi.fn()
   useAuthStore.setState({ accessToken: 'token', user: null })
-  useSpeechSessionStore.setState({ state: null })
+  useSpeechSessionStore.setState({ state: 'ready' })
 })
 
 afterEach(() => {
@@ -212,14 +212,16 @@ afterEach(() => {
 })
 
 const voiceFrame = new Float32Array(512).fill(0.05)
+const quietFrame = new Float32Array(512).fill(0.04)
 const silenceFrame = new Float32Array(512)
 
 function vadProcessor() {
   const processor = new FrameProcessor(
-    async (frame) => ({
-      isSpeech: frame === voiceFrame ? 0.99 : 0.01,
-      notSpeech: frame === voiceFrame ? 0.01 : 0.99,
-    }),
+    async (frame) => {
+      const isSpeech =
+        frame === voiceFrame ? 0.99 : frame === quietFrame ? 0.27 : 0.01
+      return { isSpeech, notSpeech: 1 - isSpeech }
+    },
     () => {},
     {
       ...defaultFrameProcessorOptions,
@@ -316,6 +318,24 @@ describe('ConversationMode provisional turns', () => {
 
     await feed(silenceFrame, 37)
     expect(sentKinds(ws).slice(-1)).toEqual(['confirm'])
+  })
+
+  it('sends the full turn instead of confirm when quiet speech followed the provisional', async () => {
+    renderWithPause(2000)
+    const ws = await start()
+    const feed = vadProcessor()
+
+    await feed(voiceFrame, 40)
+    await feed(silenceFrame, 25)
+    expect(sentKinds(ws)).toEqual(['provisional', 'wav'])
+    const provisional = ws.send.mock.calls[1][0] as ArrayBuffer
+
+    await feed(quietFrame, 4)
+    await feed(silenceFrame, 62)
+
+    expect(sentKinds(ws)).toEqual(['provisional', 'wav', 'abort', 'wav'])
+    const final = ws.send.mock.calls[3][0] as ArrayBuffer
+    expect(final.byteLength).toBeGreaterThan(provisional.byteLength)
   })
 
   it('does not send the audio again when the turn is confirmed', async () => {
@@ -1235,6 +1255,7 @@ describe('ConversationMode heard text and speech session', () => {
 
   it.each([
     ['switching', 'speechSwitching'],
+    ['off', 'speechSwitching'],
     ['busy', 'speechBusy'],
     ['away', 'speechAway'],
   ])('explains the %s speech state and keeps text working', (state, key) => {
@@ -1242,6 +1263,25 @@ describe('ConversationMode heard text and speech session', () => {
     render(<ConversationMode />)
     expect(screen.getByText(key)).toBeInTheDocument()
     expect(screen.queryByText(/errorConnection/)).toBeNull()
+  })
+
+  it.each(['switching', 'off', 'busy', 'away', null])(
+    'keeps Start disabled while the speech state is %s',
+    async (state) => {
+      useSpeechSessionStore.setState({ state: state as 'busy' | null })
+      render(<ConversationMode />)
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'start' })).toBeDisabled()
+      )
+      fireEvent.click(screen.getByRole('button', { name: 'start' }))
+      expect(MockWebSocket.instances).toHaveLength(0)
+    }
+  )
+
+  it.each(['ready', 'shared'])('enables Start when %s', (state) => {
+    useSpeechSessionStore.setState({ state: state as 'ready' })
+    render(<ConversationMode />)
+    expect(screen.getByRole('button', { name: 'start' })).not.toBeDisabled()
   })
 
   it('shows no speech notice when the voice is ready', () => {

@@ -4,11 +4,17 @@ import type { ConvStatus } from './StatusIndicator'
 interface Props {
   status: ConvStatus
   sessionActive?: boolean
+  canStart?: boolean
   onStart: () => void
   onStop: () => void
 }
 
-export default function MicButton({ status, onStart, onStop }: Props) {
+export default function MicButton({
+  status,
+  canStart = true,
+  onStart,
+  onStop,
+}: Props) {
   const t = useTranslations('conversation')
 
   if (status === 'loading') {
@@ -43,7 +49,8 @@ export default function MicButton({ status, onStart, onStop }: Props) {
     return (
       <button
         onClick={() => onStart()}
-        className="bg-fl-accent text-fl-accent-fg hover:bg-fl-accent/90 px-8 py-3 font-mono text-sm font-bold tracking-widest uppercase transition-colors"
+        disabled={!canStart}
+        className="bg-fl-accent text-fl-accent-fg hover:bg-fl-accent/90 px-8 py-3 font-mono text-sm font-bold tracking-widest uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-40"
       >
         {t('start')}
       </button>
@@ -69,7 +76,8 @@ export default function MicButton({ status, onStart, onStop }: Props) {
   return (
     <button
       onClick={() => onStart()}
-      className="border-fl-border text-fl-muted-2 hover:text-fl-fg hover:border-fl-border-2 border px-8 py-3 font-mono text-sm tracking-widest uppercase transition-colors"
+      disabled={!canStart}
+      className="border-fl-border text-fl-muted-2 hover:text-fl-fg hover:border-fl-border-2 border px-8 py-3 font-mono text-sm tracking-widest uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-40"
     >
       {t('startNew')}
     </button>

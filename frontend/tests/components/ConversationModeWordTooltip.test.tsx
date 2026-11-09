@@ -9,6 +9,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { useMicVAD } from '@ricky0123/vad-react'
 import ConversationMode from '@/components/conversation/ConversationMode'
+import { useSpeechSessionStore } from '@/store/speech-session'
 import { useAuthStore } from '@/store/auth'
 import { useLanguageStore } from '@/store/language'
 import { getLanguageByCode } from '@/lib/target-languages'
@@ -164,6 +165,7 @@ describe('ConversationMode word tooltip dismissal', () => {
       return { ok: true, json: async () => ({}) }
     })
     useAuthStore.setState({ accessToken: 'tok', user: { ...baseUser } })
+    useSpeechSessionStore.setState({ state: 'ready' })
     MockWebSocket.instances = []
     Element.prototype.scrollIntoView = vi.fn()
     vi.stubGlobal('AudioContext', MockAudioContext)
