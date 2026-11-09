@@ -3,7 +3,7 @@ uvicorn
 numpy
 soundfile
 lingua-language-detector
-onnx-asr
+onnx-asr[cpu,hub]
 omnivoice
 python-multipart
 httpx

@@ -25,18 +25,25 @@ def load_model(model: str, device: str):
     return WhisperModel(path, device=device, compute_type=compute)
 
 
-def handle(req: dict, state: dict, loader=load_model) -> dict:
-    op = req.get("op")
-    if op == "unload":
-        state.clear()
-        return {"ok": True}
-    if op != "transcribe":
-        return {"error": f"unknown op {op!r}"}
+def ensure_model(req: dict, state: dict, loader) -> None:
     key = (req["model"], req["device"])
     if state.get("key") != key:
         state.clear()  # free the old model before loading the next
         state["model"] = loader(*key)
         state["key"] = key
+
+
+def handle(req: dict, state: dict, loader=load_model) -> dict:
+    op = req.get("op")
+    if op == "unload":
+        state.clear()
+        return {"ok": True}
+    if op == "load":
+        ensure_model(req, state, loader)
+        return {"ok": True}
+    if op != "transcribe":
+        return {"error": f"unknown op {op!r}"}
+    ensure_model(req, state, loader)
     audio = np.frombuffer(base64.b64decode(req["audio"]), dtype=np.float32)
     segments, _ = state["model"].transcribe(
         audio, language=req["language"], beam_size=5, condition_on_previous_text=False

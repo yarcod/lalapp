@@ -244,3 +244,28 @@ def test_file_mode_control_corrupt_state_is_default(tmp_path):
 def test_file_mode_control_rejects_bad_mode(tmp_path):
     with pytest.raises(ValueError):
         FileModeControl(tmp_path).request("shared")
+
+
+def test_file_mode_control_shared_tier_wins_before_any_state(tmp_path):
+    tier = tmp_path / "llm-tier"
+    tier.write_text("shared\n")
+    control = FileModeControl(tmp_path, tier_file=tier)
+    assert control.read()["mode"] == "shared"
+    tier.write_text("full\n")
+    assert control.read()["mode"] == "full"
+
+
+def test_file_mode_control_missing_tier_file_is_full(tmp_path):
+    assert FileModeControl(tmp_path, tier_file=tmp_path / "nope").read()["mode"] == "full"
+
+
+@pytest.mark.parametrize(
+    "tier, expected", [("shared", SessionState.SHARED), ("full", SessionState.OFF)]
+)
+def test_manager_reports_tier_from_the_start_without_open(tmp_path, tier, expected):
+    tier_file = tmp_path / "llm-tier"
+    tier_file.write_text(tier + "\n")
+    manager = SessionManager(FileModeControl(tmp_path, tier_file=tier_file), Clock())
+    assert manager.state == expected
+    asyncio.run(manager.tick())
+    assert manager.state == expected

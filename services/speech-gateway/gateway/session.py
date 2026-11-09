@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Protocol
 
 DEFAULT_STATE_DIR = Path("/var/lib/speech-gateway")
+DEFAULT_TIER_FILE = "/run/llm-tier"
 _DEFAULT_READ = {"mode": "full", "state": "ready", "busy": False}
 
 
@@ -25,11 +26,26 @@ class ModeControl(Protocol):
     def read(self) -> dict: ...
 
 
-class FileModeControl:
-    """Host contract: write desired-mode, read mode-state.json."""
+def read_tier(path: Path) -> str:
+    """`full` (ninfer) or `shared` (Ollama); a missing or odd file means `full`."""
+    try:
+        tier = path.read_text().strip()
+    except OSError:
+        return "full"
+    return tier if tier == "shared" else "full"
 
-    def __init__(self, directory: str | Path = DEFAULT_STATE_DIR) -> None:
+
+class FileModeControl:
+    """Host contract: write desired-mode, read mode-state.json. The tier file wins: a shared
+    tier is `shared` before any session opens, when mode-state.json may not exist yet."""
+
+    def __init__(
+        self,
+        directory: str | Path = DEFAULT_STATE_DIR,
+        tier_file: str | Path = DEFAULT_TIER_FILE,
+    ) -> None:
         self._dir = Path(directory)
+        self._tier_file = Path(tier_file)
 
     def request(self, mode: str) -> None:
         if mode not in ("speech", "full"):
@@ -44,8 +60,11 @@ class FileModeControl:
             if not isinstance(data, dict):
                 raise ValueError
         except (OSError, ValueError):
-            return dict(_DEFAULT_READ)
-        return {**_DEFAULT_READ, **data}
+            data = {}
+        result = {**_DEFAULT_READ, **data}
+        if read_tier(self._tier_file) == "shared":
+            result["mode"] = "shared"
+        return result
 
 
 RETRY_EVERY = 30.0
@@ -71,7 +90,8 @@ class SessionManager:
         self._force = False
         self._last_write = 0.0
         self._last_seen = 0.0
-        self.state = SessionState.OFF
+        shared = mode.read().get("mode") == "shared"
+        self.state = SessionState.SHARED if shared else SessionState.OFF
 
     async def open(self) -> SessionState:
         if self._mode.read().get("mode") == "shared":

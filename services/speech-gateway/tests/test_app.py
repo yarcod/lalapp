@@ -1,5 +1,6 @@
 import io
 import json
+import sys
 
 import numpy as np
 import pytest
@@ -7,7 +8,8 @@ import soundfile as sf
 from fastapi.testclient import TestClient
 
 from gateway.app import create_app
-from gateway.engines import EngineOOM
+from gateway import engines as engines_module
+from gateway.engines import EngineError, EngineOOM, WhisperEngine, worker_env
 from gateway.session import SessionState
 
 
@@ -42,9 +44,14 @@ class FakeWhisper:
     def __init__(self, text="hola"):
         self.text = text
         self.calls = []
+        self.preloaded = []
         self.loaded = False
 
     def load(self):
+        self.loaded = True
+
+    def preload(self, model, device):
+        self.preloaded.append((model, device))
         self.loaded = True
 
     def unload(self):
@@ -222,14 +229,134 @@ def test_reconcile_loads_gpu_engines_only_while_usable(refs, vram):
     from gateway.app import reconcile
 
     eng, session = Engines(), FakeSession(SessionState.READY)
-    reconcile(eng, session)
+    reconcile(eng, session, vram)
     assert eng.tts.loaded and eng.whisper.loaded
     session.state = SessionState.BUSY
-    reconcile(eng, session)
+    reconcile(eng, session, vram)
     assert not eng.tts.loaded and not eng.whisper.loaded
     session.state = SessionState.SHARED
-    reconcile(eng, session)
+    reconcile(eng, session, vram)
     assert eng.tts.loaded
+
+
+@pytest.mark.parametrize(
+    "vram, expected", [(24.0, ("kbmedium", "cuda")), (8.0, ("kbsmall", "cpu"))]
+)
+def test_reconcile_preloads_whisper_for_the_english_plan_model(vram, expected):
+    from gateway.app import reconcile
+
+    eng = Engines()
+    reconcile(eng, FakeSession(SessionState.READY), vram)
+    assert eng.whisper.preloaded == [expected]
+
+
+def test_single_sentence_ends_with_room_tone(refs):
+    client = make(refs)
+    r = client.post("/v1/audio/speech", json={"input": "Hello there.", "language": "en"})
+    assert r.status_code == 200
+    from gateway.polish import polish, room_tone
+
+    audio, sr = FakeTts().synth("x", "en", "x", "x")
+    assert r.content == b"MP3" + str(len(polish(audio, sr)) + len(room_tone(sr))).encode()
+
+
+def test_asr_engine_error_is_503(refs):
+    eng = Engines(text="hej hej")
+
+    def broken(*_args):
+        raise EngineError("worker hung")
+
+    eng.whisper.transcribe = broken
+    client = make(refs, engines=eng)
+    assert asr(client, "en-GB").status_code == 503
+
+
+def test_worker_env_puts_venv_cuda_libs_on_the_loader_path(tmp_path, monkeypatch):
+    python = tmp_path / "venv" / "bin" / "python"
+    libs = [
+        tmp_path / "venv/lib/python3.12/site-packages/nvidia" / name / "lib"
+        for name in ("cublas", "cudnn")
+    ]
+    for lib in libs:
+        lib.mkdir(parents=True)
+    monkeypatch.setenv("LD_LIBRARY_PATH", "/existing")
+    env = worker_env(str(python))
+    assert env["LD_LIBRARY_PATH"].split(":") == [str(libs[0]), str(libs[1]), "/existing"]
+
+
+def test_worker_env_is_given_to_the_worker_only(tmp_path, monkeypatch):
+    seen = {}
+
+    class FakePopen:
+        def __init__(self, cmd, **kw):
+            seen.update(kw)
+
+        def poll(self):
+            return None
+
+    monkeypatch.delenv("LD_LIBRARY_PATH", raising=False)
+    monkeypatch.setattr(engines_module.subprocess, "Popen", FakePopen)
+    WhisperEngine(str(tmp_path / "bin" / "python")).load()
+    assert "LD_LIBRARY_PATH" in seen["env"]
+    assert "LD_LIBRARY_PATH" not in engines_module.os.environ
+
+
+HUNG_WORKER = "import sys, time\nfor line in sys.stdin:\n    time.sleep(60)\n"
+ANSWERING_WORKER = (
+    "import sys\n"
+    "for line in sys.stdin:\n"
+    "    print('{\"text\": \"ok\", \"ok\": true}', flush=True)\n"
+)
+
+
+def worker(script):
+    engine = WhisperEngine(sys.executable)
+    engine._cmd = [sys.executable, "-u", "-c", script]
+    return engine
+
+
+def test_hung_worker_is_killed_and_raises(monkeypatch):
+    monkeypatch.setattr(engines_module, "WORKER_REQUEST_TIMEOUT", 0.2)
+    monkeypatch.setattr(engines_module, "WORKER_LOAD_TIMEOUT", 0.2)
+    engine = worker(HUNG_WORKER)
+    with pytest.raises(EngineError, match="timed out"):
+        engine.transcribe(np.zeros(160, dtype=np.float32), "sv", "medium", "cuda")
+    assert engine._proc is None
+
+
+def test_transcribe_uses_load_timeout_until_the_model_is_loaded(monkeypatch):
+    monkeypatch.setattr(engines_module, "WORKER_LOAD_TIMEOUT", 11.0)
+    monkeypatch.setattr(engines_module, "WORKER_REQUEST_TIMEOUT", 7.0)
+    engine = worker(ANSWERING_WORKER)
+    timeouts = []
+    real = engine._readline
+    monkeypatch.setattr(engine, "_readline", lambda p, t: (timeouts.append(t), real(p, t))[1])
+    audio = np.zeros(160, dtype=np.float32)
+    try:
+        engine.preload("kbmedium", "cuda")
+        engine.preload("kbmedium", "cuda")  # already loaded: no second request
+        assert timeouts == [11.0]
+        assert engine.transcribe(audio, "sv", "kbmedium", "cuda") == "ok"
+        assert engine.transcribe(audio, "sv", "medium", "cuda") == "ok"  # model swap
+        assert engine.transcribe(audio, "sv", "medium", "cuda") == "ok"
+        assert timeouts == [11.0, 7.0, 11.0, 7.0]
+    finally:
+        engine.unload()
+
+
+def test_worker_load_op_loads_the_model():
+    from gateway.whisper_worker import handle
+
+    loads, state = [], {}
+
+    def loader(model, device):
+        loads.append((model, device))
+        return object()
+
+    req = {"op": "load", "model": "kbmedium", "device": "cuda"}
+    assert handle(req, state, loader) == {"ok": True}
+    assert loads == [("kbmedium", "cuda")]
+    assert state["key"] == ("kbmedium", "cuda")
 
 
 def test_whisper_worker_protocol():

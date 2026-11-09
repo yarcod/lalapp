@@ -4,6 +4,7 @@ import asyncio
 import contextlib
 import io
 import json
+import logging
 import os
 import re
 import subprocess
@@ -17,6 +18,7 @@ from fastapi.responses import Response
 from pydantic import BaseModel
 
 from gateway.engines import (
+    EngineError,
     Engines,
     EngineOOM,
     detect_vram_gb,
@@ -29,6 +31,10 @@ from gateway.session import FileModeControl, SessionManager, SessionState
 
 os.environ.setdefault("TORCHDYNAMO_DISABLE", "1")
 
+log = logging.getLogger(__name__)
+
+# The model for the common case: a Swedish speaker on an English plan.
+PRELOAD_LANGUAGE = "en"
 SILENCE_RMS = 0.003
 ASR_RATE = 16000
 LANGUAGES = ("sv", "en", "es")
@@ -72,11 +78,11 @@ def split_sentences(text: str) -> list[str]:
     return [s.strip() for s in _SENTENCE_END.split(text.strip()) if s.strip()]
 
 
-def reconcile(engines, session) -> None:
+def reconcile(engines, session, vram_gb: float) -> None:
     """Hold the GPU engines exactly while the session is ready or shared."""
     if session.state in GPU_STATES:
         engines.tts.load()
-        engines.whisper.load()
+        engines.whisper.preload(*whisper_choice(PRELOAD_LANGUAGE, vram_gb))
     else:
         engines.tts.unload()
         engines.whisper.unload()
@@ -93,7 +99,8 @@ def create_app(
     llm_transport=None,
 ) -> FastAPI:
     engines = engines or Engines()
-    session = session or SessionManager(FileModeControl(), time.monotonic)
+    tier_file = Path(llm_tier_file or os.environ.get("LLM_TIER_FILE", DEFAULT_TIER_FILE))
+    session = session or SessionManager(FileModeControl(tier_file=tier_file), time.monotonic)
     refs_dir = Path(refs_dir or os.environ.get("REFS_DIR", "/models/refs"))
     vram = detect_vram_gb() if vram_gb is None else vram_gb
     gpu_lock = asyncio.Lock()
@@ -103,9 +110,9 @@ def create_app(
             try:
                 await session.tick()
                 async with gpu_lock:
-                    await asyncio.to_thread(reconcile, engines, session)
+                    await asyncio.to_thread(reconcile, engines, session, vram)
             except Exception:  # noqa: BLE001 - keep the loop alive
-                pass
+                log.exception("speech gateway tick failed")
             await asyncio.sleep(TICK_EVERY)
 
     @contextlib.asynccontextmanager
@@ -165,9 +172,13 @@ def create_app(
         if device == "cuda" and session.state not in GPU_STATES:
             raise HTTPException(503, "speech session not ready")
         async with gpu_lock:
-            text = await asyncio.to_thread(
-                engines.whisper.transcribe, audio, spoken, model, device
-            )
+            try:
+                text = await asyncio.to_thread(
+                    engines.whisper.transcribe, audio, spoken, model, device
+                )
+            except EngineError as exc:
+                log.error("whisper transcription failed: %s", exc)
+                raise HTTPException(503, "speech engine failed") from exc
         return {"text": text, "spoken_language": spoken}
 
     @app.post("/v1/audio/speech")
@@ -196,9 +207,8 @@ def create_app(
                     except EngineOOM:
                         if attempt == 2:
                             raise
-                if parts:
-                    parts.append(room_tone(sr))
                 parts.append(polish(audio, sr))
+                parts.append(room_tone(sr))
             return encoder(np.concatenate(parts), sr)
 
         async with gpu_lock:
@@ -208,8 +218,7 @@ def create_app(
                 raise HTTPException(503, "out of GPU memory") from exc
         return Response(mp3, media_type="audio/mpeg")
 
-    tier_file = Path(llm_tier_file or os.environ.get("LLM_TIER_FILE", DEFAULT_TIER_FILE))
-    app.post("/v1/chat/completions")(make_handler(tier_file, llm_transport))
+    app.post("/v1/chat/completions")(make_handler(tier_file, llm_transport, session))
 
     return app
 

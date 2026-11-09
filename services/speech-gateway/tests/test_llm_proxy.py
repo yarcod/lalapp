@@ -3,8 +3,10 @@ import json
 import httpx
 from fastapi.testclient import TestClient
 
+from gateway import llm_proxy
 from gateway.app import create_app
 from gateway.llm_proxy import NINFER_MODEL, OLLAMA_MODEL
+from gateway.session import SessionState
 
 
 class FakeSession:
@@ -36,13 +38,13 @@ def reply(status=200, data=None):
     )
 
 
-def make_client(tmp_path, tier, handler):
+def make_client(tmp_path, tier, handler, session=None):
     tier_file = tmp_path / "llm-tier"
     if tier is not None:
         tier_file.write_text(tier + "\n")
     app = create_app(
         engines=FakeEngines(),
-        session=FakeSession(),
+        session=session or FakeSession(),
         vram_gb=24,
         background=False,
         llm_tier_file=tier_file,
@@ -169,3 +171,52 @@ def test_backend_down_is_logged(tmp_path, caplog):
     with caplog.at_level("ERROR", logger="gateway.llm_proxy"):
         make_client(tmp_path, "full", handler).post("/v1/chat/completions", json=BODY)
     assert any("refused" in m for m in caplog.messages)
+
+
+def switching_session():
+    session = FakeSession()
+    session.state = SessionState.SWITCHING
+    return session
+
+
+def down_then_up(failures):
+    attempts = []
+
+    def handler(request):
+        attempts.append(1)
+        if len(attempts) <= failures:
+            raise httpx.ConnectError("refused")
+        return reply(200, {"ok": True})
+
+    return handler, attempts
+
+
+def test_retries_while_switching_until_the_backend_is_up(tmp_path, monkeypatch):
+    monkeypatch.setattr(llm_proxy, "SWITCH_RETRY_EVERY", 0.001)
+    handler, attempts = down_then_up(3)
+    r = make_client(tmp_path, "full", handler, switching_session()).post(
+        "/v1/chat/completions", json=BODY
+    )
+    assert r.status_code == 200
+    assert len(attempts) == 4
+
+
+def test_gives_up_after_the_retry_window(tmp_path, monkeypatch):
+    monkeypatch.setattr(llm_proxy, "SWITCH_RETRY_EVERY", 0.001)
+    monkeypatch.setattr(llm_proxy, "SWITCH_RETRY_SECONDS", 0.05)
+    handler, attempts = down_then_up(10_000)
+    r = make_client(tmp_path, "full", handler, switching_session()).post(
+        "/v1/chat/completions", json=BODY
+    )
+    assert r.status_code == 503
+    assert len(attempts) >= 2
+
+
+def test_no_retry_when_not_switching(tmp_path, monkeypatch):
+    monkeypatch.setattr(llm_proxy, "SWITCH_RETRY_EVERY", 0.001)
+    handler, attempts = down_then_up(1)
+    session = FakeSession()
+    session.state = SessionState.READY
+    r = make_client(tmp_path, "full", handler, session).post("/v1/chat/completions", json=BODY)
+    assert r.status_code == 503
+    assert len(attempts) == 1
