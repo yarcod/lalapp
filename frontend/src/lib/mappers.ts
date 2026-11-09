@@ -65,6 +65,7 @@ export function mapUserLanguageInfo(
           progress_day: data.plan.progress_day,
           total_days: data.plan.total_days,
           completion_pct: data.plan.completion_pct,
+          tagged_replies: data.plan.tagged_replies,
         }
       : null,
     progress: data.progress

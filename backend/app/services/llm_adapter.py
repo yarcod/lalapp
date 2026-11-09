@@ -130,6 +130,11 @@ class LLMStreamReset:
 ToolExecutor = Callable[[LLMToolCall], Awaitable[LLMToolResult]]
 
 
+def _is_service_unavailable(exc: Exception) -> bool:
+    """A 503 from an OpenAI-compatible server, such as the speech gateway with no LLM behind it."""
+    return getattr(exc, "status_code", None) == 503
+
+
 async def _safe_stream_events(stream: object, provider: str) -> AsyncGenerator:
     """Normalize exceptions raised after a provider stream has started."""
     try:
@@ -156,7 +161,7 @@ async def _safe_stream_events(stream: object, provider: str) -> AsyncGenerator:
         if _is_tools_unsupported_error(exc):
             raise LLMToolsUnsupportedError(f"{provider} does not support tools") from exc
         message = str(exc)
-        if "connection" in message.lower():
+        if "connection" in message.lower() or _is_service_unavailable(exc):
             raise LLMUnavailableError(f"{provider} is unreachable") from exc
         if "rate" in message.lower():
             raise LLMUnavailableError(f"{provider} rate limit exceeded") from exc
@@ -676,7 +681,7 @@ class LLMAdapter:
                 if tools_requested and _is_tools_unsupported_error(e):
                     raise LLMToolsUnsupportedError(f"{self.provider} does not support tools") from e
                 error_msg = str(e)
-                if "connection" in error_msg.lower():
+                if "connection" in error_msg.lower() or _is_service_unavailable(e):
                     last_error = LLMUnavailableError(
                         f"{self.provider} is unreachable. Check that the service is running."
                     )

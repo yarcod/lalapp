@@ -787,6 +787,20 @@ class TestAnthropicErrorMapping:
                 await adapter.chat([{"role": "user", "content": "Hi"}])
 
     @pytest.mark.asyncio
+    async def test_service_unavailable_status_means_unavailable(self, monkeypatch):
+        """The speech gateway answers 503 while the local LLM is down."""
+        from app.services.llm_adapter import LLMAdapter, LLMUnavailableError
+
+        class ServiceUnavailable(Exception):
+            status_code = 503
+
+        monkeypatch.setattr("app.services.llm_adapter.asyncio.sleep", AsyncMock())
+        adapter = LLMAdapter()
+        call = AsyncMock(side_effect=ServiceUnavailable("Error code: 503"))
+        with pytest.raises(LLMUnavailableError):
+            await adapter._call_with_retry(call)
+
+    @pytest.mark.asyncio
     async def test_rate_limit_error_mapped(self, monkeypatch):
         _make_anthropic_settings(monkeypatch)
 

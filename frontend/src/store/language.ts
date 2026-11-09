@@ -14,6 +14,7 @@ export interface UserLanguagePlan {
   progress_day: number
   total_days: number
   completion_pct: number
+  tagged_replies?: boolean
 }
 
 export interface UserLanguageProgress {

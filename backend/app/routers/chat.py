@@ -505,7 +505,11 @@ async def chat(
             yield f"data: {json.dumps({'error': 'The AI model took too long. Please try again.'})}\n\n"
         except LLMUnavailableError:
             logger.error("LLM unavailable for user %s", current_user.id)
-            yield f"data: {json.dumps({'error': 'The AI service is currently unavailable.'})}\n\n"
+            event = {
+                "error": "The AI service is currently unavailable.",
+                "error_code": "llm_unavailable",
+            }
+            yield f"data: {json.dumps(event)}\n\n"
         except LLMError:
             logger.exception(
                 "LLM error for user %s conversation %s",

@@ -146,3 +146,35 @@ async def test_non_tagged_target_keeps_streaming(client, test_user, db_session):
     assert response.status_code == 200
     assert '"token": "Bonjour"' in response.text
     assert '"token": "\\n- ami"' in response.text
+
+
+@pytest.mark.asyncio
+async def test_chat_unavailable_llm_returns_error_code(client, test_user):
+    """With no LLM the stream carries a code so the page can say Lingu is away."""
+    from app.services.llm_adapter import LLMUnavailableError
+
+    _, headers = test_user
+    with patch(
+        "app.routers.chat.llm_adapter.chat",
+        new_callable=AsyncMock,
+        side_effect=LLMUnavailableError("down"),
+    ):
+        response = await client.post("/api/chat", headers=headers, json={"message": "Hi"})
+
+    assert response.status_code == 200
+    assert '"error_code": "llm_unavailable"' in response.text
+
+
+@pytest.mark.asyncio
+async def test_chat_other_llm_error_has_no_away_code(client, test_user):
+    from app.services.llm_adapter import LLMError
+
+    _, headers = test_user
+    with patch(
+        "app.routers.chat.llm_adapter.chat",
+        new_callable=AsyncMock,
+        side_effect=LLMError("boom"),
+    ):
+        response = await client.post("/api/chat", headers=headers, json={"message": "Hi"})
+
+    assert "error_code" not in response.text

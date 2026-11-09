@@ -22,6 +22,7 @@ from app.schemas.language import (
     UserLanguageOut,
 )
 from app.services.progress_service import current_streak as get_current_streak
+from app.services.spoken_lines import tagged_replies_enabled
 from app.services.user_language_service import (
     add_language,
     get_active_language,
@@ -35,7 +36,7 @@ router = APIRouter(prefix="/api/languages", tags=["languages"])
 
 
 async def _build_plan_info(
-    db: AsyncSession, user_id: int, target_language: str
+    db: AsyncSession, user_id: int, native_language: str, target_language: str
 ) -> LanguagePlanInfo | None:
     ul_result = await db.execute(
         select(UserLanguage.id).where(
@@ -68,6 +69,9 @@ async def _build_plan_info(
         progress_day=plan.progress_day,
         total_days=total_days,
         completion_pct=completion_pct,
+        tagged_replies=tagged_replies_enabled(
+            native_language, plan.cefr_level or "", target_language
+        ),
     )
 
 
@@ -120,7 +124,9 @@ async def list_languages(
 
     languages: list[UserLanguageOut] = []
     for lang in rows:
-        plan = await _build_plan_info(db, current_user.id, lang.target_language)
+        plan = await _build_plan_info(
+            db, current_user.id, current_user.native_language, lang.target_language
+        )
         progress = (
             await _build_progress_info(db, current_user.id, lang.target_language) if plan else None
         )

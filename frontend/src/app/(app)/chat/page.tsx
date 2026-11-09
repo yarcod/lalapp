@@ -43,6 +43,7 @@ interface ChatSseEvent {
   token?: string
   response_reset?: boolean
   error?: string
+  error_code?: string
   done?: boolean
   memory_updated?: boolean
 }
@@ -56,6 +57,11 @@ export default function ChatPage() {
   const user = useAuthStore((s) => s.user)
   const sessionVersion = useAuthStore((s) => s.sessionVersion)
   const activeLanguage = useLanguageStore((s) => s.activeLanguage)
+  // Tagged replies mix languages line by line, which one read-aloud voice cannot speak.
+  const taggedReplies = useLanguageStore(
+    (s) =>
+      s.userLanguages.find((l) => l.is_active)?.plan?.tagged_replies ?? false
+  )
   const {
     selectedWord,
     tooltipPos,
@@ -294,7 +300,11 @@ export default function ChatPage() {
         }
         if (data.error) {
           streamCompleted = true
-          setError(t('errorMessage'))
+          setError(
+            data.error_code === 'llm_unavailable'
+              ? t('linguAway')
+              : t('errorMessage')
+          )
         }
         if (data.done) {
           streamCompleted = true
@@ -557,6 +567,7 @@ export default function ChatPage() {
                     </TargetLanguageText>
                     {msg.role === 'assistant' &&
                       msg.content &&
+                      !taggedReplies &&
                       !(sending && i === messages.length - 1) && (
                         <div className="mt-1">
                           <AudioPlayer
