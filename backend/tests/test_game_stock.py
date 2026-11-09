@@ -6,7 +6,8 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import func, select
 
-from app.models.game import GameRequest, GameSession, GameStock
+from app.core.config import settings
+from app.models.game import GameAdmission, GameRequest, GameSession, GameStock
 from app.models.lesson import Lesson
 from app.models.study_plan import StudyPlan
 from app.schemas.games import GameAnswer
@@ -465,3 +466,51 @@ async def test_stock_game_playable_when_llm_away(
     await db_session.refresh(session)
     assert session.status == "completed" and session.xp_earned == 15
     away.assert_not_awaited()
+
+
+async def test_second_tab_losing_the_slot_keeps_its_item(
+    client, db_session, test_user_with_plan, monkeypatch
+):
+    user, headers = test_user_with_plan
+    plan = await db_session.scalar(select(StudyPlan))
+    item = await stock_item(db_session, plan)
+    rival = {}
+
+    real = game_stock.take_from_stock
+
+    async def taker_after_rival(db, p, mode, game_type):
+        # The other tab's game appears after our active check and before our insert.
+        winner = await ready_game(db, user, p)
+        rival["id"] = winner.id
+        return await real(db, p, mode, game_type)
+
+    monkeypatch.setattr("app.routers.games.take_from_stock", taker_after_rival)
+    res = await client.post("/api/games/detective", headers=headers, json=start_body(plan))
+    assert res.status_code == 202
+    assert res.json()["id"] == rival["id"]
+    await db_session.refresh(item)
+    assert item.taken_at is None
+
+
+async def test_limited_user_at_quota_gets_402_and_stock_game_consumes_admission(
+    client, db_session, test_user_with_plan, monkeypatch
+):
+    user, headers = test_user_with_plan
+    monkeypatch.setattr(settings, "STRIPE_ENABLED", True)
+    monkeypatch.setattr(settings, "FREEMIUM_GAMES_DAILY", 1)
+    plan = await db_session.scalar(select(StudyPlan))
+    item = await stock_item(db_session, plan)
+    body = start_body(plan)
+    res = await client.post("/api/games/detective", headers=headers, json=body)
+    assert res.status_code == 202
+    admission = await db_session.get(GameAdmission, body["request_id"])
+    assert admission.status == "consumed"
+    assert (await games.game_quota(db_session, user.id))["remaining"] == 0
+    session = await db_session.get(GameSession, body["request_id"])
+    session.status = "abandoned"
+    other = await stock_item(db_session, plan, sentence_prefix="B")
+    await db_session.commit()
+    blocked = await client.post("/api/games/detective", headers=headers, json=start_body(plan))
+    assert blocked.status_code == 402
+    await db_session.refresh(other)
+    assert other.taken_at is None and item.id

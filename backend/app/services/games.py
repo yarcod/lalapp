@@ -14,6 +14,7 @@ from uuid import uuid4
 from fastapi import HTTPException
 from pydantic import ValidationError
 from sqlalchemy import and_, func, or_, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -337,9 +338,14 @@ async def create_game(
         db.add(request)
         await db.commit()
         return active, False
+    limited = limited_access(user)
+    quota = await game_quota(db, user.id, now)
+    if limited and quota["remaining"] == 0:
+        raise HTTPException(402, {"reason": "freemium_exhausted", "feature": "games", **quota})
     if stock_taker is not None:
         item = await stock_taker(db, plan, body.mode, game_type)
         if item is None:
+            await db.commit()
             return None, False
         session = GameSession(
             id=str(body.request_id),
@@ -360,15 +366,35 @@ async def create_game(
             xp_earned=0,
         )
         db.add(session)
-        await db.flush()
+        try:
+            await db.flush()
+        except IntegrityError:
+            # Another request won the single active slot: undo the claim and resume its game.
+            await db.rollback()
+            active = await db.scalar(
+                select(GameSession).where(
+                    GameSession.study_plan_id == body.study_plan_id,
+                    GameSession.game_type == game_type,
+                    GameSession.status.in_(["generating", "ready"]),
+                )
+            )
+            if active is None:
+                raise
+            return active, False
         request.session_id = session.id
         db.add(request)
+        if limited:
+            db.add(
+                GameAdmission(
+                    id=session.id,
+                    user_id=user.id,
+                    date=now.date(),
+                    status="consumed",
+                    deadline=now,
+                )
+            )
         await db.commit()
         return session, False
-    limited = limited_access(user)
-    quota = await game_quota(db, user.id, now)
-    if limited and quota["remaining"] == 0:
-        raise HTTPException(402, {"reason": "freemium_exhausted", "feature": "games", **quota})
     context = await source_context(db, plan, body.mode, game_type)
     if not context["sources"]:
         raise HTTPException(409, context["reason"])

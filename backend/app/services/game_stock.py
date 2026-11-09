@@ -271,7 +271,9 @@ async def claim_item(db: AsyncSession, item: GameStock) -> bool:
 async def take_from_stock(
     db: AsyncSession, plan: StudyPlan, mode: str, game_type: str
 ) -> GameStock | None:
-    """Oldest fresh item not repeating recent sentences; repeated items are marked stale."""
+    """Oldest fresh item not repeating recent sentences; repeated items are marked stale.
+
+    The caller commits, so the claim and the session built from it are one transaction."""
     recent: set[str] = set()
     for session in (await db.scalars(recent_sentences_query(plan))).all():
         recent.update(c["sentence"] for c in session.challenges)
@@ -293,10 +295,9 @@ async def take_from_stock(
             await db.execute(update(GameStock).where(GameStock.id == item.id).values(is_stale=True))
             continue
         if await claim_item(db, item):
-            await db.commit()
             await db.refresh(item)
             return item
-    await db.commit()
+    await db.flush()
     return None
 
 
