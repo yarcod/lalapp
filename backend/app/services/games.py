@@ -2,11 +2,16 @@
 
 import asyncio
 import logging
+import random
+import re
+import unicodedata
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from random import SystemRandom
 
 from fastapi import HTTPException
+from pydantic import ValidationError
 from sqlalchemy import and_, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,7 +25,10 @@ from app.models.progress_reward import ProgressReward
 from app.models.study_plan import StudyPlan
 from app.models.user import User
 from app.schemas.games import (
+    DetectiveChallenge,
     DetectiveContent,
+    DetectiveDraft,
+    DetectiveDraftContent,
     DetectiveReview,
     GameAnswer,
     GameCreate,
@@ -28,8 +36,11 @@ from app.schemas.games import (
     SentenceOrderAnswer,
     SentenceOrderChallenge,
     SentenceOrderContent,
+    SentenceOrderDraftContent,
+    VocabularyPair,
     VocabularyPairAnswer,
     VocabularyPairsContent,
+    VocabularyPairsDraftContent,
 )
 from app.services.freemium_service import is_freemium_trial_active
 from app.services.llm_adapter import LLMResponseError, LLMTimeoutError, llm_adapter
@@ -339,6 +350,7 @@ async def create_game(
         target_language=plan.target_language,
         native_language=user.native_language,
         level=plan.cefr_level,
+        is_child=user.is_child,
         status="generating",
         context=context,
         created_at=now,
@@ -389,38 +401,131 @@ def shuffled_order_challenge(challenge: SentenceOrderChallenge) -> SentenceOrder
     raise LLMResponseError("Sentence Order challenge cannot be shuffled into an unsolved order")
 
 
+GAMES_REQUESTED = 8
+GAMES_NEEDED = 5
+
+
+def build_challenge(draft: DetectiveDraft) -> DetectiveChallenge:
+    """Split the sentence around wrong_part and shuffle the options; raises ValueError if unusable."""
+    sentence, wrong = draft.sentence, draft.wrong_part
+    starts = [m.start() for m in re.finditer(f"(?={re.escape(wrong)})", sentence)]
+    if len(starts) != 1:
+        raise ValueError("wrong_part must occur exactly once in the sentence")
+    if draft.correct_part == wrong:
+        raise ValueError("correct_part must differ from wrong_part")
+    start = starts[0]
+    before, after = sentence[:start], sentence[start + len(wrong) :]
+    fragments = [
+        *re.findall(r"\s*\S+\s*", before),
+        wrong,
+        *re.findall(r"\s*\S+\s*", after),
+    ]
+    if "".join(fragments) != sentence:
+        raise ValueError("Sentence cannot be split into fragments")
+    options = [draft.correct_part, *draft.wrong_options]
+    random.shuffle(options)
+    error_index = len(re.findall(r"\s*\S+\s*", before))
+    correct_index = options.index(draft.correct_part)
+    return DetectiveChallenge(
+        sentence=sentence,
+        fragments=fragments,
+        error_index=error_index,
+        options=options,
+        correct_index=correct_index,
+        corrected_sentence=sentence[:start] + draft.correct_part + after,
+        explanation=draft.explanation,
+        source_id=draft.source_id,
+    )
+
+
+def _build_detective(item: object) -> DetectiveChallenge:
+    draft = item if isinstance(item, DetectiveDraft) else DetectiveDraft.model_validate(item)
+    return build_challenge(draft)
+
+
+def _norm(value: str) -> str:
+    return unicodedata.normalize("NFKC", value).strip().casefold()
+
+
+def salvage_challenges(
+    drafts: list,
+    needed: int = GAMES_NEEDED,
+    *,
+    build: Callable[[object], object] = _build_detective,
+    keys: Callable[[object], tuple[str, ...]] = lambda c: (_norm(c.sentence),),
+    accept: Callable[[object], bool] = lambda c: True,
+) -> list:
+    """Keep the first `needed` valid, distinct items; invalid ones are dropped, not fatal."""
+    kept: list = []
+    seen: list[set[str]] = []
+    for item in drafts:
+        try:
+            challenge = build(item)
+        except ValueError, ValidationError, TypeError:
+            continue
+        if not accept(challenge):
+            continue
+        item_keys = keys(challenge)
+        if len(seen) < len(item_keys):
+            seen.extend(set() for _ in range(len(item_keys) - len(seen)))
+        if any(not key or key in seen[i] for i, key in enumerate(item_keys)):
+            continue
+        for i, key in enumerate(item_keys):
+            seen[i].add(key)
+        kept.append(challenge)
+        if len(kept) == needed:
+            return kept
+    raise LLMResponseError(f"Only {len(kept)} of {needed} required challenges were valid")
+
+
 async def generate_content(
     session: GameSession, deadline: float
 ) -> DetectiveContent | SentenceOrderContent | VocabularyPairsContent:
+    """Ask for more challenges than needed and keep the first valid ones."""
     ordering = session.game_type == "sentence-order"
     prompt_builder = sentence_order_prompt if ordering else detective_prompt
     review_builder = sentence_order_review_prompt if ordering else detective_review_prompt
     schema = SentenceOrderContent if ordering else DetectiveContent
+    draft_schema = SentenceOrderDraftContent if ordering else DetectiveDraftContent
+    build = SentenceOrderChallenge.model_validate if ordering else _build_detective
+    keys = lambda c: (_norm(c.sentence),)  # noqa: E731
     if session.game_type == "vocabulary-pairs":
         prompt_builder = vocabulary_pairs_prompt
         review_builder = vocabulary_pairs_review_prompt
         schema = VocabularyPairsContent
+        draft_schema = VocabularyPairsDraftContent
+        build = VocabularyPair.model_validate
+        keys = lambda c: (_norm(c.term), _norm(c.meaning))  # noqa: E731
     prompt = prompt_builder(
         session.target_language,
         session.native_language,
         session.level,
         session.mode,
         session.context,
+        is_child=session.is_child,
     )
     permitted = {s["source_id"] for s in session.context["sources"]}
+    recent = session.context.get("recent_sentences", [])
     rejection = ""
     for _ in range(2):
-        content = await llm_adapter.structured_output(
-            [{"role": "system", "content": prompt + rejection}], schema, deadline=deadline
+        draft = await llm_adapter.structured_output(
+            [{"role": "system", "content": prompt + rejection}], draft_schema, deadline=deadline
         )
-        if any(c.source_id not in permitted for c in content.challenges):
-            rejection = "\nPrevious candidate rejected: use only supplied source IDs."
+        try:
+            challenges = salvage_challenges(
+                draft.challenges,
+                GAMES_NEEDED,
+                build=build,
+                keys=keys,
+                accept=lambda c: c.source_id in permitted and c.sentence not in recent,
+            )
+        except LLMResponseError:
+            rejection = (
+                "\nPrevious candidate rejected: too few valid challenges. Follow the format, "
+                "use only supplied source IDs and do not repeat recent sentences."
+            )
             continue
-        if any(
-            c.sentence in session.context.get("recent_sentences", []) for c in content.challenges
-        ):
-            rejection = "\nPrevious candidate rejected: do not repeat recent sentences."
-            continue
+        content = schema(challenges=challenges)
         review = await llm_adapter.structured_output(
             [{"role": "system", "content": review_builder(prompt, content.model_dump())}],
             DetectiveReview,

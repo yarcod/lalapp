@@ -780,3 +780,19 @@ def test_child_instruction_present_when_child() -> None:
     for builder in (detective_prompt, sentence_order_prompt, vocabulary_pairs_prompt):
         assert text in builder("en-GB", "sv", "A1", "review", {}, is_child=True)
         assert text not in builder("en-GB", "sv", "A1", "review", {})
+
+
+def test_prompt_requests_eight() -> None:
+    from app.services.prompts.games import (
+        detective_prompt,
+        sentence_order_prompt,
+        vocabulary_pairs_prompt,
+    )
+
+    for builder in (detective_prompt, sentence_order_prompt, vocabulary_pairs_prompt):
+        text = builder("en-GB", "sv", "A1", "review", {})
+        assert "exactly eight" in text and "exactly five" not in text
+    detective = detective_prompt("en-GB", "sv", "A1", "review", {})
+    for field in ("wrong_part", "correct_part", "wrong_options"):
+        assert field in detective
+    assert '"fragments"' not in detective

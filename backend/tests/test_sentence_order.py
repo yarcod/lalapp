@@ -19,6 +19,7 @@ from app.schemas.games import (
     SentenceOrderAnswer,
     SentenceOrderChallenge,
     SentenceOrderContent,
+    SentenceOrderDraftContent,
 )
 from app.services import games
 from app.services.progress_rewards import award_progress_reward
@@ -41,6 +42,42 @@ def order_content(source="grammar:present-simple"):
             for i in range(5)
         ]
     )
+
+
+def order_draft(source="grammar:present-simple", count=8, broken=()):
+    items = [c.model_dump() for c in order_content(source).challenges]
+    items += [
+        {
+            **items[0],
+            "sentence": f"I often walk to town {i}.",
+            "fragments": ["often", "I", "walk", f"to town {i}."],
+        }
+        for i in range(count - 5)
+    ]
+    for i in broken:
+        items[i] = {**items[i], "accepted_orders": [[0, 0, 0, 0]]}
+    return SentenceOrderDraftContent(challenges=items[:count])
+
+
+async def test_order_salvage_drops_invalid_items(db_session, test_user_with_plan, monkeypatch):
+    user, _ = test_user_with_plan
+    plan = await db_session.scalar(select(StudyPlan))
+    session, _ = await games.create_game(
+        db_session,
+        user,
+        plan,
+        GameCreate(request_id=uuid4(), study_plan_id=plan.id, mode="free"),
+        "sentence-order",
+    )
+    source = session.context["sources"][0]["source_id"]
+    draft = order_draft(source, count=5)
+    draft.challenges.append(order_draft(source).challenges[5])
+    draft.challenges[2] = {**draft.challenges[2], "fragments": ["a"]}
+    mock = AsyncMock(side_effect=[draft, DetectiveReview(valid=True, reason="ok")])
+    monkeypatch.setattr(games.llm_adapter, "structured_output", mock)
+    content = await games.generate_content(session, 1e12)
+    assert len(content.challenges) == 5
+    assert all(c.sentence != "I often walk to school on day 2." for c in content.challenges)
 
 
 async def ready_order_game(db, user, plan):
@@ -379,7 +416,7 @@ async def test_order_generation_reviews_before_consuming_quota(
         if outcome != "wrong_source"
         else "lesson:foreign"
     )
-    candidate = order_content(source)
+    candidate = order_draft(source)
     review = DetectiveReview(valid=outcome == "valid", reason="missing valid alternative")
     effects = [candidate, review, candidate, review]
     if outcome == "timeout":
@@ -396,7 +433,7 @@ async def test_order_generation_reviews_before_consuming_quota(
     monkeypatch.setattr(games, "db_session", factory)
     await games.generate_game(session.id)
     await db_session.refresh(session)
-    assert mock.call_args_list[0].args[1] is SentenceOrderContent
+    assert mock.call_args_list[0].args[1] is SentenceOrderDraftContent
     assert session.status == ("ready" if outcome == "valid" else "failed")
     assert (await db_session.get(GameAdmission, session.id)).status == (
         "consumed" if outcome == "valid" else "released"

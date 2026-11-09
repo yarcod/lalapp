@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from sqlalchemy import JSON, Date, DateTime, ForeignKey, Index, Integer, String, text
+from sqlalchemy import JSON, Boolean, Date, DateTime, ForeignKey, Index, Integer, String, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -31,6 +31,10 @@ class GameSession(Base):
     target_language: Mapped[str] = mapped_column(String(10))
     native_language: Mapped[str] = mapped_column(String(10))
     level: Mapped[str] = mapped_column(String(10))
+    # Copied from the user at creation so background generation adapts its prompts.
+    is_child: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
     status: Mapped[str] = mapped_column(String(16), default="generating")
     context: Mapped[dict] = mapped_column(JSON, default=dict)
     challenges: Mapped[list] = mapped_column(JSON, default=list)

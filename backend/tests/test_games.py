@@ -18,6 +18,8 @@ from app.models.user_language import UserLanguage
 from app.schemas.games import (
     DetectiveChallenge,
     DetectiveContent,
+    DetectiveDraft,
+    DetectiveDraftContent,
     DetectiveReview,
     GameAnswer,
     GameCreate,
@@ -43,6 +45,22 @@ def content(source="grammar:present-simple"):
             for i in range(5)
         ]
     )
+
+
+def draft_dict(i=0, source="grammar:present-simple", **override):
+    return {
+        "sentence": f"She go to school on day {i}.",
+        "wrong_part": "go",
+        "correct_part": "goes",
+        "wrong_options": ["going", "gone"],
+        "explanation": "Con she, el presente simple lleva -s.",
+        "source_id": source,
+        **override,
+    }
+
+
+def draft_content(source="grammar:present-simple", count=8):
+    return DetectiveDraftContent(challenges=[draft_dict(i, source) for i in range(count)])
 
 
 async def ready_game(db, user, plan):
@@ -467,7 +485,7 @@ async def test_background_review_charges_only_valid_persisted_content(
     session, _ = await games.create_game(
         db_session, user, plan, GameCreate(request_id=uuid4(), study_plan_id=plan.id, mode="free")
     )
-    candidate = content(session.context["sources"][0]["source_id"])
+    candidate = draft_content(session.context["sources"][0]["source_id"])
     mocked = AsyncMock(
         side_effect=[
             candidate,
@@ -601,3 +619,76 @@ def test_schema_supports_cjk_without_spaces_and_rejects_invalid_corrections():
     ]:
         with pytest.raises(ValidationError):
             DetectiveChallenge.model_validate({**challenge.model_dump(), **override})
+
+
+def test_build_challenge_splits_and_shuffles():
+    import random
+
+    draft = DetectiveDraft(**draft_dict(3))
+    seen = set()
+    for seed in range(20):
+        random.seed(seed)
+        challenge = games.build_challenge(draft)
+        assert DetectiveChallenge.model_validate(challenge.model_dump())
+        assert "".join(challenge.fragments) == draft.sentence
+        assert challenge.fragments[challenge.error_index] == "go"
+        assert challenge.options[challenge.correct_index] == "goes"
+        assert sorted(challenge.options) == ["goes", "going", "gone"]
+        assert challenge.corrected_sentence == "She goes to school on day 3."
+        seen.add(challenge.correct_index)
+    assert len(seen) > 1
+
+
+def test_wrong_part_not_in_sentence_is_dropped():
+    for override in (
+        {"wrong_part": "walks"},
+        {"sentence": "She go and go.", "wrong_part": "go"},
+        {"correct_part": "go"},
+        {"wrong_options": ["going", "going"]},
+        {"wrong_options": ["goes", "gone"]},
+    ):
+        with pytest.raises(ValueError):
+            games.build_challenge(DetectiveDraft(**draft_dict(0, **override)))
+    kept = games.salvage_challenges(
+        [{**draft_dict(0), "wrong_part": "walks"}] + [draft_dict(i) for i in range(1, 7)]
+    )
+    assert len(kept) == 5
+    assert all(c.sentence != "She go to school on day 0." for c in kept)
+
+
+def test_salvage_keeps_valid_when_some_fail():
+    drafts = [draft_dict(i) for i in range(8)]
+    drafts[1] = {"sentence": "broken"}
+    drafts[4]["wrong_part"] = "absent"
+    kept = games.salvage_challenges(drafts)
+    assert [c.sentence for c in kept] == [f"She go to school on day {i}." for i in (0, 2, 3, 5, 6)]
+
+
+def test_too_few_valid_raises():
+    drafts = [draft_dict(i) for i in range(4)] + [{"sentence": "x"}] * 4
+    with pytest.raises(games.LLMResponseError):
+        games.salvage_challenges(drafts)
+
+
+async def test_child_flag_reaches_prompt_and_session(db_session, test_user_with_plan, monkeypatch):
+    user, _ = test_user_with_plan
+    user.is_child = True
+    await db_session.commit()
+    plan = await db_session.scalar(select(StudyPlan))
+    session, _ = await games.create_game(
+        db_session, user, plan, GameCreate(request_id=uuid4(), study_plan_id=plan.id, mode="free")
+    )
+    assert session.is_child is True
+    mocked = AsyncMock(
+        side_effect=[
+            draft_content(session.context["sources"][0]["source_id"]),
+            DetectiveReview(valid=True, reason="ok"),
+        ]
+    )
+    monkeypatch.setattr(games.llm_adapter, "structured_output", mocked)
+    result = await games.generate_content(session, 1e12)
+    assert len(result.challenges) == 5
+    from app.services.prompts.common import child_instruction
+
+    assert child_instruction() in mocked.call_args_list[0].args[0][0]["content"]
+    assert mocked.call_args_list[0].args[1] is DetectiveDraftContent

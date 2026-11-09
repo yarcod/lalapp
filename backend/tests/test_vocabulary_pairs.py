@@ -19,6 +19,7 @@ from app.schemas.games import (
     GameCreate,
     VocabularyPairAnswer,
     VocabularyPairsContent,
+    VocabularyPairsDraftContent,
 )
 from app.services import games
 from app.services.progress_rewards import award_progress_reward
@@ -46,6 +47,14 @@ def pairs_content(source="vocabulary:test"):
             ]
         ]
     )
+
+
+def pairs_draft(source="vocabulary:test"):
+    items = [c.model_dump() for c in pairs_content(source).challenges]
+    items.insert(1, {**items[0], "term": "bird"})  # duplicate meaning: dropped
+    items.append({"term": "x"})  # malformed: dropped
+    items.append({**items[0], "term": "fish", "meaning": "pez"})
+    return VocabularyPairsDraftContent(challenges=items)
 
 
 async def ready_pairs(db, user, plan):
@@ -251,7 +260,7 @@ async def test_pairs_generation_and_consumption(
         "vocabulary-pairs",
     )
     assert all(s["source_id"].startswith("vocabulary:") for s in session.context["sources"])
-    candidate = pairs_content(
+    candidate = pairs_draft(
         session.context["sources"][0]["source_id"] if outcome != "wrong_source" else "foreign"
     )
     review = DetectiveReview(valid=outcome == "valid", reason="ambiguous meanings")
@@ -270,7 +279,7 @@ async def test_pairs_generation_and_consumption(
     monkeypatch.setattr(games, "db_session", factory)
     await games.generate_game(session.id)
     await db_session.refresh(session)
-    assert mock.call_args_list[0].args[1] is VocabularyPairsContent
+    assert mock.call_args_list[0].args[1] is VocabularyPairsDraftContent
     assert session.status == ("ready" if outcome == "valid" else "failed")
     assert (await db_session.get(GameAdmission, session.id)).status == (
         "consumed" if outcome == "valid" else "released"
@@ -278,7 +287,7 @@ async def test_pairs_generation_and_consumption(
     if outcome == "valid":
         assert sorted(c["choice_index"] for c in session.challenges) == list(range(5))
         assert {(c["term"], c["meaning"]) for c in session.challenges} == {
-            (c.term, c.meaning) for c in candidate.challenges
+            (c.term, c.meaning) for c in pairs_content().challenges
         }
         public = games.game_output(session)
         assert all(set(c) == {"index", "term", "matched"} for c in public["challenges"])
