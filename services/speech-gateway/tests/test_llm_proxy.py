@@ -143,3 +143,29 @@ def test_invalid_body_is_400(tmp_path):
         "/v1/chat/completions", content=b"not json"
     )
     assert r.status_code == 400
+
+
+def test_mid_stream_failure_is_logged_and_ends_the_stream(tmp_path, caplog):
+    class Broken(httpx.AsyncByteStream):
+        async def __aiter__(self):
+            yield b"data: {}\n\n"
+            raise httpx.ReadError("connection lost")
+
+    def handler(request):
+        return httpx.Response(
+            200, headers={"content-type": "text/event-stream"}, stream=Broken()
+        )
+
+    with caplog.at_level("ERROR", logger="gateway.llm_proxy"):
+        r = make_client(tmp_path, "full", handler).post("/v1/chat/completions", json=BODY)
+    assert r.content == b"data: {}\n\n"
+    assert any("connection lost" in m for m in caplog.messages)
+
+
+def test_backend_down_is_logged(tmp_path, caplog):
+    def handler(request):
+        raise httpx.ConnectError("refused")
+
+    with caplog.at_level("ERROR", logger="gateway.llm_proxy"):
+        make_client(tmp_path, "full", handler).post("/v1/chat/completions", json=BODY)
+    assert any("refused" in m for m in caplog.messages)

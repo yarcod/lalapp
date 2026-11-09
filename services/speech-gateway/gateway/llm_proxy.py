@@ -1,11 +1,14 @@
 """Stable chat-completions address in front of whichever LLM backend is live."""
 
 import json
+import logging
 from pathlib import Path
 
 import httpx
 from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
+
+log = logging.getLogger(__name__)
 
 NINFER_URL = "http://127.0.0.1:8080"
 OLLAMA_URL = "http://127.0.0.1:11434"
@@ -44,7 +47,8 @@ def make_handler(tier_file: Path, transport: httpx.AsyncBaseTransport | None):
                 client.build_request("POST", f"{base}/v1/chat/completions", json=payload),
                 stream=True,
             )
-        except httpx.HTTPError:
+        except httpx.HTTPError as exc:
+            log.error("LLM backend %s unavailable: %r", base, exc)
             await client.aclose()
             return JSONResponse({"detail": "LLM backend unavailable"}, status_code=503)
 
@@ -52,6 +56,9 @@ def make_handler(tier_file: Path, transport: httpx.AsyncBaseTransport | None):
             try:
                 async for chunk in upstream.aiter_raw():
                     yield chunk
+            except httpx.HTTPError as exc:
+                # Headers are already sent: all that is left is to log and end the stream.
+                log.error("LLM stream from %s failed mid-response: %r", base, exc)
             finally:
                 await upstream.aclose()
                 await client.aclose()
