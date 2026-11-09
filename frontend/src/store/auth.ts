@@ -26,6 +26,7 @@ export interface User {
   conversation_max_duration: number
   conversation_inactivity_timeout: number
   conversation_speech_pause?: number
+  is_child?: boolean
   avatar?: string | null
   is_verified?: boolean
   bio?: string | null

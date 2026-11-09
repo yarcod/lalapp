@@ -1,5 +1,8 @@
 """Shared prompt fragments used across LLM-backed services."""
 
+from app.services.language_helpers import get_language_name
+from app.services.spoken_lines import TAGGED_LEVELS
+
 PLAIN_TEXT_OUTPUT_INSTRUCTION = (
     "OUTPUT FORMAT: The interface displays text literally and does not render Markdown. "
     "Use plain text for all learner-facing content, including text inside JSON string values. "
@@ -109,6 +112,44 @@ def get_language_prompt_overlay(target_language: str) -> str:
     """Return concise language/variant guidance for prompt composition."""
     canonical_language = _LANGUAGE_PROMPT_OVERLAY_ALIASES.get(target_language, target_language)
     return _LANGUAGE_PROMPT_OVERLAYS.get(canonical_language, "")
+
+
+_CHILD_INSTRUCTION = (
+    "The student is a child of about 9-11 years old. Use simple, short words and a warm, "
+    "encouraging tone. Choose everyday topics such as school, friends, pets, family, food, and "
+    "games. Keep scenarios, examples, and explanations easy for a child to understand."
+)
+
+_INSTRUCTION_LANGUAGE_RULES = """\
+Language of your replies (these rules override the instruction to answer only in {target}):
+The student is a Swedish speaker at {level} level. Your reply is read aloud by two voices, a \
+Swedish voice and a {target} voice, so write one item per line and start every line with a tag:
+[sv] one short Swedish sentence. It must not contain any English or Spanish word at all, not even \
+a quoted one. Refer to "meningen" or "ordet på skärmen" instead.
+[{code}] one complete, correct {target} sentence for the student to hear and copy.
+[screen] the key correction as short text shown on screen, for example: go → went. This line is \
+not spoken.
+Rules: 4 to 6 lines. Start with short, kind Swedish feedback. Then say the whole corrected \
+sentence in a [{code}] line. Explain the mistake very simply in Swedish. Give the [screen] line. \
+End with one easy question in a [{code}] line, followed by an [sv] line saying what the question \
+means. Use only the tags [sv], [{code}], and [screen]. No emojis, no other labels."""
+
+
+def child_instruction() -> str:
+    """Return the shared instruction for students who are children."""
+    return _CHILD_INSTRUCTION
+
+
+def instruction_language_rules(level: str, native_code: str, target_code: str) -> str:
+    """Return the tagged-line rules for Swedish A1-A2 learners, otherwise an empty string."""
+    if native_code.lower().split("-")[0] != "sv" or level.upper() not in TAGGED_LEVELS:
+        return ""
+    code = target_code.lower().split("-")[0]
+    if code not in ("en", "es"):
+        return ""
+    return _INSTRUCTION_LANGUAGE_RULES.format(
+        target=get_language_name(target_code), level=level.upper(), code=code
+    )
 
 
 MEMORY_SYSTEM_INSTRUCTION_BASE = """

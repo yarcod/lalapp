@@ -370,6 +370,8 @@
     "bio": "Conte a Lingu sobre você",
     "bioPlaceholder": "ex: Sou desenvolvedor/a e viajo muito a trabalho...",
     "bioHint": "Lingu usará essas informações para adaptar as conversas a você.",
+    "isChild": "Este aluno é uma criança",
+    "isChildHint": "Lingu usará palavras simples, um tom caloroso e temas do dia a dia para uma criança de cerca de 9-11 anos.",
     "saveChanges": "Salvar alterações",
     "saving": "Salvando...",
     "saved": "Perfil atualizado.",

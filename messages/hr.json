@@ -370,6 +370,8 @@
     "bio": "Reci Linguu nešto o sebi",
     "bioPlaceholder": "Npr. radim kao programer i često putujem zbog posla...",
     "bioHint": "Lingu će upotrijebiti ove podatke kako bi prilagodio razgovore tebi.",
+    "isChild": "Ovaj učenik je dijete",
+    "isChildHint": "Lingu će koristiti jednostavne riječi, topao ton i svakodnevne teme za dijete od otprilike 9-11 godina.",
     "saveChanges": "Spremi promjene",
     "saving": "Spremanje...",
     "saved": "Profil je ažuriran.",

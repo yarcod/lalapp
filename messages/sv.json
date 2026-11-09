@@ -370,6 +370,8 @@
     "bio": "Berätta om dig själv för Lingu",
     "bioPlaceholder": "Till exempel: Jag är programutvecklare och reser ofta i jobbet...",
     "bioHint": "Lingu använder informationen för att anpassa samtalen till dig.",
+    "isChild": "Eleven är ett barn",
+    "isChildHint": "Lingu använder enkla ord, en varm ton och vardagliga ämnen för ett barn på ungefär 9-11 år.",
     "saveChanges": "Spara ändringar",
     "saving": "Sparar...",
     "saved": "Profilen har uppdaterats.",

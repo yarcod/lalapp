@@ -394,6 +394,7 @@ async def conversation_ws(
             max_duration = min(max_duration, freemium_remaining_seconds)
         inactivity_timeout = user.conversation_inactivity_timeout
         native_language = user.native_language
+        user_is_child = user.is_child
         student_name = user.display_name
         user_bio = user.bio
         user_learning_goals = user.learning_goals
@@ -556,6 +557,7 @@ async def conversation_ws(
             study_plan_id=study_plan_id_for_conv,
             lesson_practice_context=lesson_practice.context if lesson_practice else "",
             user_agent=websocket.headers.get("user-agent", ""),
+            is_child=user_is_child,
         )
         pipeline._redis = redis
         pipeline._freemium_voice = freemium_ok

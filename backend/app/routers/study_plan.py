@@ -314,6 +314,7 @@ async def get_today_lessons(
                     target_language=plan.target_language,
                     native_language=current_user.native_language,
                     previous_lessons=previous_lessons,
+                    is_child=current_user.is_child,
                 )
                 content_dict = content.model_dump() if hasattr(content, "model_dump") else content
 

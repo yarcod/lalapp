@@ -370,6 +370,8 @@
     "bio": "Vertel Lingu over jezelf",
     "bioPlaceholder": "bijv. Ik ben ontwikkelaar en reis veel voor mijn werk...",
     "bioHint": "Lingu gebruikt deze informatie om de gesprekken op jou af te stemmen.",
+    "isChild": "Deze leerling is een kind",
+    "isChildHint": "Lingu gebruikt eenvoudige woorden, een warme toon en alledaagse onderwerpen voor een kind van ongeveer 9-11 jaar.",
     "saveChanges": "Wijzigingen opslaan",
     "saving": "Opslaan...",
     "saved": "Profiel bijgewerkt.",

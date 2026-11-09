@@ -370,6 +370,8 @@
     "bio": "Kerro Lingulle itsestäsi",
     "bioPlaceholder": "Esimerkiksi: Olen ohjelmistokehittäjä ja matkustan usein työni vuoksi...",
     "bioHint": "Lingu mukauttaa keskustelut sinulle sopiviksi näiden tietojen avulla.",
+    "isChild": "Oppija on lapsi",
+    "isChildHint": "Lingu käyttää yksinkertaisia sanoja, lämmintä sävyä ja arkisia aiheita noin 9-11-vuotiaalle lapselle.",
     "saveChanges": "Tallenna muutokset",
     "saving": "Tallennetaan...",
     "saved": "Profiili päivitetty.",

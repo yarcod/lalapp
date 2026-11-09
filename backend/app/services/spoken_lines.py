@@ -31,6 +31,14 @@ _FOREIGN_WORDS = frozenset(
 _FOREIGN_CHARS = frozenset("ñ¿¡áíóúÁÍÓÚ")
 
 
+TAGGED_LEVELS = frozenset({"A1", "A2"})
+
+
+def tagged_replies_enabled(native_code: str, cefr_level: str) -> bool:
+    """Whether replies use spoken-line tags: Swedish native language at A1 or A2."""
+    return native_code.lower().split("-")[0] == "sv" and cefr_level.upper() in TAGGED_LEVELS
+
+
 @dataclass
 class SpokenLine:
     language: str  # "sv", a target iso code, or "screen"

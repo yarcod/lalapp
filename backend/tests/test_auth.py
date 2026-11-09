@@ -804,3 +804,15 @@ async def test_register_when_closed_with_invalid_invite(client):
         )
     assert response.status_code == 403
     assert response.json()["detail"] == "Invalid or expired invite"
+
+
+@pytest.mark.asyncio
+async def test_patch_me_sets_is_child(client, test_user) -> None:
+    """PATCH /api/auth/me should persist the per-profile child setting."""
+    _, headers = test_user
+
+    before = await client.get("/api/auth/me", headers=headers)
+    assert before.json()["is_child"] is False
+    response = await client.patch("/api/auth/me", headers=headers, json={"is_child": True})
+    assert response.status_code == 200
+    assert response.json()["is_child"] is True

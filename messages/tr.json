@@ -370,6 +370,8 @@
     "bio": "Lingu'ya kendinizden bahsedin",
     "bioPlaceholder": "ör. İş nedeniyle sık sık seyahat eden bir yazılım geliştiricisiyim...",
     "bioHint": "Lingu, konuşmaları size uyarlamak için bu bilgileri kullanır.",
+    "isChild": "Bu öğrenci bir çocuk",
+    "isChildHint": "Lingu, yaklaşık 9-11 yaşındaki bir çocuk için basit sözcükler, sıcak bir üslup ve günlük konular kullanır.",
     "saveChanges": "Değişiklikleri Kaydet",
     "saving": "Kaydediliyor...",
     "saved": "Profil güncellendi.",

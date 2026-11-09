@@ -161,6 +161,7 @@ async def generate_lesson(
     target_language: str = "en-GB",
     native_language: str | None = None,
     previous_lessons: list[dict[str, Any]] | None = None,
+    is_child: bool = False,
 ) -> LessonContent:
     gp_str = ", ".join(grammar_points) if grammar_points else "none specified"
     vs_str = ", ".join(vocabulary_set_ids) if vocabulary_set_ids else "general"
@@ -183,6 +184,7 @@ async def generate_lesson(
         valid_slugs=valid_slugs_str,
         language_prompt_overlay=language_prompt_overlay,
         previous_lessons_summary=build_previous_lessons_summary(previous_lessons or []),
+        is_child=is_child,
     )
 
     lesson = await llm_adapter.structured_output(

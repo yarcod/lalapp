@@ -370,6 +370,8 @@
     "bio": "Tell Lingu about yourself",
     "bioPlaceholder": "e.g. I'm a software developer who travels frequently for work...",
     "bioHint": "Lingu will use this information to tailor conversations to you.",
+    "isChild": "This learner is a child",
+    "isChildHint": "Lingu will use simple words, a warm tone, and everyday topics for a child of about 9-11.",
     "saveChanges": "Save Changes",
     "saving": "Saving...",
     "saved": "Profile updated.",

@@ -38,6 +38,7 @@ from app.services.spoken_lines import (
     display_text,
     invalid_swedish_lines,
     parse_reply,
+    tagged_replies_enabled,
 )
 from app.utils.db import db_session
 
@@ -49,7 +50,6 @@ logger = get_logger(__name__)
 TTS_MAX_RETRIES = 1
 TTS_RETRY_DELAY_SECONDS = 0.2
 
-TAGGED_LEVELS = frozenset({"A1", "A2"})
 REWRITE_REQUEST = (
     "Rewrite your last reply. Every [sv] line must be plain Swedish with no English or Spanish "
     "words and no quoted words. Put target-language words on their own [en] or [es] line, or on a "
@@ -70,6 +70,9 @@ def _build_conversation_system_prompt(
     language_prompt_overlay: str = "",
     memory_tools_enabled: bool = True,
     lesson_practice_context: str = "",
+    native_code: str = "",
+    target_code: str = "",
+    is_child: bool = False,
 ) -> str:
     return build_conversation_system_prompt(
         student_name=student_name,
@@ -81,6 +84,9 @@ def _build_conversation_system_prompt(
         language_prompt_overlay=language_prompt_overlay,
         memory_tools_enabled=memory_tools_enabled,
         lesson_practice_context=lesson_practice_context,
+        native_code=native_code,
+        target_code=target_code,
+        is_child=is_child,
     )
 
 
@@ -110,6 +116,7 @@ class ConversationPipeline:
         study_plan_id: int | None = None,
         lesson_practice_context: str = "",
         user_agent: str = "",
+        is_child: bool = False,
     ) -> None:
         self.llm = llm
         self.tts = tts
@@ -117,9 +124,7 @@ class ConversationPipeline:
         self._voice = voice
         self._stt_language = get_iso639(target_language)
         self._target_language = target_language
-        self._tagged_lines = (
-            native_language.lower().split("-")[0] == "sv" and cefr_level.upper() in TAGGED_LEVELS
-        )
+        self._tagged_lines = tagged_replies_enabled(native_language, cefr_level)
         self._user_id = user_id
         self._conversation_id = conversation_id
         self._study_plan_id = study_plan_id
@@ -154,6 +159,9 @@ class ConversationPipeline:
             "user_context": user_context,
             "language_prompt_overlay": language_prompt_overlay,
             "lesson_practice_context": lesson_practice_context,
+            "native_code": native_language,
+            "target_code": target_language,
+            "is_child": is_child,
         }
         self.system_prompt = _build_conversation_system_prompt(
             **self._prompt_args,

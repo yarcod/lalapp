@@ -370,6 +370,8 @@
     "bio": "Povestește-i lui Lingu despre tine",
     "bioPlaceholder": "ex: Sunt programator/oare și călătoresc frecvent în interes de serviciu...",
     "bioHint": "Lingu va folosi aceste informații pentru a adapta conversațiile la tine.",
+    "isChild": "Acest cursant este un copil",
+    "isChildHint": "Lingu va folosi cuvinte simple, un ton cald și subiecte de zi cu zi pentru un copil de aproximativ 9-11 ani.",
     "saveChanges": "Salvează modificările",
     "saving": "Se salvează...",
     "saved": "Profil actualizat.",
