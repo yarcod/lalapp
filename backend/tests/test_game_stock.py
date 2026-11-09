@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from datetime import timedelta
 from unittest.mock import AsyncMock
 
@@ -255,3 +256,30 @@ async def test_take_loses_race_when_row_already_taken(db_session, test_user_with
     monkeypatch.setattr(game_stock, "claim_item", claim_after_rival)
     assert await game_stock.take_from_stock(db_session, plan, "free", "detective") is None
     assert item.id
+
+
+async def test_refill_pass_skipped_when_lock_held(
+    db_session, test_user_with_plan, gateway, generate, monkeypatch
+):
+    @asynccontextmanager
+    async def held():
+        yield False
+
+    monkeypatch.setattr(game_stock, "pass_lock", held)
+    assert await game_stock.run_pass() == 0
+    generate.assert_not_called()
+
+
+async def test_surplus_stale_rows_do_not_grant_uncapped_generation(
+    db_session, test_user_with_plan, gateway, generate
+):
+    plan = await db_session.scalar(select(StudyPlan))
+    for _ in range(game_stock.STOCK_TARGET):
+        await stock_item(db_session, plan)
+    old = await stock_item(db_session, plan)
+    old.is_stale = True
+    await db_session.commit()
+    await game_stock.refill_once(db_session)
+    await db_session.refresh(old)
+    assert old.replaced is True
+    assert await stock_count(db_session, game_type="detective", mode="free") == 4

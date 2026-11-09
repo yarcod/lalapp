@@ -3,13 +3,15 @@
 import asyncio
 import hashlib
 import logging
-from collections.abc import Sequence
+from collections.abc import AsyncIterator, Sequence
+from contextlib import asynccontextmanager
 from datetime import timedelta
 
-from sqlalchemy import func, select, update
+from sqlalchemy import func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.database import engine
 from app.models.game import GameSession, GameStock
 from app.models.study_plan import StudyPlan
 from app.models.user import User
@@ -80,6 +82,21 @@ async def plan_buckets(db: AsyncSession, plan: StudyPlan, user: User) -> list[Bu
         ).all()
         bucket.fresh = sum(1 for stale, taken, _ in rows if not stale and taken is None)
         bucket.unreplaced = sum(1 for stale, _, replaced in rows if stale and not replaced)
+        if bucket.fresh >= STOCK_TARGET and bucket.unreplaced:
+            # Surplus stale rows must not grant uncapped generations later.
+            await db.execute(
+                update(GameStock)
+                .where(
+                    GameStock.study_plan_id == plan.id,
+                    GameStock.mode == bucket.mode,
+                    GameStock.game_type == bucket.game_type,
+                    GameStock.is_stale.is_(True),
+                    GameStock.replaced.is_(False),
+                )
+                .values(replaced=True)
+            )
+            await db.commit()
+            bucket.unreplaced = 0
     return buckets
 
 
@@ -283,12 +300,38 @@ async def take_from_stock(
     return None
 
 
+ADVISORY_LOCK_KEY = 0x46_4C_47_53  # "FLGS": one refill pass at a time across workers
+
+
+@asynccontextmanager
+async def pass_lock() -> AsyncIterator[bool]:
+    """Session-level Postgres advisory lock on a dedicated autocommit connection."""
+    if engine.dialect.name != "postgresql":
+        yield True
+        return
+    async with engine.connect() as conn:
+        conn = await conn.execution_options(isolation_level="AUTOCOMMIT")
+        got = await conn.scalar(text("SELECT pg_try_advisory_lock(:k)"), {"k": ADVISORY_LOCK_KEY})
+        try:
+            yield bool(got)
+        finally:
+            if got:
+                await conn.execute(text("SELECT pg_advisory_unlock(:k)"), {"k": ADVISORY_LOCK_KEY})
+
+
+async def run_pass() -> int:
+    async with pass_lock() as acquired:
+        if not acquired:
+            return 0
+        async with db_session() as db:
+            return await refill_once(db)
+
+
 async def stock_loop() -> None:
     """Background refill; one failed pass never stops the loop."""
     while True:
         try:
-            async with db_session() as db:
-                made = await refill_once(db)
+            made = await run_pass()
             if made:
                 logger.info("Game stock refill generated %s games", made)
         except asyncio.CancelledError:
