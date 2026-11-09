@@ -2264,3 +2264,26 @@ async def test_run_routes_discard_client_event() -> None:
     await pipeline.run(ws)
 
     pipeline.discard_last_turn.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_discard_during_running_turn_keeps_previous_turn() -> None:
+    pipeline = _make_pipeline()
+    previous = [
+        {"role": "user", "content": "first"},
+        {"role": "assistant", "content": "first reply"},
+    ]
+    pipeline.history = list(previous)
+    pipeline._has_finished_turn = True
+
+    async def slow_turn(audio_bytes, ws) -> None:
+        pipeline.history.append({"role": "user", "content": "second"})
+        await asyncio.sleep(10)
+
+    pipeline._process_turn = slow_turn
+    await pipeline.handle_audio(b"audio", FakeWS())
+    await asyncio.sleep(0.01)
+
+    await pipeline.discard_last_turn()
+
+    assert pipeline.history == previous

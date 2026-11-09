@@ -654,6 +654,8 @@ class ConversationPipeline:
         # Turns are serialized by handle_audio. Only this turn owns additions
         # beyond the snapshot; a cancelled greeting never owns initial context.
         history_start = len(self.history)
+        # An interrupted or failed turn must never discard the one before it.
+        self._has_finished_turn = False
         try:
             await self._process_turn(audio_bytes, ws)
         finally:
