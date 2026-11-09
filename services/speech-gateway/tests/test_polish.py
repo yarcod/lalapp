@@ -22,10 +22,12 @@ def test_polish_trims_and_fades():
 
 
 def test_polish_peak_cap():
-    x = _clip()
-    x[SR] = 1.0
-    x[SR + 1] = -1.0
-    assert np.abs(polish(x, SR)).max() <= 0.95
+    t = np.arange(SR) / SR
+    quiet = np.zeros(SR // 2)
+    x = np.concatenate([quiet, 0.02 * np.sin(2 * np.pi * 220 * t), quiet]).astype(np.float32)
+    x[SR] = 1.0  # single full-scale spike in the middle of low-level voiced audio
+    out = polish(x, SR)
+    assert abs(float(np.abs(out).max()) - 0.95) < 1e-3
 
 
 def test_polish_silent_input_unchanged():
