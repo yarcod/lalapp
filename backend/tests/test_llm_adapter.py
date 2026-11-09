@@ -352,6 +352,73 @@ class TestChatNonStreaming:
             assert result == "Hello from Ollama!"
 
     @pytest.mark.asyncio
+    async def test_reasoning_effort_sent_for_local(self, monkeypatch):
+        _make_ollama_settings(monkeypatch)
+
+        from app.services.llm_adapter import LLMAdapter
+
+        msg = MagicMock()
+        msg.content = "ok"
+        response = MagicMock()
+        response.choices = [MagicMock()]
+        response.choices[0].message = msg
+
+        adapter = LLMAdapter()
+        with patch.object(
+            adapter.client.chat.completions,
+            "create",
+            new_callable=AsyncMock,
+            return_value=response,
+        ) as create:
+            await adapter.chat([{"role": "user", "content": "Hi"}], reasoning_effort="low")
+            assert create.await_args.kwargs["reasoning_effort"] == "low"
+
+    @pytest.mark.asyncio
+    async def test_reasoning_effort_absent_by_default(self, monkeypatch):
+        _make_ollama_settings(monkeypatch)
+
+        from app.services.llm_adapter import LLMAdapter
+
+        msg = MagicMock()
+        msg.content = "ok"
+        response = MagicMock()
+        response.choices = [MagicMock()]
+        response.choices[0].message = msg
+
+        adapter = LLMAdapter()
+        with patch.object(
+            adapter.client.chat.completions,
+            "create",
+            new_callable=AsyncMock,
+            return_value=response,
+        ) as create:
+            await adapter.chat([{"role": "user", "content": "Hi"}])
+            assert "reasoning_effort" not in create.await_args.kwargs
+
+    @pytest.mark.asyncio
+    async def test_reasoning_effort_not_sent_to_deepseek(self, monkeypatch):
+        monkeypatch.setattr("app.core.config.settings.LLM_PROVIDER", "deepseek")
+        monkeypatch.setattr("app.core.config.settings.DEEPSEEK_API_KEY", "sk-test")
+
+        from app.services.llm_adapter import LLMAdapter
+
+        msg = MagicMock()
+        msg.content = "ok"
+        response = MagicMock()
+        response.choices = [MagicMock()]
+        response.choices[0].message = msg
+
+        adapter = LLMAdapter()
+        with patch.object(
+            adapter.client.chat.completions,
+            "create",
+            new_callable=AsyncMock,
+            return_value=response,
+        ) as create:
+            await adapter.chat([{"role": "user", "content": "Hi"}], reasoning_effort="low")
+            assert "reasoning_effort" not in create.await_args.kwargs
+
+    @pytest.mark.asyncio
     async def test_openai_chat_returns_content(self, monkeypatch):
         monkeypatch.setattr("app.core.config.settings.LLM_PROVIDER", "openai")
         monkeypatch.setattr("app.core.config.settings.OPENAI_API_KEY", "sk-test")
@@ -1335,6 +1402,44 @@ class TestNativeToolStreaming:
         assert create.call_args_list[0].kwargs["messages"] == messages
         assert create.call_args_list[1].kwargs["messages"] == fallback_messages
         assert "Native tools available" not in caplog.text
+
+    @pytest.mark.asyncio
+    async def test_reasoning_effort_reaches_fallback_call(self, monkeypatch):
+        _make_ollama_settings(monkeypatch)
+        from app.services.llm_adapter import LLMAdapter, LLMTool, LLMToolResult
+
+        async def fallback_stream():
+            yield FakeOpenAIChunk("Normal response.")
+
+        adapter = LLMAdapter()
+        tool = LLMTool("save_user_memory", "Save memory", {"type": "object"})
+        messages = [{"role": "user", "content": "Hi"}]
+
+        async def executor(call):
+            return LLMToolResult(call=call, content={"saved": True})
+
+        with patch.object(
+            adapter.client.chat.completions,
+            "create",
+            new_callable=AsyncMock,
+            side_effect=[
+                RuntimeError("This model does not support function calling"),
+                fallback_stream(),
+            ],
+        ) as create:
+            stream = await adapter.chat(
+                messages,
+                stream=True,
+                tools=[tool],
+                tool_executor=executor,
+                reasoning_effort="low",
+            )
+            assert [part async for part in stream] == ["Normal response."]
+
+        assert [call.kwargs["reasoning_effort"] for call in create.call_args_list] == [
+            "low",
+            "low",
+        ]
 
     @pytest.mark.asyncio
     async def test_late_tools_incompatibility_resets_then_returns_full_fallback(

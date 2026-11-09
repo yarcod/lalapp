@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 import time
 import uuid
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from app.core.app_logger import get_logger
+from app.core.config import settings
 from app.models.user import User
 from app.services.language_helpers import (
     get_iso639,
@@ -88,6 +90,117 @@ def _build_conversation_system_prompt(
         target_code=target_code,
         is_child=is_child,
     )
+
+
+# A sentence longer than this is spoken in fragments cut at clause punctuation.
+LONG_SENTENCE_CHARS = 140
+_CLAUSE_RE = re.compile(r"[,;:\u2013\u2014](?=\s)")
+
+
+class _StreamedSpeech:
+    """Speaks a reply while it streams: each finished sentence, or tagged line, in order.
+
+    A line that fails validation after audio has started goes to ``[screen]``.
+    Before any audio, the tagged path instead stops speaking (``buffered``) so the
+    caller can rewrite the whole reply as it always did.
+    """
+
+    def __init__(
+        self, pipeline: ConversationPipeline, ws: WebSocket, *, tagged: bool, target_code: str
+    ) -> None:
+        self._pipeline = pipeline
+        self._ws = ws
+        self._tagged = tagged
+        self._target_code = target_code
+        self.full_response = ""
+        self.lines: list[SpokenLine] = []
+        self.buffered = False
+        self.chunks_sent = 0
+        self.audio_bytes = 0
+        self.send_aborted = False
+        self._buffer = ""
+
+    def reset(self) -> None:
+        """The model restarted its reply. Audio that already played is kept."""
+        if self.chunks_sent == 0:
+            self.full_response = ""
+            self.lines = []
+            self.buffered = False
+        else:
+            self.full_response = self.full_response[: len(self.full_response) - len(self._buffer)]
+            if self.full_response and not self.full_response[-1].isspace():
+                self.full_response += " "
+        self._buffer = ""
+
+    async def feed(self, token: str) -> None:
+        self.full_response += token
+        if self.buffered or self.send_aborted:
+            return
+        self._buffer += token
+        await self._drain(final=False)
+
+    async def finish(self) -> None:
+        if not (self.buffered or self.send_aborted):
+            await self._drain(final=True)
+
+    async def _drain(self, *, final: bool) -> None:
+        if self._tagged:
+            while "\n" in self._buffer and not (self.buffered or self.send_aborted):
+                line, self._buffer = self._buffer.split("\n", 1)
+                await self._line(line)
+            if final and self._buffer.strip() and not (self.buffered or self.send_aborted):
+                line, self._buffer = self._buffer, ""
+                await self._line(line)
+            return
+        sentences, self._buffer = self._pipeline._pop_sentences(self._buffer, final=final)
+        if final and self._buffer.strip():
+            sentences.append(self._buffer.strip())
+            self._buffer = ""
+        for sentence in sentences:
+            await self._speak_sentence(sentence, None)
+        while not final and len(self._buffer.strip()) > LONG_SENTENCE_CHARS:
+            cut = self._pipeline._clause_cut(self._buffer.lstrip())
+            if cut is None:
+                break
+            text = self._buffer.lstrip()
+            self._buffer = text[cut:]
+            await self._speak_sentence(text[:cut], None)
+
+    async def _line(self, raw: str) -> None:
+        for line in parse_reply(raw, self._target_code):
+            if line.spoken and invalid_swedish_lines([line]):
+                if self.chunks_sent == 0:
+                    self.buffered = True
+                    return
+                line.language = SCREEN
+                line.spoken = False
+            self.lines.append(line)
+            if line.spoken:
+                await self._speak_sentence(line.text, line.language)
+
+    async def _speak_sentence(self, text: str, language: str | None) -> None:
+        for sentence in ConversationPipeline._split_tts_sentences(text):
+            for piece in ConversationPipeline._split_long(sentence):
+                await self._speak(piece, language)
+
+    async def _speak(self, text: str, language: str | None) -> None:
+        if self.send_aborted or not any(char.isalnum() for char in text):
+            return
+        try:
+            audio = await self._pipeline._synthesize_chunk(text, language)
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            logger.warning(
+                "[pipeline] TTS sentence failed after retry: error=%s", self._pipeline._fmt_exc(exc)
+            )
+            return
+        if not await self._pipeline._safe_send_bytes(self._ws, audio):
+            logger.warning("[pipeline] Audio send failed and remaining chunks are being aborted")
+            self.send_aborted = True
+            return
+        self.chunks_sent += 1
+        self.audio_bytes += len(audio)
 
 
 class ConversationPipeline:
@@ -247,11 +360,16 @@ class ConversationPipeline:
         return ConversationPipeline._clean_sentence(raw_text).strip()
 
     async def _collect_reply(self, messages: list[dict]) -> str:
-        stream = await self.llm.chat(messages, stream=True)
+        stream = await self.llm.chat(messages, stream=True, **self._effort_kwargs())
         text = ""
         async for chunk in stream:
             text += self._stream_text(chunk)
         return text.strip()
+
+    @staticmethod
+    def _effort_kwargs() -> dict:
+        effort = settings.VOICE_REASONING_EFFORT
+        return {"reasoning_effort": effort} if effort else {}
 
     @staticmethod
     def _tagged_text(lines: list[SpokenLine]) -> str:
@@ -404,13 +522,20 @@ class ConversationPipeline:
                 await asyncio.sleep(TTS_RETRY_DELAY_SECONDS * attempt)
 
     @staticmethod
-    def _split_tts_sentences(text: str) -> list[str]:
-        """Split on full stops while preserving decimals and ellipses for speech."""
+    def _pop_sentences(text: str, *, final: bool) -> tuple[list[str], str]:
+        """Split complete sentences off ``text`` on full stops.
+
+        Decimals and ellipses stay inside a sentence. While the text may still
+        grow (``final`` false), a full stop at its very end is held back, since
+        the next character decides whether it ends the sentence.
+        """
         chunks: list[str] = []
         start = 0
         for idx, char in enumerate(text):
             if char != ".":
                 continue
+            if idx + 1 >= len(text) and not final:
+                break
             if (idx > 0 and text[idx - 1] == ".") or (idx + 1 < len(text) and text[idx + 1] == "."):
                 continue
             if (
@@ -424,12 +549,40 @@ class ConversationPipeline:
             if sentence:
                 chunks.append(sentence)
             start = idx + 1
+        return chunks, text[start:]
 
-        tail = text[start:].strip()
+    @staticmethod
+    def _split_tts_sentences(text: str) -> list[str]:
+        """Split on full stops while preserving decimals and ellipses for speech."""
+        chunks, tail = ConversationPipeline._pop_sentences(text, final=True)
+        tail = tail.strip()
         if tail:
             chunks.append(tail)
-
         return [chunk for chunk in chunks if any(char.isalnum() for char in chunk)]
+
+    @staticmethod
+    def _clause_cut(text: str) -> int | None:
+        """Where to cut an over-long sentence: after the last clause mark within the limit,
+        else after the first one beyond it."""
+        marks = [match.end() for match in _CLAUSE_RE.finditer(text)]
+        within = [end for end in marks if end <= LONG_SENTENCE_CHARS]
+        if within:
+            return within[-1]
+        return marks[0] if marks else None
+
+    @staticmethod
+    def _split_long(text: str) -> list[str]:
+        """Break a sentence longer than the limit at clause punctuation."""
+        pieces: list[str] = []
+        rest = text.strip()
+        while len(rest) > LONG_SENTENCE_CHARS:
+            cut = ConversationPipeline._clause_cut(rest)
+            if cut is None or not rest[:cut].strip() or not rest[cut:].strip():
+                break
+            pieces.append(rest[:cut].strip())
+            rest = rest[cut:].strip()
+        pieces.append(rest)
+        return pieces
 
     async def _synthesize_and_send_response(
         self,
@@ -521,7 +674,7 @@ class ConversationPipeline:
 
         try:
             full_response = ""
-            llm_stream = await self.llm.chat(messages, stream=True)
+            llm_stream = await self.llm.chat(messages, stream=True, **self._effort_kwargs())
             async for chunk in llm_stream:
                 token = self._stream_text(chunk)
                 full_response += token
@@ -775,17 +928,27 @@ class ConversationPipeline:
                     "tool_executor": execute_memory_tool,
                     "fallback_messages": fallback_messages,
                 }
-            llm_stream = await self.llm.chat(messages, stream=True, **memory_kwargs)
+            speech = _StreamedSpeech(
+                self,
+                ws,
+                tagged=self._tagged_lines,
+                target_code=get_iso639(self._target_language),
+            )
+            llm_stream = await self.llm.chat(
+                messages, stream=True, **self._effort_kwargs(), **memory_kwargs
+            )
             try:
                 async for chunk in llm_stream:
                     if isinstance(chunk, LLMToolResultEvent):
                         memory_updated = memory_updated or chunk.result.content.get("saved") is True
                         continue
                     if isinstance(chunk, LLMStreamReset):
-                        full_response = ""
+                        speech.reset()
                         continue
-                    token = self._stream_text(chunk)
-                    full_response += token
+                    await speech.feed(self._stream_text(chunk))
+                    if speech.send_aborted:
+                        break
+                await speech.finish()
             finally:
                 memory_updated = memory_updated or any(
                     result.content.get("saved") is True
@@ -793,35 +956,56 @@ class ConversationPipeline:
                 )
                 if memory_updated:
                     await self._send_memory_updated(ws, turn_id)
+
             llm_ms = (time.perf_counter() - llm_t0) * 1000
 
-            clean_full_response = self._extract_speech_text(full_response)
-            spoken_lines = None
+            clean_full_response = self._extract_speech_text(speech.full_response)
             history_text = clean_full_response
+            spoken_lines = None
+            replay = False
             if self._tagged_lines:
-                spoken_lines = await self._build_spoken_lines(messages, clean_full_response)
+                if speech.buffered or not speech.lines:
+                    # Nothing was heard yet: validate, rewrite or retry the whole reply.
+                    spoken_lines = await self._build_spoken_lines(messages, clean_full_response)
+                    replay = True
+                else:
+                    spoken_lines = speech.lines
                 clean_full_response = display_text(spoken_lines)
                 history_text = self._tagged_text(spoken_lines)
+            transcript_payload = {
+                "type": "transcript",
+                "role": "assistant",
+                "text": clean_full_response,
+                "final": True,
+                "turn_id": turn_id,
+            }
             if clean_full_response:
                 tts_send_t0 = time.perf_counter()
-                (
-                    tts_chunks_sent,
-                    tts_bytes,
-                    assistant_transcript_sent,
-                    send_aborted,
-                ) = await self._synthesize_and_send_response(
-                    ws,
-                    text=clean_full_response,
-                    turn_id=turn_id,
-                    transcript_payload={
-                        "type": "transcript",
-                        "role": "assistant",
-                        "text": clean_full_response,
-                        "final": True,
-                        "turn_id": turn_id,
-                    },
-                    lines=spoken_lines,
-                )
+                if replay:
+                    (
+                        tts_chunks_sent,
+                        tts_bytes,
+                        assistant_transcript_sent,
+                        send_aborted,
+                    ) = await self._synthesize_and_send_response(
+                        ws,
+                        text=clean_full_response,
+                        turn_id=turn_id,
+                        transcript_payload=transcript_payload,
+                        lines=spoken_lines,
+                    )
+                else:
+                    tts_chunks_sent, tts_bytes = speech.chunks_sent, speech.audio_bytes
+                    send_aborted = speech.send_aborted
+                    if not send_aborted:
+                        if tts_chunks_sent == 0:
+                            logger.warning(
+                                "[pipeline] No TTS audio produced; publishing text-only "
+                                "transcript: turn_id=%s",
+                                turn_id,
+                            )
+                        await self._send_json(ws, transcript_payload)
+                        assistant_transcript_sent = True
                 tts_send_ms = (time.perf_counter() - tts_send_t0) * 1000
                 if send_aborted or not assistant_transcript_sent:
                     logger.warning(

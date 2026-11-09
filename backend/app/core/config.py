@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     OPENAI_REASONING_EFFORT: Literal[
         "", "none", "minimal", "low", "medium", "high", "xhigh", "max"
     ] = ""
+    # Reasoning effort for the local voice reply; empty means do not send.
+    VOICE_REASONING_EFFORT: str = "low"
     ANTHROPIC_API_KEY: str = ""
     ANTHROPIC_MODEL: str = "claude-3-5-haiku-latest"
     ANTHROPIC_MAX_TOKENS: int = 8192

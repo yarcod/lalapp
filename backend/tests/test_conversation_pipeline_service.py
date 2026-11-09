@@ -18,7 +18,12 @@ from app.services.conversation_pipeline import (
     ConversationPipeline,
     _build_conversation_system_prompt,
 )
-from app.services.llm_adapter import LLMError, LLMTimeoutError, LLMUnavailableError
+from app.services.llm_adapter import (
+    LLMError,
+    LLMStreamReset,
+    LLMTimeoutError,
+    LLMUnavailableError,
+)
 from app.services.prompts.common import TUTOR_DISPLAY_NAME
 
 # ---------------------------------------------------------------------------
@@ -2164,6 +2169,179 @@ async def test_history_keeps_tags_for_next_turn() -> None:
         "content": "[sv] Säg så här.\n[en] Good morning.",
     } in second_messages
     assert _assistant_transcripts(ws)[0]["text"] == "Säg så här. Good morning."
+
+
+# ---------------------------------------------------------------------------
+# Streamed speech
+# ---------------------------------------------------------------------------
+
+
+def _audio_count(ws: FakeWS) -> int:
+    return [kind for kind, _ in ws.sent].count("bytes")
+
+
+@pytest.mark.asyncio
+async def test_first_line_audio_before_stream_ends() -> None:
+    pipeline = _tagged_pipeline()
+    pipeline.stt.transcribe = AsyncMock(return_value="Hej")
+    pipeline.tts.synthesize = AsyncMock(return_value=b"audio")
+    ws = FakeWS()
+    audio_when_second_line_requested: list[int] = []
+
+    async def gen():
+        yield _make_chunk("[sv] Hej där.\n[en] Hel")
+        audio_when_second_line_requested.append(_audio_count(ws))
+        yield _make_chunk("lo.\n[sv] Bra!")
+
+    pipeline.llm.chat = AsyncMock(return_value=gen())
+    await pipeline._process(b"audio", ws)
+
+    assert audio_when_second_line_requested == [1]
+    assert [c.args for c in pipeline.tts.synthesize.await_args_list] == [
+        ("Hej där.", None, "sv"),
+        ("Hello.", None, "en"),
+        ("Bra!", None, "sv"),
+    ]
+    assert _assistant_transcripts(ws)[0]["text"] == "Hej där. Hello. Bra!"
+    assert pipeline.history[-1]["content"] == "[sv] Hej där.\n[en] Hello.\n[sv] Bra!"
+    assert "turn_complete" in ws.types()
+
+
+@pytest.mark.asyncio
+async def test_untagged_sentence_audio_before_stream_ends() -> None:
+    pipeline = _make_pipeline()
+    pipeline.stt.transcribe = AsyncMock(return_value="Hi")
+    pipeline.tts.synthesize = AsyncMock(return_value=b"audio")
+    ws = FakeWS()
+    seen: list[int] = []
+
+    async def gen():
+        yield _make_chunk("First sentence. Seco")
+        seen.append(_audio_count(ws))
+        yield _make_chunk("nd one")
+        seen.append(_audio_count(ws))
+        yield _make_chunk(".")
+
+    pipeline.llm.chat = AsyncMock(return_value=gen())
+    await pipeline._process(b"audio", ws)
+
+    assert seen == [1, 1]
+    assert [c.args[0] for c in pipeline.tts.synthesize.await_args_list] == [
+        "First sentence.",
+        "Second one.",
+    ]
+    assert _assistant_transcripts(ws)[0]["text"] == "First sentence. Second one."
+
+
+@pytest.mark.asyncio
+async def test_stream_splits_long_sentence() -> None:
+    pipeline = _make_pipeline()
+    pipeline.stt.transcribe = AsyncMock(return_value="Hi")
+    pipeline.tts.synthesize = AsyncMock(return_value=b"audio")
+    ws = FakeWS()
+    first = "word " * 20 + "one, "
+    second = "word " * 10 + "two, "
+    third = "word " * 8 + "end."
+    seen: list[int] = []
+
+    async def gen():
+        yield _make_chunk(first)
+        yield _make_chunk(second)
+        seen.append(_audio_count(ws))
+        yield _make_chunk(third)
+
+    pipeline.llm.chat = AsyncMock(return_value=gen())
+    await pipeline._process(b"audio", ws)
+
+    texts = [c.args[0] for c in pipeline.tts.synthesize.await_args_list]
+    assert seen == [1]
+    assert len(texts) >= 2
+    assert texts[0].endswith("one,")
+    assert all(len(text) <= 140 + 30 for text in texts)
+    assert " ".join(texts) == (first + second + third).strip()
+
+
+@pytest.mark.asyncio
+async def test_invalid_line_after_audio_goes_to_screen_without_rewrite() -> None:
+    pipeline = _tagged_pipeline()
+    pipeline.stt.transcribe = AsyncMock(return_value="Hej")
+    pipeline.tts.synthesize = AsyncMock(return_value=b"audio")
+    pipeline.llm.chat = AsyncMock(
+        return_value=_stream_of('[sv] Hej!\n[sv] Ordet "apple" betyder äpple.\n[sv] Bra!')
+    )
+    ws = FakeWS()
+    await pipeline._process(b"audio", ws)
+
+    assert pipeline.llm.chat.await_count == 1
+    assert [c.args[0] for c in pipeline.tts.synthesize.await_args_list] == ["Hej!", "Bra!"]
+    assert _assistant_transcripts(ws)[0]["text"] == 'Hej! Ordet "apple" betyder äpple. Bra!'
+    assert pipeline.history[-1]["content"] == (
+        '[sv] Hej!\n[screen] Ordet "apple" betyder äpple.\n[sv] Bra!'
+    )
+
+
+@pytest.mark.asyncio
+async def test_reset_after_audio_keeps_played_text_and_speaks_new_reply() -> None:
+    pipeline = _make_pipeline()
+    pipeline.stt.transcribe = AsyncMock(return_value="Hi")
+    pipeline.tts.synthesize = AsyncMock(return_value=b"audio")
+
+    async def gen():
+        yield "Old played sentence. Old unspoken tail"
+        yield LLMStreamReset()
+        yield "New reply."
+
+    pipeline.llm.chat = AsyncMock(return_value=gen())
+    ws = FakeWS()
+    await pipeline._process(b"audio", ws)
+
+    assert [c.args[0] for c in pipeline.tts.synthesize.await_args_list] == [
+        "Old played sentence.",
+        "New reply.",
+    ]
+    assert _assistant_transcripts(ws)[0]["text"] == "Old played sentence. New reply."
+    assert "turn_complete" in ws.types()
+
+
+@pytest.mark.asyncio
+async def test_reset_before_audio_discards_everything_old() -> None:
+    pipeline = _make_pipeline()
+    pipeline.stt.transcribe = AsyncMock(return_value="Hi")
+    pipeline.tts.synthesize = AsyncMock(return_value=b"audio")
+
+    async def gen():
+        yield "Old unfinished"
+        yield LLMStreamReset()
+        yield "New reply."
+
+    pipeline.llm.chat = AsyncMock(return_value=gen())
+    ws = FakeWS()
+    await pipeline._process(b"audio", ws)
+
+    assert [c.args[0] for c in pipeline.tts.synthesize.await_args_list] == ["New reply."]
+    assert _assistant_transcripts(ws)[0]["text"] == "New reply."
+
+
+@pytest.mark.asyncio
+async def test_voice_reply_requests_configured_reasoning_effort(monkeypatch) -> None:
+    monkeypatch.setattr("app.core.config.settings.VOICE_REASONING_EFFORT", "low")
+    pipeline = _make_pipeline()
+    pipeline.stt.transcribe = AsyncMock(return_value="Hi")
+    pipeline.tts.synthesize = AsyncMock(return_value=b"audio")
+    pipeline.llm.chat = AsyncMock(return_value=_stream_of("Hello."))
+    await pipeline._process(b"audio", FakeWS())
+    assert pipeline.llm.chat.call_args.kwargs["reasoning_effort"] == "low"
+
+
+@pytest.mark.asyncio
+async def test_voice_reply_sends_no_reasoning_effort_when_unset(monkeypatch) -> None:
+    monkeypatch.setattr("app.core.config.settings.VOICE_REASONING_EFFORT", "")
+    pipeline = _make_pipeline()
+    pipeline.stt.transcribe = AsyncMock(return_value="Hi")
+    pipeline.tts.synthesize = AsyncMock(return_value=b"audio")
+    pipeline.llm.chat = AsyncMock(return_value=_stream_of("Hello."))
+    await pipeline._process(b"audio", FakeWS())
+    assert "reasoning_effort" not in pipeline.llm.chat.call_args.kwargs
 
 
 # ---------------------------------------------------------------------------

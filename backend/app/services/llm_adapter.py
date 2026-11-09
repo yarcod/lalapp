@@ -301,6 +301,10 @@ class AnthropicLLMStream(LLMStream):
             self.total_tokens = (self.prompt_tokens or 0) + (self.completion_tokens or 0)
 
 
+def _effort_kwargs(reasoning_effort: str | None) -> dict:
+    return {"reasoning_effort": reasoning_effort} if reasoning_effort else {}
+
+
 class LLMToolStream(LLMStream):
     """Normalize provider streams and execute at most one native-tool round."""
 
@@ -314,8 +318,10 @@ class LLMToolStream(LLMStream):
         *,
         using_fallback: bool = False,
         tools_unsupported: bool = False,
+        reasoning_effort: str | None = None,
     ) -> None:
         super().__init__(stream)
+        self._reasoning_effort = reasoning_effort
         self._adapter = adapter
         self._messages = messages
         self._fallback_messages = fallback_messages
@@ -508,6 +514,7 @@ class LLMToolStream(LLMStream):
                 self._fallback_messages,
                 True,
                 None,
+                **_effort_kwargs(self._reasoning_effort),
             )
             async with aclosing(self._fallback_text(fallback)) as fallback_parts:
                 async for text in fallback_parts:
@@ -534,6 +541,7 @@ class LLMToolStream(LLMStream):
                 self._fallback_messages,
                 True,
                 None,
+                **_effort_kwargs(self._reasoning_effort),
             )
             async with aclosing(self._fallback_text(fallback)) as fallback_parts:
                 async for text in fallback_parts:
@@ -580,7 +588,7 @@ class LLMToolStream(LLMStream):
                 self._adapter._do_chat,
                 continuation_messages,
                 True,
-                None,
+                None,                **_effort_kwargs(self._reasoning_effort),
             )
             async with aclosing(
                 self._provider_text_and_calls(continuation, collect_calls=False)
@@ -611,6 +619,7 @@ class LLMToolStream(LLMStream):
                 self._fallback_messages,
                 True,
                 None,
+                **_effort_kwargs(self._reasoning_effort),
             )
             async with aclosing(self._fallback_text(fallback)) as fallback_parts:
                 async for text in fallback_parts:
@@ -690,6 +699,7 @@ class LLMAdapter:
         tools: list[LLMTool] | None = None,
         tool_executor: ToolExecutor | None = None,
         fallback_messages: list[dict] | None = None,
+        reasoning_effort: str | None = None,
     ) -> str | LLMStream:
         if tools and (not stream or tool_executor is None):
             raise ValueError("Native tools require streaming and a tool executor")
@@ -703,6 +713,7 @@ class LLMAdapter:
                 stream,
                 tools,
                 tools_requested=bool(tools),
+                **_effort_kwargs(reasoning_effort),
             )
         except LLMToolsUnsupportedError as exc:
             logger.info(
@@ -715,7 +726,7 @@ class LLMAdapter:
                 self._do_chat,
                 messages_without_tools,
                 stream,
-                None,
+                None,                **_effort_kwargs(reasoning_effort),
             )
             tools_unsupported = True
             using_fallback = True
@@ -733,7 +744,7 @@ class LLMAdapter:
                 self._do_chat,
                 messages_without_tools,
                 stream,
-                None,
+                None,                **_effort_kwargs(reasoning_effort),
             )
             using_fallback = True
         if not stream:
@@ -747,6 +758,7 @@ class LLMAdapter:
                 tool_executor,
                 using_fallback=using_fallback,
                 tools_unsupported=tools_unsupported,
+                reasoning_effort=reasoning_effort,
             )
         if self.provider == "anthropic":
             return AnthropicLLMStream(result)
@@ -762,6 +774,7 @@ class LLMAdapter:
         *,
         request_timeout: float = REQUEST_TIMEOUT,
         sdk_max_retries: int | None = None,
+        reasoning_effort: str | None = None,
     ):
         if self.provider == "anthropic":
             if request_timeout != REQUEST_TIMEOUT:
@@ -785,6 +798,9 @@ class LLMAdapter:
         extra: dict = {}
         if stream:
             extra["stream_options"] = {"include_usage": True}
+        # DeepSeek shares this path but has its own reasoning controls.
+        if reasoning_effort and self.provider == "ollama":
+            extra["reasoning_effort"] = reasoning_effort
         if tools:
             extra["tools"] = [
                 {
