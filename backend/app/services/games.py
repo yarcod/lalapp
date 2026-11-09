@@ -408,7 +408,12 @@ GAMES_NEEDED = 5
 def build_challenge(draft: DetectiveDraft) -> DetectiveChallenge:
     """Split the sentence around wrong_part and shuffle the options; raises ValueError if unusable."""
     sentence, wrong = draft.sentence, draft.wrong_part
-    starts = [m.start() for m in re.finditer(f"(?={re.escape(wrong)})", sentence)]
+    # Spaced scripts must match whole words; unspaced text (CJK) has no word boundaries to use.
+    bounded = any(ch.isspace() for ch in sentence)
+    pattern = re.escape(wrong)
+    if bounded:
+        pattern = rf"(?<!\w){pattern}(?!\w)"
+    starts = [m.start() for m in re.finditer(f"(?={pattern})", sentence)]
     if len(starts) != 1:
         raise ValueError("wrong_part must occur exactly once in the sentence")
     if draft.correct_part == wrong:

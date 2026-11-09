@@ -692,3 +692,26 @@ async def test_child_flag_reaches_prompt_and_session(db_session, test_user_with_
 
     assert child_instruction() in mocked.call_args_list[0].args[0][0]["content"]
     assert mocked.call_args_list[0].args[1] is DetectiveDraftContent
+
+
+def test_mid_word_match_is_dropped():
+    draft = DetectiveDraft(
+        **draft_dict(
+            0,
+            sentence="He doesn't like it.",
+            wrong_part="do",
+            correct_part="does",
+            wrong_options=["did", "done"],
+        )
+    )
+    with pytest.raises(ValueError):
+        games.build_challenge(draft)
+
+
+def test_bounded_match_beside_longer_word_is_kept():
+    draft = DetectiveDraft(
+        **draft_dict(0, sentence="She go to school, going home.", wrong_part="go")
+    )
+    challenge = games.build_challenge(draft)
+    assert challenge.fragments[challenge.error_index] == "go"
+    assert challenge.corrected_sentence == "She goes to school, going home."
