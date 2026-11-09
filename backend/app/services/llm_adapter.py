@@ -588,7 +588,8 @@ class LLMToolStream(LLMStream):
                 self._adapter._do_chat,
                 continuation_messages,
                 True,
-                None,                **_effort_kwargs(self._reasoning_effort),
+                None,
+                **_effort_kwargs(self._reasoning_effort),
             )
             async with aclosing(
                 self._provider_text_and_calls(continuation, collect_calls=False)
@@ -726,7 +727,8 @@ class LLMAdapter:
                 self._do_chat,
                 messages_without_tools,
                 stream,
-                None,                **_effort_kwargs(reasoning_effort),
+                None,
+                **_effort_kwargs(reasoning_effort),
             )
             tools_unsupported = True
             using_fallback = True
@@ -744,7 +746,8 @@ class LLMAdapter:
                 self._do_chat,
                 messages_without_tools,
                 stream,
-                None,                **_effort_kwargs(reasoning_effort),
+                None,
+                **_effort_kwargs(reasoning_effort),
             )
             using_fallback = True
         if not stream:

@@ -106,8 +106,16 @@ class _StreamedSpeech:
     """
 
     def __init__(
-        self, pipeline: ConversationPipeline, ws: WebSocket, *, tagged: bool, target_code: str
+        self,
+        pipeline: ConversationPipeline,
+        ws: WebSocket,
+        *,
+        tagged: bool,
+        target_code: str,
+        turn_id: int,
     ) -> None:
+        self._turn_id = turn_id
+        self._heard: list[str] = []
         self._pipeline = pipeline
         self._ws = ws
         self._tagged = tagged
@@ -125,6 +133,7 @@ class _StreamedSpeech:
         if self.chunks_sent == 0:
             self.full_response = ""
             self.lines = []
+            self._heard = []
             self.buffered = False
         else:
             self.full_response = self.full_response[: len(self.full_response) - len(self._buffer)]
@@ -180,6 +189,7 @@ class _StreamedSpeech:
 
     async def _speak_sentence(self, text: str, language: str | None) -> None:
         for sentence in ConversationPipeline._split_tts_sentences(text):
+            self._heard.append(sentence)
             for piece in ConversationPipeline._split_long(sentence):
                 await self._speak(piece, language)
 
@@ -201,6 +211,17 @@ class _StreamedSpeech:
             return
         self.chunks_sent += 1
         self.audio_bytes += len(audio)
+        shown = display_text(self.lines) if self._tagged else " ".join(self._heard)
+        await self._pipeline._send_json(
+            self._ws,
+            {
+                "type": "transcript",
+                "role": "assistant",
+                "text": shown,
+                "final": False,
+                "turn_id": self._turn_id,
+            },
+        )
 
 
 class ConversationPipeline:
@@ -933,12 +954,14 @@ class ConversationPipeline:
                 ws,
                 tagged=self._tagged_lines,
                 target_code=get_iso639(self._target_language),
+                turn_id=turn_id,
             )
             llm_stream = await self.llm.chat(
                 messages, stream=True, **self._effort_kwargs(), **memory_kwargs
             )
+            chunks = aiter(llm_stream)
             try:
-                async for chunk in llm_stream:
+                async for chunk in chunks:
                     if isinstance(chunk, LLMToolResultEvent):
                         memory_updated = memory_updated or chunk.result.content.get("saved") is True
                         continue
@@ -950,6 +973,9 @@ class ConversationPipeline:
                         break
                 await speech.finish()
             finally:
+                aclose = getattr(chunks, "aclose", None)
+                if aclose is not None:
+                    await aclose()
                 memory_updated = memory_updated or any(
                     result.content.get("saved") is True
                     for result in getattr(llm_stream, "tool_results", [])

@@ -276,7 +276,9 @@ async def test_voice_tts_never_requests_punctuation_only_fragments(
         transcripts = [
             message
             for message in ws.json_messages()
-            if message.get("type") == "transcript" and message.get("role") == "assistant"
+            if message.get("type") == "transcript"
+            and message.get("role") == "assistant"
+            and message.get("final")
         ]
         assert transcripts[0]["text"] == response
         assert "turn_complete" in ws.types()
@@ -314,7 +316,9 @@ async def test_voice_tts_preserves_decimal_numbers_within_sentences(entrypoint, 
         assistant_transcripts = [
             message
             for message in ws.json_messages()
-            if message.get("type") == "transcript" and message.get("role") == "assistant"
+            if message.get("type") == "transcript"
+            and message.get("role") == "assistant"
+            and message.get("final")
         ]
         assert assistant_transcripts[0]["text"] == response
         assert "turn_complete" in ws.types()
@@ -1146,7 +1150,9 @@ async def test_process_discards_partial_text_after_tool_stream_reset() -> None:
     assistant_transcripts = [
         message
         for message in ws.json_messages()
-        if message.get("type") == "transcript" and message.get("role") == "assistant"
+        if message.get("type") == "transcript"
+            and message.get("role") == "assistant"
+            and message.get("final")
     ]
     assert assistant_transcripts[0]["text"] == "Complete normal response."
     assert pipeline.history[-1]["content"] == "Complete normal response."
@@ -1977,12 +1983,17 @@ def _stream_of(text: str):
     return gen()
 
 
-def _assistant_transcripts(ws: FakeWS) -> list[dict]:
+def _assistant_updates(ws: FakeWS) -> list[dict]:
+    """Every assistant transcript message, partial (final false) and final."""
     return [
         m
         for m in ws.json_messages()
         if m.get("type") == "transcript" and m.get("role") == "assistant"
     ]
+
+
+def _assistant_transcripts(ws: FakeWS) -> list[dict]:
+    return [m for m in _assistant_updates(ws) if m["final"]]
 
 
 @pytest.mark.asyncio
@@ -2205,6 +2216,32 @@ async def test_first_line_audio_before_stream_ends() -> None:
     assert _assistant_transcripts(ws)[0]["text"] == "Hej där. Hello. Bra!"
     assert pipeline.history[-1]["content"] == "[sv] Hej där.\n[en] Hello.\n[sv] Bra!"
     assert "turn_complete" in ws.types()
+
+
+@pytest.mark.asyncio
+async def test_transcript_visible_after_first_audio_before_stream_ends() -> None:
+    pipeline = _make_pipeline()
+    pipeline.stt.transcribe = AsyncMock(return_value="Hi")
+    pipeline.tts.synthesize = AsyncMock(return_value=b"audio")
+    ws = FakeWS()
+    seen: list[list[dict]] = []
+
+    async def gen():
+        yield _make_chunk("First sentence. Seco")
+        seen.append(_assistant_updates(ws))
+        yield _make_chunk("nd one.")
+
+    pipeline.llm.chat = AsyncMock(return_value=gen())
+    await pipeline._process(b"audio", ws)
+
+    assert [(m["text"], m["final"]) for m in seen[0]] == [("First sentence.", False)]
+    kinds = [(m["text"], m["final"]) for m in _assistant_updates(ws)]
+    assert kinds[-1] == ("First sentence. Second one.", True)
+    first_audio = next(i for i, (k, _) in enumerate(ws.sent) if k == "bytes")
+    first_text = next(
+        i for i, (k, d) in enumerate(ws.sent) if k == "json" and d.get("role") == "assistant"
+    )
+    assert first_audio < first_text
 
 
 @pytest.mark.asyncio
