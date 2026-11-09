@@ -32,6 +32,13 @@ from app.services.memory_service import (
 from app.services.prompts.common import get_language_prompt_overlay
 from app.services.prompts.tutor import build_conversation_system_prompt
 from app.services.quota_service import record_session_seconds
+from app.services.spoken_lines import (
+    SCREEN,
+    SpokenLine,
+    display_text,
+    invalid_swedish_lines,
+    parse_reply,
+)
 from app.utils.db import db_session
 
 if TYPE_CHECKING:
@@ -41,6 +48,13 @@ logger = get_logger(__name__)
 
 TTS_MAX_RETRIES = 1
 TTS_RETRY_DELAY_SECONDS = 0.2
+
+TAGGED_LEVELS = frozenset({"A1", "A2"})
+REWRITE_REQUEST = (
+    "Rewrite your last reply. Every [sv] line must be plain Swedish with no English or Spanish "
+    "words and no quoted words. Put target-language words on their own [en] or [es] line, or on a "
+    "[screen] line. Keep the same tags and send only the rewritten reply."
+)
 
 WARNING_ADVANCE_SECONDS = 60  # How many seconds before timeout to send the warning
 
@@ -103,6 +117,9 @@ class ConversationPipeline:
         self._voice = voice
         self._stt_language = get_iso639(target_language)
         self._target_language = target_language
+        self._tagged_lines = (
+            native_language.lower().split("-")[0] == "sv" and cefr_level.upper() in TAGGED_LEVELS
+        )
         self._user_id = user_id
         self._conversation_id = conversation_id
         self._study_plan_id = study_plan_id
@@ -218,6 +235,34 @@ class ConversationPipeline:
     def _extract_speech_text(raw_text: str) -> str:
         return ConversationPipeline._clean_sentence(raw_text).strip()
 
+    async def _build_spoken_lines(self, messages: list[dict], reply: str) -> list[SpokenLine]:
+        """Parse a tagged reply; ask for one rewrite of invalid Swedish, then move the rest."""
+        target_code = get_iso639(self._target_language)
+        lines = parse_reply(reply, target_code)
+        invalid = invalid_swedish_lines(lines)
+        if not invalid:
+            return lines
+        rewritten = ""
+        try:
+            stream = await self.llm.chat(
+                [
+                    *messages,
+                    {"role": "assistant", "content": reply},
+                    {"role": "user", "content": REWRITE_REQUEST},
+                ],
+                stream=True,
+            )
+            async for chunk in stream:
+                rewritten += self._stream_text(chunk)
+        except LLMError as exc:
+            logger.warning("[pipeline] Swedish rewrite failed: %s", self._fmt_exc(exc))
+        if rewritten.strip():
+            lines = parse_reply(rewritten.strip(), target_code)
+        for line in invalid_swedish_lines(lines):
+            line.language = SCREEN
+            line.spoken = False
+        return lines
+
     @staticmethod
     def _stream_text(chunk: object) -> str:
         if isinstance(chunk, str):
@@ -269,7 +314,7 @@ class ConversationPipeline:
         async with self._send_lock:
             await ws.close(code=code)
 
-    async def _synthesize_chunk(self, text: str) -> bytes:
+    async def _synthesize_chunk(self, text: str, language: str | None = None) -> bytes:
         attempts = TTS_MAX_RETRIES + 1
         trace_id = uuid.uuid4().hex[:10]
         logger.info(
@@ -286,7 +331,9 @@ class ConversationPipeline:
                     attempt,
                     attempts,
                 )
-                audio = await self.tts.synthesize(text, self._voice or None, self._target_language)
+                audio = await self.tts.synthesize(
+                    text, self._voice or None, language or self._target_language
+                )
                 if not audio:
                     raise RuntimeError("TTS returned empty audio payload")
                 return audio
@@ -366,16 +413,31 @@ class ConversationPipeline:
         text: str,
         turn_id: int,
         transcript_payload: dict,
+        lines: list[SpokenLine] | None = None,
     ) -> tuple[int, int, bool, bool]:
-        """Synthesize ordered sentence chunks and send the transcript after first audio."""
+        """Synthesize ordered sentence chunks and send the transcript after first audio.
+
+        With ``lines``, each spoken line is synthesized in its own language and
+        ``[screen]`` lines are skipped.
+        """
         chunks_sent = 0
         audio_bytes_sent = 0
         transcript_sent = False
         send_aborted = False
 
-        for idx, sentence in enumerate(self._split_tts_sentences(text), start=1):
+        if lines is None:
+            items = [(sentence, None) for sentence in self._split_tts_sentences(text)]
+        else:
+            items = [
+                (sentence, line.language)
+                for line in lines
+                if line.spoken
+                for sentence in self._split_tts_sentences(line.text)
+            ]
+
+        for idx, (sentence, language) in enumerate(items, start=1):
             try:
-                audio = await self._synthesize_chunk(sentence)
+                audio = await self._synthesize_chunk(sentence, language)
             except asyncio.CancelledError:
                 raise
             except Exception as exc:
@@ -439,6 +501,10 @@ class ConversationPipeline:
                 token = self._stream_text(chunk)
                 full_response += token
             clean_full_response = self._extract_speech_text(full_response)
+            spoken_lines = None
+            if clean_full_response and self._tagged_lines:
+                spoken_lines = await self._build_spoken_lines(messages, clean_full_response)
+                clean_full_response = display_text(spoken_lines)
             if not clean_full_response:
                 return
             await self._send_status(ws, turn_id, "thinking")
@@ -459,6 +525,7 @@ class ConversationPipeline:
                     "final": True,
                     "turn_id": turn_id,
                 },
+                lines=spoken_lines,
             )
             if send_aborted or not transcript_sent:
                 return
@@ -696,6 +763,10 @@ class ConversationPipeline:
             llm_ms = (time.perf_counter() - llm_t0) * 1000
 
             clean_full_response = self._extract_speech_text(full_response)
+            spoken_lines = None
+            if clean_full_response and self._tagged_lines:
+                spoken_lines = await self._build_spoken_lines(messages, clean_full_response)
+                clean_full_response = display_text(spoken_lines)
             if clean_full_response:
                 tts_send_t0 = time.perf_counter()
                 (
@@ -714,6 +785,7 @@ class ConversationPipeline:
                         "final": True,
                         "turn_id": turn_id,
                     },
+                    lines=spoken_lines,
                 )
                 tts_send_ms = (time.perf_counter() - tts_send_t0) * 1000
                 if send_aborted or not assistant_transcript_sent:

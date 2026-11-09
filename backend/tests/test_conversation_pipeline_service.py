@@ -276,9 +276,9 @@ async def test_voice_tts_never_requests_punctuation_only_fragments(
         assert "turn_complete" in ws.types()
         synthesis_inputs = [call.args[0] for call in pipeline.tts.synthesize.await_args_list]
         assert synthesis_inputs == expected_inputs
-        assert all(
-            any(char.isalnum() for char in text) for text in synthesis_inputs
-        ), synthesis_inputs
+        assert all(any(char.isalnum() for char in text) for text in synthesis_inputs), (
+            synthesis_inputs
+        )
         assert len([kind for kind, _ in ws.sent if kind == "bytes"]) == len(expected_inputs)
         assert pipeline.history[-1] == {"role": "assistant", "content": response}
     finally:
@@ -1944,3 +1944,166 @@ async def test_process_no_llm_output_sends_turn_complete() -> None:
 
     types = ws.types()
     assert "turn_complete" in types
+
+
+# ---------------------------------------------------------------------------
+# Tagged spoken lines (Swedish native, A1/A2)
+# ---------------------------------------------------------------------------
+
+
+def _tagged_pipeline() -> ConversationPipeline:
+    return ConversationPipeline(
+        llm=AsyncMock(),
+        tts=AsyncMock(),
+        stt=AsyncMock(),
+        cefr_level="A1",
+        native_language="sv",
+        target_language="en-GB",
+        max_duration=1800,
+        inactivity_timeout=180,
+    )
+
+
+def _stream_of(text: str):
+    async def gen():
+        yield _make_chunk(text)
+
+    return gen()
+
+
+def _assistant_transcripts(ws: FakeWS) -> list[dict]:
+    return [
+        m
+        for m in ws.json_messages()
+        if m.get("type") == "transcript" and m.get("role") == "assistant"
+    ]
+
+
+@pytest.mark.asyncio
+async def test_pipeline_speaks_each_line_in_its_language() -> None:
+    pipeline = _tagged_pipeline()
+    pipeline.stt.transcribe = AsyncMock(return_value="Hej")
+    calls: list[tuple[str, str | None]] = []
+
+    async def synth(text, voice, lang):
+        calls.append((text, lang))
+        return b"audio"
+
+    pipeline.tts.synthesize = synth
+    pipeline.llm.chat = AsyncMock(
+        return_value=_stream_of("[sv] Säg så här.\n[en] Good morning.\n[screen] God morgon")
+    )
+    ws = FakeWS()
+    await pipeline._process(b"audio", ws)
+
+    assert calls == [("Säg så här.", "sv"), ("Good morning.", "en")]
+    assert _assistant_transcripts(ws)[0]["text"] == "Säg så här. Good morning. God morgon"
+    assert pipeline.history[-1]["content"] == "Säg så här. Good morning. God morgon"
+    assert "turn_complete" in ws.types()
+
+
+@pytest.mark.asyncio
+async def test_pipeline_rewrites_once_then_moves_to_screen() -> None:
+    pipeline = _tagged_pipeline()
+    pipeline.stt.transcribe = AsyncMock(return_value="Hej")
+    calls: list[tuple[str, str | None]] = []
+
+    async def synth(text, voice, lang):
+        calls.append((text, lang))
+        return b"audio"
+
+    pipeline.tts.synthesize = synth
+    pipeline.llm.chat = AsyncMock(
+        side_effect=[
+            _stream_of('[sv] Ordet "apple" betyder äpple.\n[sv] Bra!'),
+            _stream_of('[sv] Säg "apple" nu.\n[sv] Bra!'),
+        ]
+    )
+    ws = FakeWS()
+    await pipeline._process(b"audio", ws)
+
+    assert pipeline.llm.chat.await_count == 2
+    rewrite_messages = pipeline.llm.chat.await_args_list[1].args[0]
+    assert rewrite_messages[-2]["role"] == "assistant"
+    assert rewrite_messages[-1]["role"] == "user"
+    assert calls == [("Bra!", "sv")]
+    assert _assistant_transcripts(ws)[0]["text"] == 'Säg "apple" nu. Bra!'
+
+
+@pytest.mark.asyncio
+async def test_pipeline_rewrite_that_fixes_the_line_is_spoken() -> None:
+    pipeline = _tagged_pipeline()
+    pipeline.stt.transcribe = AsyncMock(return_value="Hej")
+    calls: list[tuple[str, str | None]] = []
+
+    async def synth(text, voice, lang):
+        calls.append((text, lang))
+        return b"audio"
+
+    pipeline.tts.synthesize = synth
+    pipeline.llm.chat = AsyncMock(
+        side_effect=[
+            _stream_of('[sv] Ordet "apple" betyder äpple.'),
+            _stream_of("[sv] Nu ska du säga ordet.\n[en] Apple."),
+        ]
+    )
+    ws = FakeWS()
+    await pipeline._process(b"audio", ws)
+
+    assert calls == [("Nu ska du säga ordet.", "sv"), ("Apple.", "en")]
+
+
+@pytest.mark.asyncio
+async def test_pipeline_all_screen_reply_completes_without_audio() -> None:
+    pipeline = _tagged_pipeline()
+    pipeline.stt.transcribe = AsyncMock(return_value="Hej")
+    pipeline.tts.synthesize = AsyncMock(return_value=b"audio")
+    pipeline.llm.chat = AsyncMock(return_value=_stream_of("[screen] Rätt: I am"))
+    ws = FakeWS()
+    await pipeline._process(b"audio", ws)
+
+    pipeline.tts.synthesize.assert_not_awaited()
+    assert [kind for kind, _ in ws.sent].count("bytes") == 0
+    assert _assistant_transcripts(ws)[0]["text"] == "Rätt: I am"
+    assert "turn_complete" in ws.types()
+    assert not [m for m in ws.json_messages() if m.get("type") == "error"]
+
+
+@pytest.mark.asyncio
+async def test_tts_failure_on_one_line_still_sends_transcript() -> None:
+    pipeline = _tagged_pipeline()
+    pipeline.stt.transcribe = AsyncMock(return_value="Hej")
+
+    async def synth(text, voice, lang):
+        if lang == "en":
+            raise RuntimeError("TTS unavailable")
+        return b"audio"
+
+    pipeline.tts.synthesize = synth
+    pipeline.llm.chat = AsyncMock(return_value=_stream_of("[en] Hello.\n[sv] Bra!"))
+    ws = FakeWS()
+    await pipeline._process(b"audio", ws)
+
+    assert [kind for kind, _ in ws.sent].count("bytes") == 1
+    assert _assistant_transcripts(ws)[0]["text"] == "Hello. Bra!"
+    assert "turn_complete" in ws.types()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(("level", "native"), [("B1", "sv"), ("A1", "es")])
+async def test_tagging_not_applied_at_b1_or_for_other_native_language(level, native) -> None:
+    pipeline = ConversationPipeline(
+        llm=AsyncMock(),
+        tts=AsyncMock(),
+        stt=AsyncMock(),
+        cefr_level=level,
+        native_language=native,
+        target_language="en-GB",
+    )
+    pipeline.stt.transcribe = AsyncMock(return_value="Hej")
+    pipeline.tts.synthesize = AsyncMock(return_value=b"audio")
+    pipeline.llm.chat = AsyncMock(return_value=_stream_of("[sv] Hello there."))
+    ws = FakeWS()
+    await pipeline._process(b"audio", ws)
+    pipeline.tts.synthesize.assert_awaited_once_with("[sv] Hello there.", None, "en-GB")
+    assert pipeline.llm.chat.await_count == 1

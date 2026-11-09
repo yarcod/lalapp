@@ -6,6 +6,7 @@ import httpx
 import openai
 
 from app.core.app_logger import get_logger
+from app.services.language_helpers import get_iso639
 from app.services.prompts.speech import build_speech_instructions
 
 logger = get_logger(__name__)
@@ -26,16 +27,18 @@ class KokoroTTSService:
         self, text: str, voice: str | None = None, language: str | None = None
     ) -> bytes:
         """Call Kokoro-FastAPI and return MP3 audio bytes."""
-        _ = language  # Kokoro handles language via the voice model itself
+        payload = {
+            "model": "kokoro",
+            "input": text,
+            "voice": voice or self.voice,
+            "response_format": "mp3",
+        }
+        if language:
+            payload["language"] = get_iso639(language) or language
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 f"{self.base_url}/v1/audio/speech",
-                json={
-                    "model": "kokoro",
-                    "input": text,
-                    "voice": voice or self.voice,
-                    "response_format": "mp3",
-                },
+                json=payload,
                 timeout=30.0,
             )
             response.raise_for_status()
