@@ -40,6 +40,11 @@ async def _gateway(method: str, path: str) -> SpeechSessionState:
     return SpeechSessionState(state=state)
 
 
+async def live_llm_is_small() -> bool:
+    """Whether the small LLM is the live tier: a shared GPU that also runs a game."""
+    return (await _gateway("GET", "/session/status")).state == "shared"
+
+
 @router.post("/open", response_model=SpeechSessionState)
 @limiter.limit("30/minute")
 async def open_session(

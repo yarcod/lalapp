@@ -701,11 +701,15 @@ class LLMAdapter:
         tool_executor: ToolExecutor | None = None,
         fallback_messages: list[dict] | None = None,
         reasoning_effort: str | None = None,
+        max_tokens: int | None = None,
     ) -> str | LLMStream:
         if tools and (not stream or tool_executor is None):
             raise ValueError("Native tools require streaming and a tool executor")
         tools_unsupported = False
         using_fallback = False
+        request_kwargs = _effort_kwargs(reasoning_effort)
+        if max_tokens:
+            request_kwargs["max_tokens"] = max_tokens
         messages_without_tools = fallback_messages if fallback_messages is not None else messages
         try:
             result = await self._call_with_retry(
@@ -714,7 +718,7 @@ class LLMAdapter:
                 stream,
                 tools,
                 tools_requested=bool(tools),
-                **_effort_kwargs(reasoning_effort),
+                **request_kwargs,
             )
         except LLMToolsUnsupportedError as exc:
             logger.info(
@@ -728,7 +732,7 @@ class LLMAdapter:
                 messages_without_tools,
                 stream,
                 None,
-                **_effort_kwargs(reasoning_effort),
+                **request_kwargs,
             )
             tools_unsupported = True
             using_fallback = True
@@ -747,7 +751,7 @@ class LLMAdapter:
                 messages_without_tools,
                 stream,
                 None,
-                **_effort_kwargs(reasoning_effort),
+                **request_kwargs,
             )
             using_fallback = True
         if not stream:
@@ -778,6 +782,7 @@ class LLMAdapter:
         request_timeout: float = REQUEST_TIMEOUT,
         sdk_max_retries: int | None = None,
         reasoning_effort: str | None = None,
+        max_tokens: int | None = None,
     ):
         if self.provider == "anthropic":
             if request_timeout != REQUEST_TIMEOUT:
@@ -804,6 +809,8 @@ class LLMAdapter:
         # DeepSeek shares this path but has its own reasoning controls.
         if reasoning_effort and self.provider == "ollama":
             extra["reasoning_effort"] = reasoning_effort
+        if max_tokens:
+            extra["max_tokens"] = max_tokens
         if tools:
             extra["tools"] = [
                 {
@@ -1025,6 +1032,10 @@ class LLMAdapter:
             }
             for call in calls
         ]
+        # A prefilled assistant reply and this round are one assistant message.
+        if messages and messages[-1].get("role") == "assistant":
+            initial_text = f"{messages[-1]['content']}{initial_text}"
+            messages = messages[:-1]
         continuation = messages + [
             {
                 "role": "assistant",

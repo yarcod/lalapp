@@ -22,6 +22,8 @@ from app.services.llm_adapter import (
     LLMStream,
     LLMStreamReset,
     LLMTimeoutError,
+    LLMToolCall,
+    LLMToolResult,
     LLMToolResultEvent,
     LLMUnavailableError,
 )
@@ -33,9 +35,15 @@ from app.services.memory_service import (
 )
 from app.services.prompts.common import get_language_prompt_overlay
 from app.services.prompts.tutor import build_conversation_system_prompt
+from app.services.provisional_turn import (
+    OPENER_MAX_TOKENS,
+    ProvisionalTurn,
+    build_opener_messages,
+)
 from app.services.quota_service import record_session_seconds
 from app.services.spoken_lines import (
     SCREEN,
+    SWEDISH,
     SpokenLine,
     display_text,
     invalid_swedish_lines,
@@ -127,6 +135,29 @@ class _StreamedSpeech:
         self.audio_bytes = 0
         self.send_aborted = False
         self._buffer = ""
+        self._trim_next_token = False
+
+    async def speak_opener(self, text: str) -> str | None:
+        """Speak the generated opener. Returns the assistant prefill, or None if it wasn't heard."""
+        if self._tagged:
+            lines = parse_reply(text, self._target_code)
+            line = next((item for item in lines if item.spoken), None)
+            if line is None or line.language != SWEDISH or invalid_swedish_lines([line]):
+                return None
+            self.lines.append(line)
+            spoken, prefill = line.text, f"[{SWEDISH}] {line.text}"
+        else:
+            spoken = text.strip()
+            prefill = spoken
+        if not spoken:
+            return None
+        await self._speak_sentence(spoken, SWEDISH if self._tagged else None)
+        if self.chunks_sent == 0:
+            self.reset()
+            return None
+        self.full_response = f"{prefill}\n" if self._tagged else prefill
+        self._trim_next_token = not self._tagged
+        return prefill
 
     def reset(self) -> None:
         """The model restarted its reply. Audio that already played is kept."""
@@ -142,6 +173,10 @@ class _StreamedSpeech:
         self._buffer = ""
 
     async def feed(self, token: str) -> None:
+        if self._trim_next_token and token:
+            # The reply carries on from the opener after one space.
+            token = f" {token.lstrip()}" if token.strip() else ""
+            self._trim_next_token = not token
         self.full_response += token
         if self.buffered or self.send_aborted:
             return
@@ -251,6 +286,8 @@ class ConversationPipeline:
         lesson_practice_context: str = "",
         user_agent: str = "",
         is_child: bool = False,
+        small_llm: bool = False,
+        generated_opener: bool = False,
     ) -> None:
         self.llm = llm
         self.tts = tts
@@ -259,6 +296,8 @@ class ConversationPipeline:
         self._stt_language = get_iso639(target_language)
         self._target_language = target_language
         self._tagged_lines = tagged_replies_enabled(native_language, cefr_level, target_language)
+        self._small_llm = small_llm
+        self._generated_opener = generated_opener
         self._user_id = user_id
         self._conversation_id = conversation_id
         self._study_plan_id = study_plan_id
@@ -332,6 +371,8 @@ class ConversationPipeline:
         self._send_lock = asyncio.Lock()
         self._turn_id = 0
         self._client_close_reason: str | None = None
+        self._provisional: ProvisionalTurn | None = None
+        self._next_audio_provisional = False
 
     @staticmethod
     def _fmt_exc(exc: Exception) -> str:
@@ -387,10 +428,9 @@ class ConversationPipeline:
             text += self._stream_text(chunk)
         return text.strip()
 
-    @staticmethod
-    def _effort_kwargs() -> dict:
+    def _effort_kwargs(self) -> dict:
         effort = settings.VOICE_REASONING_EFFORT
-        return {"reasoning_effort": effort} if effort else {}
+        return {"reasoning_effort": effort} if effort and not self._small_llm else {}
 
     @staticmethod
     def _tagged_text(lines: list[SpokenLine]) -> str:
@@ -771,9 +811,22 @@ class ConversationPipeline:
                     logger.info("[pipeline] websocket.disconnect event received")
                     break
                 if "bytes" in data:
-                    await self.handle_audio(data["bytes"], ws)
+                    if self._next_audio_provisional:
+                        self._next_audio_provisional = False
+                        await self.handle_audio(data["bytes"], ws, provisional=True)
+                    else:
+                        await self.handle_audio(data["bytes"], ws)
                 elif "text" in data:
                     msg = json.loads(data["text"])
+                    if msg.get("type") == "provisional":
+                        self._next_audio_provisional = True
+                        continue
+                    if msg.get("type") == "confirm":
+                        await self._confirm_provisional(ws)
+                        continue
+                    if msg.get("type") == "abort":
+                        await self._abort_provisional()
+                        continue
                     if msg.get("type") == "client_event":
                         if msg.get("event") == "session_close_request":
                             self._client_close_reason = msg.get("reason", "manual")
@@ -807,7 +860,9 @@ class ConversationPipeline:
         self._last_activity = time.monotonic()
         self._inactivity_warning_sent = False
 
-    async def handle_audio(self, audio_bytes: bytes, ws: WebSocket) -> None:
+    async def handle_audio(
+        self, audio_bytes: bytes, ws: WebSocket, *, provisional: bool = False
+    ) -> None:
         self._reset_inactivity()
         logger.debug(
             "[pipeline] Audio chunk received (%d bytes); current_task=%s",
@@ -821,25 +876,114 @@ class ConversationPipeline:
             )
             await self.cancel_current()
             logger.info("[pipeline] Barge-in: previous turn cancelled")
-            await self._send_json(ws, {"type": "barge_in"})
-        self.current_task = asyncio.create_task(self._process(audio_bytes, ws))
+            # A provisional turn must stay invisible until it is confirmed.
+            if not provisional:
+                await self._send_json(ws, {"type": "barge_in"})
+        self._provisional = None
+        if provisional:
+            self._provisional = ProvisionalTurn(ws, self._send_lock)
+        self.current_task = asyncio.create_task(self._process(audio_bytes, ws, self._provisional))
 
-    async def _process(self, audio_bytes: bytes, ws: WebSocket) -> None:
+    async def _confirm_provisional(self, ws: WebSocket) -> None:
+        """The child's pause reached the end of the turn: release everything held."""
+        turn, self._provisional = self._provisional, None
+        if turn is None:
+            logger.debug("[pipeline] Confirm with no provisional turn pending")
+            return
+        # The confirmed turn is now the last turn; discarding must not reach an earlier one.
+        self._has_finished_turn = False
+        try:
+            memory_calls, usage_streams = await turn.confirm()
+        except Exception as exc:
+            logger.warning("[pipeline] Provisional flush failed: %s", self._fmt_exc(exc))
+            return
+        for stream in usage_streams:
+            self._pending_saves.append(asyncio.create_task(self._save_usage(stream)))
+        if memory_calls:
+            self._pending_saves.append(
+                asyncio.create_task(self._run_held_memory_calls(memory_calls, ws, turn.turn_id))
+            )
+
+    async def _abort_provisional(self) -> None:
+        """The child kept talking: drop the provisional turn entirely."""
+        if self._provisional is None:
+            return
+        await self.cancel_current()
+
+    async def _run_memory_tool(self, call: LLMToolCall) -> LLMToolResult:
+        if self._user_id is None:
+            raise RuntimeError("Memory tool requires an authenticated user")
+        async with db_session() as db_mem:
+            return await execute_save_user_memory(
+                db_mem,
+                self._user_id,
+                call,
+                "voice",
+                study_plan_id=self._study_plan_id,
+            )
+
+    async def _run_held_memory_calls(
+        self, calls: list[LLMToolCall], ws: WebSocket, turn_id: int
+    ) -> None:
+        saved = False
+        for call in calls:
+            try:
+                result = await self._run_memory_tool(call)
+            except Exception as exc:
+                logger.warning("[pipeline] Held memory call failed: %s", self._fmt_exc(exc))
+                continue
+            saved = saved or result.content.get("saved") is True
+        if saved:
+            await self._send_memory_updated(ws, turn_id)
+
+    def _record_usage(self, turn: ProvisionalTurn | None, stream: object) -> None:
+        if turn is not None and not turn.confirmed:
+            turn.hold_usage(stream)
+            return
+        self._pending_saves.append(asyncio.create_task(self._save_usage(stream)))
+
+    async def _generate_opener(self, messages: list[dict], turn: ProvisionalTurn | None) -> str:
+        """A few reacting words ahead of the reply. Empty when they can't be had."""
+        try:
+            stream = await self.llm.chat(
+                build_opener_messages(messages, tagged=self._tagged_lines),
+                stream=True,
+                reasoning_effort="none",
+                max_tokens=OPENER_MAX_TOKENS,
+            )
+            text = ""
+            async for chunk in stream:
+                text += self._stream_text(chunk)
+        except LLMError as exc:
+            logger.warning("[pipeline] Opener generation failed: %s", self._fmt_exc(exc))
+            return ""
+        self._record_usage(turn, stream)
+        return text.strip()
+
+    async def _process(
+        self, audio_bytes: bytes, ws: WebSocket, turn: ProvisionalTurn | None = None
+    ) -> None:
         # Turns are serialized by handle_audio. Only this turn owns additions
         # beyond the snapshot; a cancelled greeting never owns initial context.
         history_start = len(self.history)
         # An interrupted or failed turn must never discard the one before it.
-        self._has_finished_turn = False
+        if turn is None:
+            self._has_finished_turn = False
         try:
-            await self._process_turn(audio_bytes, ws)
+            await self._process_turn(audio_bytes, ws, turn)
         finally:
             if len(self.history) > history_start and self.history[-1]["role"] == "user":
                 self.history.pop()
             self._reset_inactivity()
 
-    async def _process_turn(self, audio_bytes: bytes, ws: WebSocket) -> None:
+    async def _process_turn(
+        self, audio_bytes: bytes, ws: WebSocket, turn: ProvisionalTurn | None = None
+    ) -> None:
         turn_t0 = time.perf_counter()
         turn_id = self._next_turn_id()
+        if turn is not None:
+            turn.turn_id = turn_id
+            ws = turn  # Everything this turn sends is held until it is confirmed.
         stt_ms: float | None = None
         llm_ms: float | None = None
         tts_send_ms: float | None = None
@@ -901,12 +1045,16 @@ class ConversationPipeline:
         )
 
         # 2. Streaming LLM
-        self.history.append({"role": "user", "content": user_text})
+        user_message = {"role": "user", "content": user_text}
+        # A provisional turn joins the history only when it is confirmed.
+        if turn is None:
+            self.history.append(user_message)
+        context = self.history if turn is None else [*self.history, user_message]
         # NOTE: user message is intentionally saved *after* a successful turn
         # (alongside the assistant reply) so no orphan rows are written on
         # LLM failures or barge-in cancellations.
         await self._refresh_memory_prompt()
-        messages = [{"role": "system", "content": self.system_prompt}] + self.history[-20:]
+        messages = [{"role": "system", "content": self.system_prompt}] + context[-20:]
 
         full_response = ""
         clean_full_response = ""
@@ -919,16 +1067,24 @@ class ConversationPipeline:
             llm_t0 = time.perf_counter()
 
             async def execute_memory_tool(call):
-                if self._user_id is None:
-                    raise RuntimeError("Memory tool requires an authenticated user")
-                async with db_session() as db_mem:
-                    return await execute_save_user_memory(
-                        db_mem,
-                        self._user_id,
-                        call,
-                        "voice",
-                        study_plan_id=self._study_plan_id,
-                    )
+                if turn is not None and not turn.confirmed:
+                    return turn.hold_memory_call(call)
+                return await self._run_memory_tool(call)
+
+            speech = _StreamedSpeech(
+                self,
+                ws,
+                tagged=self._tagged_lines,
+                target_code=get_iso639(self._target_language),
+                turn_id=turn_id,
+            )
+            prefill: list[dict] = []
+            if self._generated_opener:
+                opener = await self._generate_opener(messages, turn)
+                prefilled = await speech.speak_opener(opener) if opener else None
+                if prefilled:
+                    prefill = [{"role": "assistant", "content": prefilled}]
+                    messages = [*messages, *prefill]
 
             memory_kwargs = {}
             if self._memory_tools_available:
@@ -941,7 +1097,7 @@ class ConversationPipeline:
                             memory_tools_enabled=False,
                         ),
                     }
-                ] + self.history[-20:]
+                ] + context[-20:] + prefill
                 memory_kwargs = {
                     "tools": [
                         build_save_user_memory_tool(str(self._prompt_args["native_language"]))
@@ -949,13 +1105,6 @@ class ConversationPipeline:
                     "tool_executor": execute_memory_tool,
                     "fallback_messages": fallback_messages,
                 }
-            speech = _StreamedSpeech(
-                self,
-                ws,
-                tagged=self._tagged_lines,
-                target_code=get_iso639(self._target_language),
-                turn_id=turn_id,
-            )
             llm_stream = await self.llm.chat(
                 messages, stream=True, **self._effort_kwargs(), **memory_kwargs
             )
@@ -1112,8 +1261,11 @@ class ConversationPipeline:
             if llm_stream is not None:
                 if getattr(llm_stream, "tools_unsupported", False):
                     self._memory_tools_available = False
-                self._pending_saves.append(asyncio.create_task(self._save_usage(llm_stream)))
+                self._record_usage(turn, llm_stream)
 
+        if turn is not None:
+            await turn.wait_confirmed()
+            self.history.append(user_message)
         self.history.append({"role": "assistant", "content": history_text})
         # Persist both sides of the turn together — only reached on success.
         self._has_finished_turn = True
@@ -1284,6 +1436,8 @@ class ConversationPipeline:
             logger.debug("[pipeline] Failed to remove discarded turn rows — ignored")
 
     async def cancel_current(self) -> None:
+        self._provisional = None
+        self._next_audio_provisional = False
         if self.current_task and not self.current_task.done():
             logger.debug(
                 "[pipeline] cancel_current: cancelling task state=%s",

@@ -23,6 +23,7 @@ from app.models.conversation import Conversation as ConversationModel
 from app.models.study_plan import StudyPlan
 from app.models.user import User
 from app.models.user_language import UserLanguage
+from app.routers.speech_session import live_llm_is_small
 from app.services.assessment_voice_trial import (
     AssessmentVoiceTrial,
     consume_assessment_voice_trial_token,
@@ -537,6 +538,9 @@ async def conversation_ws(
         except Exception:
             pass
 
+        # Decided once for the connection: the opener and reasoning effort depend on the tier.
+        small_llm = await live_llm_is_small()
+
         pipeline = ConversationPipeline(
             llm=llm_adapter,
             tts=tts_service,
@@ -558,6 +562,8 @@ async def conversation_ws(
             lesson_practice_context=lesson_practice.context if lesson_practice else "",
             user_agent=websocket.headers.get("user-agent", ""),
             is_child=user_is_child,
+            small_llm=small_llm,
+            generated_opener=settings.LLM_PROVIDER == "ollama" and not small_llm,
         )
         pipeline._redis = redis
         pipeline._freemium_voice = freemium_ok

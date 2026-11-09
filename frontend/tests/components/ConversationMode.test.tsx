@@ -211,6 +211,216 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+const voiceFrame = new Float32Array(512).fill(0.05)
+const silenceFrame = new Float32Array(512)
+
+function vadProcessor() {
+  const processor = new FrameProcessor(
+    async (frame) => ({
+      isSpeech: frame === voiceFrame ? 0.99 : 0.01,
+      notSpeech: frame === voiceFrame ? 0.01 : 0.99,
+    }),
+    () => {},
+    {
+      ...defaultFrameProcessorOptions,
+      positiveSpeechThreshold: mocks.options.positiveSpeechThreshold!,
+      redemptionMs: mocks.options.redemptionMs!,
+    },
+    32
+  )
+  processor.resume()
+  const handleEvent = (event: FrameProcessorEvent) => {
+    if (event.msg === Message.FrameProcessed) {
+      mocks.options.onFrameProcessed?.(event.probs, event.frame)
+    }
+    if (event.msg === Message.SpeechStart) mocks.options.onSpeechStart?.()
+    if (event.msg === Message.VADMisfire) mocks.options.onVADMisfire?.()
+    if (event.msg === Message.SpeechEnd) {
+      mocks.options.onSpeechEnd?.(event.audio)
+    }
+  }
+  return async (frames: Float32Array, count: number) => {
+    await act(async () => {
+      for (let i = 0; i < count; i++) {
+        await processor.process(frames, handleEvent)
+      }
+    })
+  }
+}
+
+function sentKinds(ws: MockWebSocket) {
+  return ws.send.mock.calls.map(([sent]) =>
+    typeof sent === 'string' ? JSON.parse(sent).type : 'wav'
+  )
+}
+
+function renderWithPause(speechPause: number) {
+  useAuthStore.setState({
+    user: mapUser({
+      id: 1,
+      username: 'voice-test',
+      display_name: 'Voice Test',
+      role: 'user',
+      native_language: 'es',
+      target_language: 'en-GB',
+      conversation_speech_pause: speechPause,
+    }),
+  })
+  render(<ConversationMode />)
+}
+
+describe('ConversationMode provisional turns', () => {
+  it('test_vad_sends_provisional_at_800ms_and_confirms_at_redemption', async () => {
+    renderWithPause(2000)
+    const ws = await start()
+    expect(mocks.options.redemptionMs).toBe(2000)
+    const feed = vadProcessor()
+
+    await feed(voiceFrame, 40)
+    await feed(silenceFrame, 24)
+    expect(ws.send).not.toHaveBeenCalled()
+
+    await feed(silenceFrame, 1) // 25 x 32 ms = 800 ms
+    expect(sentKinds(ws)).toEqual(['provisional', 'wav'])
+    const wav = ws.send.mock.calls[1][0] as ArrayBuffer
+    expect(wav.byteLength).toBe(44 + (40 + 25) * 512 * 2)
+
+    await feed(silenceFrame, 36) // 61 x 32 ms: the VAD ends the turn at 62 frames
+    expect(sentKinds(ws)).toEqual(['provisional', 'wav'])
+
+    await feed(silenceFrame, 1)
+    expect(sentKinds(ws)).toEqual(['provisional', 'wav', 'confirm'])
+  })
+
+  it('aborts when the child continues and restarts from the longer utterance', async () => {
+    renderWithPause(2000)
+    const ws = await start()
+    const feed = vadProcessor()
+
+    await feed(voiceFrame, 40)
+    await feed(silenceFrame, 25)
+    await feed(voiceFrame, 1)
+    expect(sentKinds(ws)).toEqual(['provisional', 'wav', 'abort'])
+
+    await feed(voiceFrame, 19)
+    await feed(silenceFrame, 25)
+    expect(sentKinds(ws)).toEqual([
+      'provisional',
+      'wav',
+      'abort',
+      'provisional',
+      'wav',
+    ])
+    const longer = ws.send.mock.calls[4][0] as ArrayBuffer
+    expect(longer.byteLength).toBe(44 + (40 + 25 + 20 + 25) * 512 * 2)
+
+    await feed(silenceFrame, 37)
+    expect(sentKinds(ws).slice(-1)).toEqual(['confirm'])
+  })
+
+  it('does not send the audio again when the turn is confirmed', async () => {
+    renderWithPause(2000)
+    const ws = await start()
+    const feed = vadProcessor()
+    await feed(voiceFrame, 40)
+    await feed(silenceFrame, 62)
+    const wavs = ws.send.mock.calls.filter(
+      ([sent]) => sent instanceof ArrayBuffer
+    )
+    expect(wavs).toHaveLength(1)
+  })
+
+  it('stays quiet while provisional and ignores speech after confirmation as before', async () => {
+    renderWithPause(2000)
+    const ws = await start()
+    const feed = vadProcessor()
+    await feed(voiceFrame, 40)
+    await feed(silenceFrame, 63)
+    expect(sentKinds(ws)).toEqual(['provisional', 'wav', 'confirm'])
+    ws.send.mockClear()
+
+    await feed(voiceFrame, 40)
+    await feed(silenceFrame, 63)
+
+    expect(ws.send).not.toHaveBeenCalled()
+  })
+
+  it('does not send provisional audio when the utterance is too quiet', async () => {
+    renderWithPause(2000)
+    const ws = await start()
+    const quietFrame = new Float32Array(512).fill(0.005)
+    const processor = new FrameProcessor(
+      async (frame) => ({
+        isSpeech: frame === quietFrame ? 0.99 : 0.01,
+        notSpeech: frame === quietFrame ? 0.01 : 0.99,
+      }),
+      () => {},
+      {
+        ...defaultFrameProcessorOptions,
+        positiveSpeechThreshold: mocks.options.positiveSpeechThreshold!,
+        redemptionMs: mocks.options.redemptionMs!,
+      },
+      32
+    )
+    processor.resume()
+    const handleEvent = (event: FrameProcessorEvent) => {
+      if (event.msg === Message.FrameProcessed) {
+        mocks.options.onFrameProcessed?.(event.probs, event.frame)
+      }
+      if (event.msg === Message.SpeechStart) mocks.options.onSpeechStart?.()
+      if (event.msg === Message.SpeechEnd)
+        mocks.options.onSpeechEnd?.(event.audio)
+    }
+    await act(async () => {
+      for (let i = 0; i < 40; i++) {
+        await processor.process(quietFrame, handleEvent)
+      }
+      for (let i = 0; i < 70; i++) {
+        await processor.process(silenceFrame, handleEvent)
+      }
+    })
+    expect(ws.send).not.toHaveBeenCalled()
+  })
+
+  it('aborts a sent provisional when the VAD discards the speech', async () => {
+    renderWithPause(2000)
+    const ws = await start()
+    act(() => {
+      mocks.options.onFrameProcessed?.(
+        { isSpeech: 0.99, notSpeech: 0.01 },
+        new Float32Array(512).fill(0.05)
+      )
+      mocks.options.onSpeechStart?.()
+    })
+    await act(async () => {
+      for (let i = 0; i < 40; i++)
+        mocks.options.onFrameProcessed?.(
+          { isSpeech: 0.99, notSpeech: 0.01 },
+          voiceFrame
+        )
+      for (let i = 0; i < 25; i++)
+        mocks.options.onFrameProcessed?.(
+          { isSpeech: 0.01, notSpeech: 0.99 },
+          silenceFrame
+        )
+    })
+    expect(sentKinds(ws)).toEqual(['provisional', 'wav'])
+    act(() => mocks.options.onVADMisfire?.())
+    expect(sentKinds(ws)).toEqual(['provisional', 'wav', 'abort'])
+  })
+
+  it('test_short_user_pause_skips_provisional', async () => {
+    renderWithPause(1000)
+    const ws = await start()
+    const feed = vadProcessor()
+    await feed(voiceFrame, 40)
+    await feed(silenceFrame, 30)
+    expect(ws.send).not.toHaveBeenCalled()
+    await feed(silenceFrame, 1)
+    expect(sentKinds(ws)).toEqual(['wav'])
+  })
+})
+
 describe('ConversationMode session lifecycle', () => {
   it.each([
     'automatic-start',
@@ -338,17 +548,23 @@ describe('ConversationMode session lifecycle', () => {
         segment.reduce((energy, sample) => energy + sample * sample, 0) /
           segment.length
       )
+      const wavs = ws.send.mock.calls
+        .map(([sent]) => sent)
+        .filter((sent): sent is ArrayBuffer => sent instanceof ArrayBuffer)
       expect(
-        ws.send,
+        wavs,
         JSON.stringify({
           speechPause,
           voicedMs: voiceFrames * 32,
           segmentMs: (segment.length / 16000) * 1000,
           rms,
         })
-      ).toHaveBeenCalledTimes(1)
-      const wav = ws.send.mock.calls[0][0] as ArrayBuffer
-      expect(wav.byteLength).toBe(44 + segment.length * 2)
+      ).toHaveLength(1)
+      const wav = wavs[0]
+      // Pauses over 1 s send the whole utterance so far 800 ms into the silence.
+      const heldBackSamples =
+        speechPause > 1000 ? (processor.redemptionFrames - 25) * 512 : 0
+      expect(wav.byteLength).toBe(44 + (segment.length - heldBackSamples) * 2)
       const pcm = new DataView(wav)
       const firstVoicedSample = prependSilence
         ? processor.preSpeechPadFrames * 512
