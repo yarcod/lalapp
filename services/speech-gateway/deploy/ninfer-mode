@@ -20,11 +20,16 @@ write_state() { # mode state busy
   mv "$tmp" "$STATE_DIR/mode-state.json"
 }
 
+# The running unit is the truth; mode-state.json is only a report and can be
+# stale after a reboot (only ninfer.service comes back up).
 current_mode() {
-  local m=""
+  if systemctl is-active --quiet ninfer-speech.service; then echo speech; else echo full; fi
+}
+
+# "shared" is written by something other than this script, so it is read from the file.
+state_file_mode() {
   [[ -f "$STATE_DIR/mode-state.json" ]] \
-    && m="$(grep -Eo '"mode" *: *"[a-z]+"' "$STATE_DIR/mode-state.json" | grep -Eo '[a-z]+"$' | tr -d '"')"
-  echo "${m:-full}"
+    && grep -Eo '"mode" *: *"[a-z]+"' "$STATE_DIR/mode-state.json" | grep -Eo '[a-z]+"$' | tr -d '"'
 }
 
 unit_for() { [[ "$1" == speech ]] && echo ninfer-speech.service || echo ninfer.service; }
@@ -42,8 +47,8 @@ main() {
   local want cur
   want="$(tr -d '[:space:]' < "$STATE_DIR/desired-mode" 2>/dev/null)"
   [[ "$want" == speech || "$want" == full ]] || { echo "bad desired-mode: $want" >&2; exit 2; }
+  if [[ "$(state_file_mode)" == shared ]]; then exit 0; fi
   cur="$(current_mode)"
-  if [[ "$cur" == shared ]]; then exit 0; fi
   if [[ "$want" == "$cur" ]]; then write_state "$cur" ready false; exit 0; fi
 
   # Refuse while busy. The gateway re-writes desired-mode to retry.

@@ -27,6 +27,9 @@ T="$(mktemp -d)"; trap 'rm -rf "$T"' EXIT
 mkdir -p "$T/bin"
 cat > "$T/bin/systemctl" <<'STUB'
 #!/usr/bin/env bash
+if [[ "$1" == is-active ]]; then
+  [[ " $STUB_ACTIVE " == *" ${@: -1} "* ]]; exit $?
+fi
 echo "$*" >> "$STUB_DIR/calls"
 [[ "$*" == "start $STUB_FAIL_START" ]] && exit 1
 exit 0
@@ -44,12 +47,14 @@ STUB
 printf '#!/usr/bin/env bash\nexit 0\n' > "$T/bin/sleep"
 chmod +x "$T/bin/"*
 
-run_main() { # name desired start_mode ; extra env via caller
+run_main() { # name desired state_file_mode [running_mode, default = state_file_mode]
   rm -f "$T/calls" "$T/curlcount" "$T/state/mode-state.json"
   mkdir -p "$T/state"
   echo "$2" > "$T/state/desired-mode"
   [[ -n "$3" ]] && echo "{\"mode\":\"$3\",\"state\":\"ready\",\"busy\":false}" > "$T/state/mode-state.json"
-  STUB_DIR="$T" SPEECH_GATEWAY_STATE_DIR="$T/state" PATH="$T/bin:$PATH" NINFER_HEALTH_TIMEOUT=4 \
+  local running="${4:-$3}" active=ninfer.service
+  [[ "$running" == speech ]] && active=ninfer-speech.service
+  STUB_ACTIVE="$active" STUB_DIR="$T" SPEECH_GATEWAY_STATE_DIR="$T/state" PATH="$T/bin:$PATH" NINFER_HEALTH_TIMEOUT=4 \
     bash "$script"
 }
 expect() { # name want_state_json want_calls
@@ -80,5 +85,17 @@ expect "failed start rolls back" '{"mode":"full","state":"failed","busy":false}'
 STUB_FAIL_START="" STUB_CURL_FAILS=2 run_main x speech full
 expect "health timeout rolls back" '{"mode":"full","state":"failed","busy":false}' \
   "stop ninfer.service|start ninfer-speech.service|stop ninfer-speech.service|start ninfer.service"
+
+# Stale report after a reboot: the file says speech but full ninfer is running.
+: > "$T/dockerlog"
+STUB_FAIL_START="" run_main x speech speech full
+expect "stale speech state with full running still switches" \
+  '{"mode":"speech","state":"ready","busy":false}' \
+  "stop ninfer.service|start ninfer-speech.service"
+
+STUB_FAIL_START="" run_main x speech switching full
+expect "unrecognised state-file mode with full running still switches" \
+  '{"mode":"speech","state":"ready","busy":false}' \
+  "stop ninfer.service|start ninfer-speech.service"
 
 exit $fail
