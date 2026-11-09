@@ -168,6 +168,29 @@ async def test_open_during_pending_release_requests_speech_again():
 
 
 @sync
+async def test_failed_release_keeps_retrying_full():
+    fake, clock, mgr = make()
+    await mgr.open()
+    clock.now += 700
+    fake.fail = True
+    await mgr.tick()
+    assert fake.requests == ["speech", "full"]
+    assert fake.mode == "speech" and fake.state == "failed"
+    assert mgr.state != SessionState.READY
+    clock.now += 29
+    await mgr.tick()
+    assert fake.requests == ["speech", "full"]
+    clock.now += 1
+    await mgr.tick()
+    assert fake.requests == ["speech", "full", "full"]
+    fake.fail, fake.state = False, "ready"
+    clock.now += 30
+    await mgr.tick()
+    assert fake.mode == "full"
+    assert mgr.state == SessionState.OFF
+
+
+@sync
 async def test_small_slice_is_shared_and_never_switches():
     fake, clock, mgr = make(mode="shared", busy=True)
     assert await mgr.open() == SessionState.SHARED

@@ -109,7 +109,7 @@ class SessionManager:
         now = self._clock()
         if self._active and now - self._last_seen >= self._release_after:
             self._active = False
-        if trust_failed and info.get("state") == "failed":
+        if trust_failed and self._active and info.get("state") == "failed":
             self._active = self._wrote_speech = False
             self._written = None
             self.state = SessionState.OFF
@@ -135,10 +135,10 @@ class SessionManager:
                 self._wrote_speech = False
                 self._written = None
                 self.state = SessionState.OFF
-            elif status == "switching":
-                self.state = SessionState.SWITCHING
-            else:
+            elif mode == "speech" and status == "ready":
                 self.state = SessionState.READY  # speech stays usable until accepted
+            else:
+                self.state = SessionState.SWITCHING
         elif refused:
             self.state = SessionState.BUSY
         elif mode == "speech" and status == "ready" and not reopened:
