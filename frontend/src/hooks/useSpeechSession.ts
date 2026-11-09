@@ -1,12 +1,12 @@
 import { useEffect } from 'react'
 import { apiFetch } from '@/lib/api'
 import {
+  SPEECH_SESSION_STATES,
   useSpeechSessionStore,
   type SpeechSessionState,
 } from '@/store/speech-session'
 
 const KEEPALIVE_INTERVAL_MS = 60_000
-const KNOWN_STATES = ['off', 'switching', 'ready', 'busy', 'shared', 'away']
 
 async function call(path: string, method: 'POST' | 'GET') {
   const setState = useSpeechSessionStore.getState().setState
@@ -15,7 +15,7 @@ async function call(path: string, method: 'POST' | 'GET') {
     if (!res.ok) return setState('away')
     const data = (await res.json()) as { state?: string }
     setState(
-      KNOWN_STATES.includes(data.state ?? '')
+      (SPEECH_SESSION_STATES as readonly string[]).includes(data.state ?? '')
         ? (data.state as SpeechSessionState)
         : 'away'
     )
@@ -33,9 +33,16 @@ export function useSpeechSession(enabled: boolean) {
 
   useEffect(() => {
     if (!enabled) return
-    void call('open', 'POST')
+    // A missing, off or away session never recovers by itself: open it again.
+    const tick = () => {
+      const current = useSpeechSessionStore.getState().state
+      const needsOpen =
+        current === null || current === 'off' || current === 'away'
+      void call(needsOpen ? 'open' : 'keepalive', 'POST')
+    }
+    tick()
     const keepAlive = () => {
-      if (document.visibilityState === 'visible') void call('keepalive', 'POST')
+      if (document.visibilityState === 'visible') tick()
     }
     const timer = setInterval(keepAlive, KEEPALIVE_INTERVAL_MS)
     document.addEventListener('visibilitychange', keepAlive)

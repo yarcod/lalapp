@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import time
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -2163,3 +2164,103 @@ async def test_history_keeps_tags_for_next_turn() -> None:
         "content": "[sv] Säg så här.\n[en] Good morning.",
     } in second_messages
     assert _assistant_transcripts(ws)[0]["text"] == "Säg så här. Good morning."
+
+
+# ---------------------------------------------------------------------------
+# discard_last_turn
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_discard_last_turn_removes_history_and_rows(db_session, test_engine) -> None:
+    from contextlib import asynccontextmanager
+
+    from sqlalchemy import select
+    from sqlalchemy.ext.asyncio import async_sessionmaker
+
+    from app.core.security import hash_password
+    from app.models.chat_history import ChatHistory
+    from app.models.conversation import Conversation
+    from app.models.user import User
+
+    user = User(
+        username="discardtest",
+        email="discard@test.com",
+        display_name="Discard Test",
+        hashed_password=hash_password("test"),
+        role="user",
+        native_language="es",
+        target_language="en-US",
+        is_active=True,
+    )
+    db_session.add(user)
+    await db_session.flush()
+    conv = Conversation(user_id=user.id, title="Test Conv", study_plan_id=None)
+    db_session.add(conv)
+    await db_session.commit()
+
+    pipeline = _make_pipeline(user_id=user.id, conversation_id=conv.id)
+    pipeline.history = [
+        {"role": "user", "content": "earlier"},
+        {"role": "assistant", "content": "earlier reply"},
+        {"role": "user", "content": "misheard"},
+        {"role": "assistant", "content": "wrong answer"},
+    ]
+    pipeline._has_finished_turn = True
+
+    @asynccontextmanager
+    async def test_db():
+        async with async_sessionmaker(test_engine, expire_on_commit=False)() as session:
+            yield session
+
+    with (
+        patch("app.services.conversation_pipeline.db_session", test_db),
+        patch("app.services.conversation_pipeline.record_lingu_practice", AsyncMock()),
+    ):
+        pipeline._last_turn_save = asyncio.create_task(
+            pipeline._save_turn(
+                "misheard",
+                "wrong answer",
+                completed_at=datetime.now(UTC).replace(tzinfo=None),
+            )
+        )
+        await pipeline._last_turn_save
+        rows = (await db_session.scalars(select(ChatHistory))).all()
+        assert len(rows) == 2
+
+        await pipeline.discard_last_turn()
+
+    assert pipeline.history == [
+        {"role": "user", "content": "earlier"},
+        {"role": "assistant", "content": "earlier reply"},
+    ]
+    db_session.expire_all()
+    assert (await db_session.scalars(select(ChatHistory))).all() == []
+
+
+@pytest.mark.asyncio
+async def test_discard_with_no_turn_is_noop() -> None:
+    pipeline = _make_pipeline()
+    pipeline.history = [{"role": "assistant", "content": "greeting"}]
+
+    await pipeline.discard_last_turn()
+
+    assert pipeline.history == [{"role": "assistant", "content": "greeting"}]
+
+
+@pytest.mark.asyncio
+async def test_run_routes_discard_client_event() -> None:
+    pipeline = _make_pipeline()
+    pipeline._greet = AsyncMock(return_value=None)
+    pipeline.discard_last_turn = AsyncMock(return_value=None)
+    ws = FakeWS()
+    ws.receive = AsyncMock(
+        side_effect=[
+            {"text": '{"type": "client_event", "event": "discard_last_turn"}'},
+            {"type": "websocket.disconnect"},
+        ]
+    )
+
+    await pipeline.run(ws)
+
+    pipeline.discard_last_turn.assert_awaited_once()

@@ -9,10 +9,12 @@ import {
   useMemo,
 } from 'react'
 import { useMicVAD } from '@ricky0123/vad-react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import { TargetLanguageText } from '@/components/TargetLanguageText'
 import { useAuthStore } from '@/store/auth'
+import { useSpeechSessionStore } from '@/store/speech-session'
 import { resolveVadRedemptionMs } from '@/lib/conversation-vad'
 import { useConfigStore } from '@/store/config'
 import { apiFetch } from '@/lib/api'
@@ -28,8 +30,6 @@ import {
 } from '@/lib/conversation-ws'
 import StatusIndicator, { type ConvStatus } from './StatusIndicator'
 import TranscriptBubble from './TranscriptBubble'
-import Link from 'next/link'
-import { useSpeechSessionStore } from '@/store/speech-session'
 import SessionTimeoutBanner from './SessionTimeoutBanner'
 import MicButton from './MicButton'
 import { WordTooltip, useWordSave } from '@/components/ui/WordTooltip'
@@ -721,11 +721,12 @@ export default function ConversationMode({
   )
 
   // Redo: drop what Lingu heard and everything after it, stop any reply in
-  // progress, and let the child speak again. The backend discards an unfinished
-  // turn on `interrupt`; a finished turn stays in its history.
+  // progress, and let the child speak again. The backend forgets the turn.
   const handleRedo = useCallback(() => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ type: 'interrupt' }))
+      wsRef.current.send(
+        JSON.stringify({ type: 'client_event', event: 'discard_last_turn' })
+      )
     }
     audioQueueRef.current?.cancel()
     assistantTurnActiveRef.current = false

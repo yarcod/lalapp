@@ -88,4 +88,17 @@ describe('useSpeechSession', () => {
     await act(async () => {})
     expect(result.current).toBe('away')
   })
+
+  it.each(['off', 'away'])('hook reopens when %s', async (state) => {
+    answer(state)
+    renderHook(() => useSpeechSession(true))
+    await act(async () => {})
+    expect(calls('/api/speech-session/open')).toBe(1)
+
+    await act(async () => {
+      vi.advanceTimersByTime(60_000)
+    })
+    expect(calls('/api/speech-session/open')).toBe(2)
+    expect(calls('/api/speech-session/keepalive')).toBe(0)
+  })
 })

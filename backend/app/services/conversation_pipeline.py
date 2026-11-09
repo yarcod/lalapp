@@ -191,6 +191,9 @@ class ConversationPipeline:
         self._last_activity = time.monotonic()
         self._timer_tasks: list[asyncio.Task] = []
         self._pending_saves: list[asyncio.Task] = []
+        self._last_turn_save: asyncio.Task | None = None
+        self._has_finished_turn = False
+        self._last_turn_response_id: int | None = None
         self._inactivity_warning_sent = False
         self._send_lock = asyncio.Lock()
         self._turn_id = 0
@@ -605,6 +608,9 @@ class ConversationPipeline:
                                 self._client_close_reason,
                             )
                             break
+                        if msg.get("event") == "discard_last_turn":
+                            await self.discard_last_turn()
+                            continue
                         logger.debug("[pipeline] Received unknown client_event: %s", msg)
                         continue
                     if msg.get("type") == "interrupt":
@@ -898,11 +904,12 @@ class ConversationPipeline:
 
         self.history.append({"role": "assistant", "content": history_text})
         # Persist both sides of the turn together — only reached on success.
-        self._pending_saves.append(
-            asyncio.create_task(
-                self._save_turn(user_text, clean_full_response, completed_at=completed_at)
-            )
+        self._has_finished_turn = True
+        self._last_turn_response_id = None
+        self._last_turn_save = asyncio.create_task(
+            self._save_turn(user_text, clean_full_response, completed_at=completed_at)
         )
+        self._pending_saves.append(self._last_turn_save)
 
         logger.info("[pipeline] Turn complete — assistant: %r", clean_full_response[:120])
         logger.info(
@@ -960,6 +967,7 @@ class ConversationPipeline:
             response_id = await self._save_message(
                 "assistant", assistant_text, user_text=user_text, completed_at=completed_at
             )
+        self._last_turn_response_id = response_id
         if response_id is not None:
             await record_lingu_practice(response_id, user_agent=self._user_agent)
 
@@ -1028,6 +1036,40 @@ class ConversationPipeline:
             return response_id
         except Exception:
             logger.debug("[pipeline] Failed to save message — ignored")
+
+    async def discard_last_turn(self) -> None:
+        """Forget the last finished turn: history entries and saved rows. XP is kept."""
+        await self.cancel_current()
+        if (
+            not self._has_finished_turn
+            or len(self.history) < 2
+            or self.history[-1]["role"] != "assistant"
+            or self.history[-2]["role"] != "user"
+        ):
+            return
+        del self.history[-2:]
+        self._has_finished_turn = False
+        save, self._last_turn_save = self._last_turn_save, None
+        if save is not None:
+            await asyncio.gather(save, return_exceptions=True)
+        response_id, self._last_turn_response_id = self._last_turn_response_id, None
+        if response_id is None:
+            return
+        try:
+            from sqlalchemy import delete, select  # noqa: PLC0415
+
+            from app.models.chat_history import ChatHistory  # noqa: PLC0415
+
+            async with db_session() as db:
+                reply_to_id = await db.scalar(
+                    select(ChatHistory.reply_to_id).where(ChatHistory.id == response_id)
+                )
+                ids = [response_id] if reply_to_id is None else [response_id, reply_to_id]
+                for row_id in ids:  # assistant first: it references the user row
+                    await db.execute(delete(ChatHistory).where(ChatHistory.id == row_id))
+                await db.commit()
+        except Exception:
+            logger.debug("[pipeline] Failed to remove discarded turn rows — ignored")
 
     async def cancel_current(self) -> None:
         if self.current_task and not self.current_task.done():

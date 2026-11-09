@@ -998,7 +998,10 @@ describe('ConversationMode heard text and speech session', () => {
     ws.send.mockClear()
     fireEvent.click(screen.getByRole('button', { name: 'redo' }))
 
-    expect(JSON.parse(ws.send.mock.calls[0][0])).toEqual({ type: 'interrupt' })
+    expect(JSON.parse(ws.send.mock.calls[0][0])).toEqual({
+      type: 'client_event',
+      event: 'discard_last_turn',
+    })
     expect(mocks.cancel).toHaveBeenCalled()
     expect(screen.queryByText('I has a dog')).not.toBeInTheDocument()
     expect(screen.queryByText('Nice dog!')).not.toBeInTheDocument()

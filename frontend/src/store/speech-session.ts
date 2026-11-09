@@ -1,7 +1,15 @@
 import { create } from 'zustand'
 
-export type SpeechSessionState =
-  'off' | 'switching' | 'ready' | 'busy' | 'shared' | 'away'
+export const SPEECH_SESSION_STATES = [
+  'off',
+  'switching',
+  'ready',
+  'busy',
+  'shared',
+  'away',
+] as const
+
+export type SpeechSessionState = (typeof SPEECH_SESSION_STATES)[number]
 
 interface SpeechSessionStore {
   state: SpeechSessionState | null
