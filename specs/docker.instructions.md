@@ -105,8 +105,8 @@ public.
 values; a field present in backend `Settings` but absent from Compose is not configurable merely by
 placing it in `.env`.
 
-`VOICE_REASONING_EFFORT` (default `low`) is a backend `Settings` field that neither Compose file
-forwards; the in-code default applies in containers unless Compose is extended.
+`docker-compose.yml` forwards `VOICE_REASONING_EFFORT` (default `low`) to the backend;
+`docker-compose.dev.yml` does not, so the in-code default applies there.
 
 Both Compose files forward optional `OPENAI_REASONING_EFFORT` with an empty default. It controls
 `reasoning.effort` on OpenAI Responses requests only; nonempty values must be supported by the selected
