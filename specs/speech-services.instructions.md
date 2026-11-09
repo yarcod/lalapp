@@ -29,7 +29,8 @@ TTS configuration:
 STT configuration:
 
 - `STT_PROVIDER=local` selects the local Whisper service; `openai` selects OpenAI transcription.
-- `STT_BASE_URL` defaults to `http://whisper:9000`.
+- `STT_BASE_URL` defaults to `http://whisper:9000`. A home deployment points both `TTS_BASE_URL` and
+  `STT_BASE_URL` at the speech gateway (port 8090, see "Speech gateway").
 - `OPENAI_STT_MODEL` defaults to `whisper-1`.
 - `STT_MODEL` and `STT_ENGINE` configure the local Whisper container as `ASR_MODEL` and
   `ASR_ENGINE`; they are not backend `Settings` fields.
@@ -52,7 +53,8 @@ not expose provider credentials or the selected STT provider.
 - uses the requested voice or configured `TTS_VOICE`;
 - raises on non-success HTTP responses;
 - returns response bytes without validating that they contain a non-empty MP3;
-- accepts a language argument but does not use it.
+- adds an ISO 639-1 `language` field to the request body when a language argument is supplied
+  (the speech gateway requires it; stock Kokoro ignores it).
 
 ### OpenAI
 
@@ -109,6 +111,45 @@ There is no implicit English fallback.
 - sends configured model, file bytes, filename, MIME type, explicit language, and a 60-second
   timeout to OpenAI transcription;
 - extracts and trims the returned text.
+
+## Speech gateway
+
+`services/speech-gateway/` is a FastAPI service that acts as the local TTS and STT provider on
+port 8090 for a single-GPU home host. The backend reaches it through the unchanged Kokoro and
+Whisper adapters; it is never called by the browser.
+
+- `POST /asr` accepts the Whisper-ASR-compatible request (`audio_file`, `language`, `output`, `task`)
+  and returns `{ "text", "spoken_language" }`. `language` is the explicit recognition language and
+  must resolve to `en` or `es` (the learner's target); anything else returns `400`. Unreadable
+  audio returns `400`; silent audio returns empty text without calling an engine.
+- One-button routing: every clip is first transcribed by the always-on CPU Parakeet engine with the
+  target language. A lingua detector (Swedish versus the target) then decides `spoken_language`.
+  Target-language speech is returned as is. Swedish speech is re-transcribed by Whisper with
+  `sv`. The learner never chooses a language per utterance.
+- Whisper runs in a child process; the model depends on the plan language and available VRAM
+  (a CPU model on small GPUs, where it is not gated on the session). A GPU Whisper request while
+  the session is not ready returns `503`.
+- `POST /v1/audio/speech` accepts `input`, a required `language` (`sv`, `en` or `es`; otherwise
+  `400`), and optional `voice`, `model` and `response_format`, and returns MP3. The OmniVoice engine
+  clones one reference voice per language from `REFS_DIR` (`{lang}.wav` plus `refs.json` text);
+  a missing reference returns `503`. Input is split into sentences, each synthesized, polished
+  (trim, fades, level) and joined with faint room tone. Out-of-memory is retried once, then `503`.
+  The `voice` field is ignored.
+- `GET /v1/models` and `GET /` are health endpoints that do not depend on the LLM.
+- Speech session: `POST /session/open`, `POST /session/keepalive` and `GET /session/status` return
+  `{ "state" }` with one of `off`, `switching`, `ready`, `busy`, `shared`. On the full GPU tier,
+  opening a session asks the host to switch from the LLM to speech mode, loads the GPU engines
+  when ready, and releases them after ten minutes without keepalive; `busy` means the host refused
+  the switch. `shared` means the GPU is shared with another workload, the small LLM tier is
+  live, and GPU engines are held without switching. TTS requires `ready` or `shared`.
+- `POST /v1/chat/completions` is a stable LLM address that proxies to the live tier read from
+  `LLM_TIER_FILE`: `full` forwards to ninfer, `shared` to Ollama, rewriting only the model name.
+  The backend's `OLLAMA_BASE_URL` points at the gateway.
+
+The backend session proxy and its states are described in `voice-conversation.instructions.md`.
+The explicit-language invariant holds end to end: the backend derives the recognition language from
+the persisted plan and sends it on every call, and the gateway rejects calls without it or with an
+unsupported value. `spoken_language` is informational and never replaces the plan language.
 
 ## HTTP API
 
