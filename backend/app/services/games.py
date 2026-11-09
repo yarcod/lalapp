@@ -483,8 +483,21 @@ def salvage_challenges(
     raise LLMResponseError(f"Only {len(kept)} of {needed} required challenges were valid")
 
 
+@dataclass
+class GenerationRequest:
+    """The fields content generation reads; lets stock build games without a GameSession."""
+
+    game_type: str
+    mode: str
+    target_language: str
+    native_language: str
+    level: str
+    context: dict
+    is_child: bool = False
+
+
 async def generate_content(
-    session: GameSession, deadline: float
+    session: GameSession | GenerationRequest, deadline: float
 ) -> DetectiveContent | SentenceOrderContent | VocabularyPairsContent:
     """Ask for more challenges than needed and keep the first valid ones."""
     ordering = session.game_type == "sentence-order"
