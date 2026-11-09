@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+numpy
+soundfile
+lingua-language-detector
+onnx-asr
+omnivoice
+python-multipart
+httpx
