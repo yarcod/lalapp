@@ -5,10 +5,11 @@ import logging
 import random
 import re
 import unicodedata
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from random import SystemRandom
+from uuid import uuid4
 
 from fastapi import HTTPException
 from pydantic import ValidationError
@@ -19,7 +20,7 @@ from app.core.config import settings
 from app.data.curriculum import COMPLETION_UNIT_IDS, get_curriculum_units
 from app.data.grammar import get_grammar_topics
 from app.data.vocabulary import get_vocabulary_by_level
-from app.models.game import GameAdmission, GameRequest, GameSession
+from app.models.game import GameAdmission, GameRequest, GameSession, GameStock
 from app.models.lesson import Exercise, Lesson
 from app.models.progress_reward import ProgressReward
 from app.models.study_plan import StudyPlan
@@ -277,7 +278,10 @@ async def create_game(
     plan: StudyPlan | None,
     body: GameCreate,
     game_type: GameType = "detective",
-) -> tuple[GameSession, bool]:
+    stock_taker: Callable[[AsyncSession, StudyPlan, str, str], Awaitable[GameStock | None]]
+    | None = None,
+) -> tuple[GameSession | None, bool]:
+    """With a stock_taker, games come only from stock and None means the stock is empty."""
     await lock_user(db, user.id)
     now = now_utc()
     await expire_generations(db, user.id, now)
@@ -333,6 +337,34 @@ async def create_game(
         db.add(request)
         await db.commit()
         return active, False
+    if stock_taker is not None:
+        item = await stock_taker(db, plan, body.mode, game_type)
+        if item is None:
+            return None, False
+        session = GameSession(
+            id=str(body.request_id),
+            user_id=user.id,
+            study_plan_id=plan.id,
+            mode=body.mode,
+            game_type=game_type,
+            target_language=item.target_language,
+            native_language=item.native_language,
+            level=item.level,
+            is_child=item.is_child,
+            status="ready",
+            context={"sources": [], "stock_id": item.id},
+            created_at=now,
+            deadline=now,
+            challenges=finalize_challenges(game_type, item.content),
+            answers=[{} for _ in item.content],
+            xp_earned=0,
+        )
+        db.add(session)
+        await db.flush()
+        request.session_id = session.id
+        db.add(request)
+        await db.commit()
+        return session, False
     limited = limited_access(user)
     quota = await game_quota(db, user.id, now)
     if limited and quota["remaining"] == 0:
@@ -559,6 +591,119 @@ async def generate_content(
     raise LLMResponseError("Game content did not pass review")
 
 
+def finalize_challenges(game_type: str, challenges: list[dict]) -> list[dict]:
+    """Per-play shuffles applied to raw generated content, for stock, generation and replay."""
+    if game_type == "vocabulary-pairs":
+        items = [{k: v for k, v in c.items() if k != "choice_index"} for c in challenges]
+        SystemRandom().shuffle(items)
+        choices = SystemRandom().sample(range(len(items)), len(items))
+        return [{**c, "choice_index": choices[i]} for i, c in enumerate(items)]
+    return [dict(c) for c in challenges]
+
+
+def reshuffled(game_type: str, challenge: dict) -> dict:
+    """Reshuffle what the game shuffles within a challenge, so a replay is not the same puzzle."""
+    if game_type == "sentence-order":
+        return shuffled_order_challenge(
+            SentenceOrderChallenge.model_validate(challenge)
+        ).model_dump()
+    if game_type == "detective":
+        options = list(challenge["options"])
+        correct = options[challenge["correct_index"]]
+        SystemRandom().shuffle(options)
+        return {**challenge, "options": options, "correct_index": options.index(correct)}
+    return challenge
+
+
+def answer_score(session: GameSession) -> int:
+    """Challenges played without a mistake."""
+    score = 0
+    for challenge, answer in zip(session.challenges, session.answers, strict=False):
+        if session.game_type == "vocabulary-pairs":
+            score += bool(answer.get("matched")) and not answer.get("assisted", False)
+        elif session.game_type == "sentence-order":
+            score += bool(answer.get("correct"))
+        else:
+            score += (
+                answer.get("detection") == challenge["error_index"]
+                and answer.get("correction") == challenge["correct_index"]
+            )
+    return score
+
+
+async def stock_empty_output(db: AsyncSession, plan: StudyPlan, game_type: str) -> dict:
+    """The happy note: what a learner can replay, and whether this is their very first games."""
+    finished = (
+        await db.scalars(
+            select(GameSession)
+            .where(
+                GameSession.study_plan_id == plan.id,
+                GameSession.game_type == game_type,
+                GameSession.status == "completed",
+            )
+            .order_by(GameSession.completed_at.desc(), GameSession.created_at.desc())
+        )
+    ).all()
+    return {
+        "status": "empty",
+        "first_games_pending": not finished,
+        "replayable": [
+            {
+                "id": s.id,
+                "mode": s.mode,
+                "completed_at": s.completed_at.isoformat() if s.completed_at else None,
+                "score": answer_score(s),
+                "total": len(s.challenges),
+                "xp_earned": s.xp_earned,
+            }
+            for s in finished[:5]
+        ],
+    }
+
+
+async def replay_game(db: AsyncSession, user: User, session_id: str) -> GameSession:
+    """A new ready session from a finished game's content, with fresh answers."""
+    source = await owned_game(db, user.id, session_id)
+    await lock_user(db, user.id)
+    if source.status != "completed":
+        raise HTTPException(409, "game_not_completed")
+    active = await db.scalar(
+        select(GameSession).where(
+            GameSession.study_plan_id == source.study_plan_id,
+            GameSession.game_type == source.game_type,
+            GameSession.status.in_(["generating", "ready"]),
+        )
+    )
+    if active is not None:
+        await db.commit()
+        return active
+    now = now_utc()
+    challenges = finalize_challenges(
+        source.game_type, [reshuffled(source.game_type, c) for c in source.challenges]
+    )
+    session = GameSession(
+        id=str(uuid4()),
+        user_id=user.id,
+        study_plan_id=source.study_plan_id,
+        mode=source.mode,
+        game_type=source.game_type,
+        target_language=source.target_language,
+        native_language=source.native_language,
+        level=source.level,
+        is_child=source.is_child,
+        status="ready",
+        context={"sources": [], "replay_of": source.id},
+        created_at=now,
+        deadline=now,
+        challenges=challenges,
+        answers=[{} for _ in challenges],
+        xp_earned=0,
+    )
+    db.add(session)
+    await db.commit()
+    return session
+
+
 async def generate_game(session_id: str) -> None:
     """Durable deadline fences late workers; restarting the server leaves a recoverable failure."""
     async with db_session() as db:
@@ -598,13 +743,9 @@ async def generate_game(session_id: str) -> None:
             if admission:
                 admission.status = "released"
         else:
-            session.challenges = [c.model_dump() for c in content.challenges]
-            if session.game_type == "vocabulary-pairs":
-                SystemRandom().shuffle(session.challenges)
-                choices = SystemRandom().sample(range(5), 5)
-                session.challenges = [
-                    {**c, "choice_index": choices[i]} for i, c in enumerate(session.challenges)
-                ]
+            session.challenges = finalize_challenges(
+                session.game_type, [c.model_dump() for c in content.challenges]
+            )
             session.answers = [{} for _ in content.challenges]
             session.status = "ready"
             if admission:

@@ -78,3 +78,17 @@ export async function gameRequest<T>(
   }
   return res.json()
 }
+
+export interface ReplayableGame {
+  id: string
+  mode: GameMode
+  completed_at: string | null
+  score: number
+  total: number
+  xp_earned: number
+}
+export interface GameStockEmpty {
+  status: 'empty'
+  first_games_pending: boolean
+  replayable: ReplayableGame[]
+}

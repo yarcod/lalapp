@@ -24,7 +24,7 @@ from app.schemas.games import (
 from app.services import games
 from app.services.progress_rewards import award_progress_reward
 from tests.conftest import make_study_plan
-from tests.test_games import ready_game
+from tests.test_games import ready_game, route_on_demand
 from tests.test_sentence_order import ready_order_game
 
 
@@ -304,7 +304,7 @@ async def test_third_game_separates_history_shares_quota_and_recovers_identity(
     user, headers = test_user_with_plan
     plan = await db_session.scalar(select(StudyPlan))
     monkeypatch.setattr(settings, "STRIPE_ENABLED", True)
-    monkeypatch.setattr("app.routers.games.generate_game", AsyncMock())
+    route_on_demand(monkeypatch, AsyncMock())
     requests = {}
     for kind in ("detective", "sentence-order", "vocabulary-pairs"):
         body = {"request_id": str(uuid4()), "study_plan_id": plan.id, "mode": "free"}

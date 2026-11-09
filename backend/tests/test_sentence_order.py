@@ -24,7 +24,7 @@ from app.schemas.games import (
 from app.services import games
 from app.services.progress_rewards import award_progress_reward
 from tests.conftest import make_study_plan
-from tests.test_games import finish, ready_game
+from tests.test_games import finish, ready_game, route_on_demand
 
 
 def order_content(source="grammar:present-simple"):
@@ -331,7 +331,7 @@ async def test_types_have_separate_sessions_history_and_immutable_request_identi
     user, headers = test_user_with_plan
     plan = await db_session.scalar(select(StudyPlan))
     mocked = AsyncMock()
-    monkeypatch.setattr("app.routers.games.generate_game", mocked)
+    route_on_demand(monkeypatch, mocked)
     monkeypatch.setattr(settings, "STRIPE_ENABLED", True)
     body = {"request_id": str(uuid4()), "study_plan_id": plan.id, "mode": "free"}
     detective = await client.post("/api/games/detective", headers=headers, json=body)
@@ -384,7 +384,7 @@ async def test_order_cannot_bypass_quota_consumed_by_detective(
     plan = await db_session.scalar(select(StudyPlan))
     monkeypatch.setattr(settings, "STRIPE_ENABLED", True)
     monkeypatch.setattr(settings, "FREEMIUM_GAMES_DAILY", 1)
-    monkeypatch.setattr("app.routers.games.generate_game", AsyncMock())
+    route_on_demand(monkeypatch, AsyncMock())
     body = {"request_id": str(uuid4()), "study_plan_id": plan.id, "mode": "free"}
     assert (
         await client.post("/api/games/detective", headers=headers, json=body)

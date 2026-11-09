@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,18 +23,20 @@ from app.schemas.games import (
     SentenceOrderAnswer,
     VocabularyPairAnswer,
 )
+from app.services.game_stock import take_from_stock
 from app.services.games import (
     answer_game,
     create_game,
     expire_generations,
     game_output,
     game_quota,
-    generate_game,
     limited_access,
     lock_user,
     now_utc,
     owned_game,
+    replay_game,
     source_context,
+    stock_empty_output,
 )
 from app.services.learning_analytics import record_game_abandoned, record_game_answer
 from app.services.progress_service import lock_progress_plan
@@ -92,15 +94,17 @@ async def start_game(
     request: Request,
     game_type: GameType,
     body: GameCreate,
-    background_tasks: BackgroundTasks,
+    response: Response,
     user: User = Depends(get_current_user),
     plan: StudyPlan | None = Depends(get_active_study_plan_optional),
     db: AsyncSession = Depends(get_db),
     _maintenance: None = Depends(require_not_maintenance),
 ) -> dict:
-    session, created = await create_game(db, user, plan, body, game_type)
-    if created:
-        background_tasks.add_task(generate_game, session.id)
+    """Games come only from stock; nobody waits for generation."""
+    session, _ = await create_game(db, user, plan, body, game_type, stock_taker=take_from_stock)
+    if session is None:
+        response.status_code = 200
+        return await stock_empty_output(db, plan, game_type)
     return game_output(session)
 
 
@@ -141,6 +145,18 @@ async def submit_answer(
             user_agent=request.headers.get("user-agent", ""),
         )
     return game_output(session)
+
+
+@router.post("/sessions/{session_id}/replay")
+@limiter.limit("10/minute")
+async def replay_session(
+    request: Request,
+    session_id: UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    _maintenance: None = Depends(require_not_maintenance),
+) -> dict:
+    return game_output(await replay_game(db, user, str(session_id)))
 
 
 @router.post("/sessions/{session_id}/abandon")

@@ -101,10 +101,23 @@ async def finish(db, user, session, correct=True):
         )
 
 
+def route_on_demand(monkeypatch, generate):
+    """Learners are served from stock; these tests still exercise the retained on-demand path."""
+    real = games.create_game
+
+    async def on_demand(db, user, plan, body, game_type="detective", stock_taker=None):
+        session, created = await real(db, user, plan, body, game_type)
+        if created:
+            await generate(session.id)
+        return session, created
+
+    monkeypatch.setattr("app.routers.games.create_game", on_demand)
+
+
 @pytest.fixture
 def no_background(monkeypatch):
     mock = AsyncMock()
-    monkeypatch.setattr("app.routers.games.generate_game", mock)
+    route_on_demand(monkeypatch, mock)
     return mock
 
 

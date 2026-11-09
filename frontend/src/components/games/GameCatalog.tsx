@@ -15,6 +15,7 @@ import {
   type DetectiveCatalog,
   type DetectiveSession,
   type GameMode,
+  type GameStockEmpty,
 } from '@/lib/detective'
 
 const button =
@@ -44,6 +45,7 @@ export function GameCatalog({
   const [error, setError] = useState('')
   const [noPlan, setNoPlan] = useState(false)
   const [paywall, setPaywall] = useState(false)
+  const [empty, setEmpty] = useState<GameStockEmpty | null>(null)
   const [busy, setBusy] = useState(false)
   const [page, setPage] = useState(0)
   const [retry, setRetry] = useState(0)
@@ -72,6 +74,7 @@ export function GameCatalog({
       setError('')
       setNoPlan(false)
       setPaywall(false)
+      setEmpty(null)
       try {
         if (!languageCode || needsRefresh) {
           const loaded = await useLanguageStore
@@ -108,21 +111,27 @@ export function GameCatalog({
     pending.current = id
     setBusy(true)
     setError('')
+    setEmpty(null)
     try {
-      const session = await gameRequest<Pick<DetectiveSession, 'id'>>(
-        `/${gameType}`,
-        {
-          method: 'POST',
-          signal: controller.signal,
-          body: JSON.stringify({
-            request_id: id,
-            study_plan_id: catalog.study_plan_id,
-            mode,
-          }),
-        }
-      )
-      if (!controller.signal.aborted)
-        router.push(`/games/${gamePath}/${session.id}`)
+      const session = await gameRequest<
+        Pick<DetectiveSession, 'id'> | GameStockEmpty
+      >(`/${gameType}`, {
+        method: 'POST',
+        signal: controller.signal,
+        body: JSON.stringify({
+          request_id: id,
+          study_plan_id: catalog.study_plan_id,
+          mode,
+        }),
+      })
+      if (controller.signal.aborted) return
+      if ('status' in session && session.status === 'empty') {
+        // Nothing was created, so the request may be reused later.
+        pending.current = null
+        setEmpty(session)
+      } else {
+        router.push(`/games/${gamePath}/${(session as { id: string }).id}`)
+      }
     } catch (e) {
       if (controller.signal.aborted) return
       if (e instanceof GameRequestError && e.status < 500 && e.status !== 408) {
@@ -136,6 +145,30 @@ export function GameCatalog({
         // The POST may have committed. Recover by identity, never create another game automatically.
         router.push(`/games/${gamePath}/${id}`)
       }
+    } finally {
+      if (!controller.signal.aborted) setBusy(false)
+    }
+  }
+
+  async function replay(id: string) {
+    if (busy || switching || pending.current) return
+    const controller = new AbortController()
+    operation.current?.abort()
+    operation.current = controller
+    pending.current = id
+    setBusy(true)
+    setError('')
+    try {
+      const session = await gameRequest<Pick<DetectiveSession, 'id'>>(
+        `/sessions/${id}/replay`,
+        { method: 'POST', signal: controller.signal }
+      )
+      if (!controller.signal.aborted)
+        router.push(`/games/${gamePath}/${session.id}`)
+    } catch {
+      if (controller.signal.aborted) return
+      pending.current = null
+      setError(common('errorMessage'))
     } finally {
       if (!controller.signal.aborted) setBusy(false)
     }
@@ -184,6 +217,41 @@ export function GameCatalog({
           <FreemiumQuotaBanner feature="games" />
           {(paywall || (catalog.limited && catalog.quota.remaining === 0)) && (
             <PaywallBanner feature="games" />
+          )}
+          {empty && (
+            <section
+              role="status"
+              className="border-fl-border bg-fl-surface space-y-3 border p-5"
+            >
+              <p className="text-fl-fg text-sm leading-relaxed font-semibold">
+                {empty.first_games_pending
+                  ? t('firstGamesPending')
+                  : t('stockEmpty')}
+              </p>
+              {empty.replayable.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-fl-muted-2 text-sm">
+                    {t('replayHeading')}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {empty.replayable.map((g) => (
+                      <button
+                        key={g.id}
+                        className={button}
+                        disabled={busy || switching}
+                        onClick={() => void replay(g.id)}
+                      >
+                        {t('replay', {
+                          score: g.score,
+                          total: g.total,
+                          date: (g.completed_at ?? '').slice(0, 10),
+                        })}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </section>
           )}
           <div className="grid gap-3 sm:grid-cols-3">
             {(['review', 'prepare', 'free'] as const).map((mode) => (

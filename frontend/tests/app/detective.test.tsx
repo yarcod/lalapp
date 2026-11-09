@@ -110,4 +110,32 @@ describe('Detective catalog', () => {
     await waitFor(() => expect(push).toHaveBeenCalledWith('/games/error-detective/game-1'))
     expect(JSON.parse(String(vi.mocked(gameRequest).mock.calls[1][1]?.body))).toMatchObject({ study_plan_id: 9, mode: 'free' })
   })
+  const catalog = (history: unknown[] = []) => ({ study_plan_id: 9, target_language: 'en-GB', level: 'A1', limited: false, quota: { remaining: 3, limit: 3 }, total: 0, history, modes: { review: { available: false }, prepare: { available: false }, free: { available: true } } })
+
+  it('test_catalog_shows_happy_note_and_replay', async () => {
+    vi.mocked(gameRequest).mockResolvedValueOnce(catalog()).mockResolvedValueOnce({
+      status: 'empty', first_games_pending: false,
+      replayable: [{ id: 'old-1', mode: 'free', completed_at: '2026-11-01T10:00:00', score: 4, total: 5, xp_earned: 13 }],
+    }).mockResolvedValueOnce({ ...initial, id: 'new-1' })
+    render(<CatalogPage />)
+    fireEvent.click((await screen.findAllByRole('button', { name: 'start' }))[2])
+    const note = await screen.findByRole('status')
+    expect(note).toHaveTextContent('stockEmpty')
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(screen.queryByText('paywall')).not.toBeInTheDocument()
+    expect(push).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'replay' }))
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/games/error-detective/new-1'))
+    expect(vi.mocked(gameRequest).mock.calls[2][0]).toBe('/sessions/old-1/replay')
+    expect(vi.mocked(gameRequest).mock.calls[2][1]?.method).toBe('POST')
+  })
+
+  it('says the first games are on the way when nothing was played yet', async () => {
+    vi.mocked(gameRequest).mockResolvedValueOnce(catalog()).mockResolvedValueOnce({ status: 'empty', first_games_pending: true, replayable: [] })
+    render(<CatalogPage />)
+    fireEvent.click((await screen.findAllByRole('button', { name: 'start' }))[2])
+    expect(await screen.findByText('firstGamesPending')).toBeInTheDocument()
+    expect(screen.queryByText('stockEmpty')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'replay' })).not.toBeInTheDocument()
+  })
 })

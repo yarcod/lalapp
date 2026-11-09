@@ -1,16 +1,18 @@
 from contextlib import asynccontextmanager
 from datetime import timedelta
 from unittest.mock import AsyncMock
+from uuid import uuid4
 
 import pytest
 from sqlalchemy import func, select
 
-from app.models.game import GameSession, GameStock
+from app.models.game import GameRequest, GameSession, GameStock
 from app.models.lesson import Lesson
 from app.models.study_plan import StudyPlan
+from app.schemas.games import GameAnswer
 from app.services import game_stock, games
 from tests.conftest import make_study_plan
-from tests.test_games import content
+from tests.test_games import content, finish, ready_game
 
 BUCKETS_FREE = 3  # detective, sentence-order, vocabulary-pairs
 
@@ -283,3 +285,183 @@ async def test_surplus_stale_rows_do_not_grant_uncapped_generation(
     await db_session.refresh(old)
     assert old.replaced is True
     assert await stock_count(db_session, game_type="detective", mode="free") == 4
+
+
+def start_body(plan, mode="free"):
+    return {"request_id": str(uuid4()), "study_plan_id": plan.id, "mode": mode}
+
+
+async def test_serves_from_stock_without_llm(client, db_session, test_user_with_plan, monkeypatch):
+    user, headers = test_user_with_plan
+    plan = await db_session.scalar(select(StudyPlan))
+    item = await stock_item(db_session, plan)
+    boom = AsyncMock(side_effect=AssertionError("no LLM call when serving"))
+    monkeypatch.setattr(games, "generate_content", boom)
+    body = start_body(plan)
+    res = await client.post("/api/games/detective", headers=headers, json=body)
+    assert res.status_code == 202
+    assert res.json()["status"] == "ready"
+    assert res.json()["id"] == body["request_id"]
+    assert len(res.json()["challenges"]) == 5
+    boom.assert_not_awaited()
+    session = await db_session.get(GameSession, body["request_id"])
+    assert session.status == "ready" and session.answers == [{}] * 5
+    assert session.is_child == item.is_child
+    await db_session.refresh(item)
+    assert item.taken_at is not None
+    # An existing ready session is resumed before any further stock is touched.
+    second = await stock_item(db_session, plan, sentence_prefix="B")
+    again = await client.post("/api/games/detective", headers=headers, json=start_body(plan))
+    assert again.json()["id"] == body["request_id"]
+    await db_session.refresh(second)
+    assert second.taken_at is None
+
+
+async def test_stock_child_flag_carried(client, db_session, test_user_with_plan):
+    _, headers = test_user_with_plan
+    plan = await db_session.scalar(select(StudyPlan))
+    item = await stock_item(db_session, plan)
+    item.is_child = True
+    await db_session.commit()
+    body = start_body(plan)
+    await client.post("/api/games/detective", headers=headers, json=body)
+    assert (await db_session.get(GameSession, body["request_id"])).is_child is True
+
+
+async def test_empty_stock_returns_happy_status(client, db_session, test_user_with_plan):
+    user, headers = test_user_with_plan
+    plan = await db_session.scalar(select(StudyPlan))
+    finished = []
+    for i in range(7):
+        session = await ready_game(db_session, user, plan)
+        await finish(db_session, user, session)
+        session.completed_at = games.now_utc() - timedelta(hours=7 - i)
+        finished.append(session.id)
+    await db_session.commit()
+    body = start_body(plan)
+    res = await client.post("/api/games/detective", headers=headers, json=body)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "empty"
+    assert data["first_games_pending"] is False
+    assert [g["id"] for g in data["replayable"]] == finished[::-1][:5]
+    assert {"id", "completed_at", "score", "total"} <= set(data["replayable"][0])
+    assert data["replayable"][0]["score"] == 5
+    # The request id is not consumed, so it may be used again once stock arrives.
+    assert await db_session.get(GameRequest, body["request_id"]) is None
+    other = await client.post("/api/games/sentence-order", headers=headers, json=start_body(plan))
+    assert other.json()["replayable"] == []
+
+
+async def test_new_plan_empty_is_first_games_pending(client, db_session, test_user_with_plan):
+    _, headers = test_user_with_plan
+    plan = await db_session.scalar(select(StudyPlan))
+    res = await client.post("/api/games/detective", headers=headers, json=start_body(plan))
+    assert res.status_code == 200
+    assert res.json() == {"status": "empty", "replayable": [], "first_games_pending": True}
+
+
+async def test_replay_creates_new_session_no_xp_change_beyond_cap(
+    client, db_session, test_user_with_plan
+):
+    user, headers = test_user_with_plan
+    plan = await db_session.scalar(select(StudyPlan))
+    original = await ready_game(db_session, user, plan)
+    await finish(db_session, user, original)
+    xp = []
+    previous = original
+    for _ in range(4):
+        path = f"/api/games/sessions/{previous.id}/replay"
+        res = await client.post(path, headers=headers)
+        assert res.status_code == 200
+        assert res.json()["id"] != previous.id and res.json()["status"] == "ready"
+        # A ready replay is returned instead of creating another.
+        assert (await client.post(path, headers=headers)).json()["id"] == res.json()["id"]
+        replay = await db_session.get(GameSession, res.json()["id"])
+        assert replay.answers == [{}] * 5 and replay.study_plan_id == plan.id
+        for i, challenge in enumerate(replay.challenges):
+            for step, choice in (("detect", 1), ("correct", challenge["correct_index"])):
+                await games.answer_game(
+                    db_session,
+                    user.id,
+                    replay.id,
+                    GameAnswer(challenge=i, step=step, choice=choice),
+                )
+        await db_session.refresh(replay)
+        xp.append(replay.xp_earned)
+        previous = replay
+    await db_session.refresh(original)
+    assert [original.xp_earned, *xp] == [15, 15, 15, 0, 0]
+    shown = (await client.get("/api/games/detective", headers=headers)).json()
+    assert shown["total"] == 5
+
+
+async def test_replay_rejects_unfinished_and_foreign(
+    client, db_session, test_user_with_plan, admin_user
+):
+    user, headers = test_user_with_plan
+    _, foreign = admin_user
+    plan = await db_session.scalar(select(StudyPlan))
+    session = await ready_game(db_session, user, plan)
+    path = f"/api/games/sessions/{session.id}/replay"
+    assert (await client.post(path, headers=headers)).status_code == 409
+    await finish(db_session, user, session)
+    assert (await client.post(path, headers=foreign)).status_code == 404
+
+
+async def test_replay_reshuffles_pairs(db_session, test_user_with_plan):
+    user, _ = test_user_with_plan
+    plan = await db_session.scalar(select(StudyPlan))
+    pairs = [
+        {
+            "term": f"t{i}",
+            "meaning": f"m{i}",
+            "sentence": f"s{i}",
+            "translation": f"x{i}",
+            "source_id": "vocabulary:a",
+            "choice_index": i,
+        }
+        for i in range(5)
+    ]
+    db_session.add(
+        GameSession(
+            id="done-pairs",
+            user_id=user.id,
+            study_plan_id=plan.id,
+            mode="free",
+            game_type="vocabulary-pairs",
+            target_language=plan.target_language,
+            native_language="es",
+            level="A1",
+            status="completed",
+            context={},
+            challenges=pairs,
+            answers=[{"matched": True}] * 5,
+            created_at=games.now_utc(),
+            deadline=games.now_utc(),
+        )
+    )
+    await db_session.commit()
+    replay = await games.replay_game(db_session, user, "done-pairs")
+    assert sorted(c["term"] for c in replay.challenges) == [f"t{i}" for i in range(5)]
+    assert sorted(c["choice_index"] for c in replay.challenges) == list(range(5))
+    assert replay.game_type == "vocabulary-pairs" and replay.status == "ready"
+    assert replay.answers == [{}] * 5
+
+
+async def test_stock_game_playable_when_llm_away(
+    client, db_session, test_user_with_plan, monkeypatch
+):
+    user, headers = test_user_with_plan
+    plan = await db_session.scalar(select(StudyPlan))
+    await stock_item(db_session, plan)
+    away = AsyncMock(side_effect=ConnectionError("llm away"))
+    monkeypatch.setattr(games.llm_adapter, "structured_output", away)
+    body = start_body(plan)
+    res = await client.post("/api/games/detective", headers=headers, json=body)
+    assert res.json()["status"] == "ready"
+    session = await db_session.get(GameSession, body["request_id"])
+    await finish(db_session, user, session)
+    await db_session.refresh(session)
+    assert session.status == "completed" and session.xp_earned == 15
+    away.assert_not_awaited()
