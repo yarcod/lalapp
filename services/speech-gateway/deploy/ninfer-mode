@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# Switch ninfer between full (131072 context) and speech (32768 context).
+# Run by a systemd path unit when /var/lib/speech-gateway/desired-mode changes.
+# Never switches while ninfer is busy.
+set -u
+
+STATE_DIR="${SPEECH_GATEWAY_STATE_DIR:-/var/lib/speech-gateway}"
+HEALTH_URL="${NINFER_HEALTH_URL:-http://127.0.0.1:8080/health}"
+HEALTH_TIMEOUT="${NINFER_HEALTH_TIMEOUT:-300}"
+
+# Reads log text on stdin. Exit 0 if any throughput line shows work, else 1.
+is_busy_text() {
+  grep -F 'throughput' | grep -Eo '(running|prefilling|decode_ready|waiting)=[0-9]+' \
+    | grep -Eqv '=0+$'
+}
+
+write_state() { # mode state busy
+  local tmp="$STATE_DIR/mode-state.json.tmp"
+  printf '{"mode":"%s","state":"%s","busy":%s}\n' "$1" "$2" "$3" > "$tmp"
+  mv "$tmp" "$STATE_DIR/mode-state.json"
+}
+
+current_mode() {
+  local m=""
+  [[ -f "$STATE_DIR/mode-state.json" ]] \
+    && m="$(grep -Eo '"mode" *: *"[a-z]+"' "$STATE_DIR/mode-state.json" | grep -Eo '[a-z]+"$' | tr -d '"')"
+  echo "${m:-full}"
+}
+
+unit_for() { [[ "$1" == speech ]] && echo ninfer-speech.service || echo ninfer.service; }
+
+main() {
+  local want cur other
+  want="$(tr -d '[:space:]' < "$STATE_DIR/desired-mode" 2>/dev/null)"
+  [[ "$want" == speech || "$want" == full ]] || { echo "bad desired-mode: $want" >&2; exit 2; }
+  cur="$(current_mode)"
+  if [[ "$cur" == shared ]]; then exit 0; fi
+  if [[ "$want" == "$cur" ]]; then write_state "$cur" ready false; exit 0; fi
+
+  if docker logs --since 15s ninfer 2>&1 | is_busy_text; then
+    write_state "$cur" ready true
+    exit 0
+  fi
+
+  write_state "$cur" switching false
+  other="$(unit_for "$cur")"
+  systemctl stop "$other"
+  systemctl start "$(unit_for "$want")"
+  local waited=0
+  until curl -fsS -o /dev/null "$HEALTH_URL"; do
+    sleep 2; waited=$((waited + 2))
+    if (( waited >= HEALTH_TIMEOUT )); then
+      write_state "$want" failed false
+      exit 1
+    fi
+  done
+  write_state "$want" ready false
+}
+
+if [[ "${1:-}" == "--busy-from-stdin" ]]; then
+  is_busy_text
+  exit $?
+elif [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main
+fi
