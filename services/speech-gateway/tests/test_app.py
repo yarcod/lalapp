@@ -1,6 +1,9 @@
 import io
 import json
+import logging
 import sys
+import time
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -251,7 +254,7 @@ def test_reconcile_preloads_whisper_for_the_english_plan_model(vram, expected):
 
 
 def test_single_sentence_ends_with_room_tone(refs):
-    client = make(refs)
+    client, _, _ = make(refs)
     r = client.post("/v1/audio/speech", json={"input": "Hello there.", "language": "en"})
     assert r.status_code == 200
     from gateway.polish import polish, room_tone
@@ -261,13 +264,13 @@ def test_single_sentence_ends_with_room_tone(refs):
 
 
 def test_asr_engine_error_is_503(refs):
-    eng = Engines(text="hej hej")
+    eng = Engines(text="jag tycker om att äta ett rött äpple")
 
     def broken(*_args):
         raise EngineError("worker hung")
 
     eng.whisper.transcribe = broken
-    client = make(refs, engines=eng)
+    client, _, _ = make(refs, eng)
     assert asr(client, "en-GB").status_code == 503
 
 
@@ -319,9 +322,12 @@ def test_hung_worker_is_killed_and_raises(monkeypatch):
     monkeypatch.setattr(engines_module, "WORKER_REQUEST_TIMEOUT", 0.2)
     monkeypatch.setattr(engines_module, "WORKER_LOAD_TIMEOUT", 0.2)
     engine = worker(HUNG_WORKER)
+    engine.load()
+    proc = engine._proc
     with pytest.raises(EngineError, match="timed out"):
         engine.transcribe(np.zeros(160, dtype=np.float32), "sv", "medium", "cuda")
     assert engine._proc is None
+    assert proc.poll() is not None
 
 
 def test_transcribe_uses_load_timeout_until_the_model_is_loaded(monkeypatch):
@@ -386,3 +392,56 @@ def test_whisper_worker_protocol():
     assert loads[-1] == ("kbmedium", "cuda")
     assert handle({"op": "unload"}, state, loader) == {"ok": True}
     assert state == {}
+
+
+def test_onnx_asr_is_installed_with_its_runtime():
+    lines = (Path(__file__).parent.parent / "requirements.txt").read_text().split()
+    assert "onnx-asr[cpu,hub]" in lines
+
+
+def test_worker_process_sees_the_venv_libraries_and_the_gateway_does_not(tmp_path, monkeypatch):
+    monkeypatch.delenv("LD_LIBRARY_PATH", raising=False)
+    lib = tmp_path / "venv/lib/python3.12/site-packages/nvidia/cublas/lib"
+    lib.mkdir(parents=True)
+    engine = WhisperEngine(str(tmp_path / "venv/bin/python"))
+    engine._cmd = [
+        sys.executable,
+        "-u",
+        "-c",
+        "import json, os, sys\n"
+        "for line in sys.stdin:\n"
+        "    print(json.dumps({'text': os.environ['LD_LIBRARY_PATH']}), flush=True)\n",
+    ]
+    try:
+        assert engine.transcribe(np.zeros(160, dtype=np.float32), "sv", "m", "cpu") == str(lib)
+    finally:
+        engine.unload()
+    assert "LD_LIBRARY_PATH" not in engines_module.os.environ
+
+
+@pytest.mark.parametrize("tier, expected", [("shared", "shared"), ("full", "off")])
+def test_status_reports_the_tier_before_any_session_opens(tmp_path, tier, expected):
+    tier_file = tmp_path / "llm-tier"
+    tier_file.write_text(tier + "\n")
+    app = create_app(
+        engines=Engines(), refs_dir=tmp_path, vram_gb=24, background=False, llm_tier_file=tier_file
+    )
+    assert TestClient(app).get("/session/status").json() == {"state": expected}
+
+
+def test_tick_loop_logs_failures_and_keeps_running(tmp_path, caplog, monkeypatch):
+    monkeypatch.setattr("gateway.app.TICK_EVERY", 0.01)
+
+    class Failing(FakeSession):
+        async def tick(self):
+            self.calls.append("tick")
+            raise RuntimeError("tick exploded")
+
+    session = Failing()
+    app = create_app(engines=Engines(), session=session, refs_dir=tmp_path, vram_gb=24)
+    with caplog.at_level(logging.ERROR, logger="gateway.app"), TestClient(app):
+        deadline = time.monotonic() + 5
+        while len(session.calls) < 2 and time.monotonic() < deadline:
+            time.sleep(0.01)
+    assert any("tick failed" in r.message and r.exc_info for r in caplog.records)
+    assert len(session.calls) >= 2

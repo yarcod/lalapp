@@ -1,4 +1,5 @@
 import json
+import time
 
 import httpx
 from fastapi.testclient import TestClient
@@ -205,11 +206,13 @@ def test_gives_up_after_the_retry_window(tmp_path, monkeypatch):
     monkeypatch.setattr(llm_proxy, "SWITCH_RETRY_EVERY", 0.001)
     monkeypatch.setattr(llm_proxy, "SWITCH_RETRY_SECONDS", 0.05)
     handler, attempts = down_then_up(10_000)
+    started = time.monotonic()
     r = make_client(tmp_path, "full", handler, switching_session()).post(
         "/v1/chat/completions", json=BODY
     )
     assert r.status_code == 503
     assert len(attempts) >= 2
+    assert time.monotonic() - started < 2
 
 
 def test_no_retry_when_not_switching(tmp_path, monkeypatch):
