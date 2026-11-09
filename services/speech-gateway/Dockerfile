@@ -17,7 +17,7 @@ RUN python -m venv /opt/whisper-env \
 COPY gateway ./gateway
 COPY tests ./tests
 COPY pytest.ini ./
-RUN python -m pytest -q tests/test_app.py tests/test_routing.py tests/test_polish.py tests/test_session.py
+RUN python -m pytest -q tests/test_app.py tests/test_routing.py tests/test_polish.py tests/test_session.py tests/test_llm_proxy.py
 
 EXPOSE 8090
 CMD ["uvicorn", "gateway.app:build", "--factory", "--host", "0.0.0.0", "--port", "8090"]

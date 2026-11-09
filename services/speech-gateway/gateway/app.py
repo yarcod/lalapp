@@ -22,6 +22,7 @@ from gateway.engines import (
     detect_vram_gb,
     whisper_choice,
 )
+from gateway.llm_proxy import DEFAULT_TIER_FILE, make_handler
 from gateway.polish import polish, room_tone
 from gateway.routing import decide_language
 from gateway.session import FileModeControl, SessionManager, SessionState
@@ -88,6 +89,8 @@ def create_app(
     vram_gb: float | None = None,
     encoder=encode_mp3,
     background: bool = True,
+    llm_tier_file=None,
+    llm_transport=None,
 ) -> FastAPI:
     engines = engines or Engines()
     session = session or SessionManager(FileModeControl(), time.monotonic)
@@ -204,6 +207,9 @@ def create_app(
             except EngineOOM as exc:
                 raise HTTPException(503, "out of GPU memory") from exc
         return Response(mp3, media_type="audio/mpeg")
+
+    tier_file = Path(llm_tier_file or os.environ.get("LLM_TIER_FILE", DEFAULT_TIER_FILE))
+    app.post("/v1/chat/completions")(make_handler(tier_file, llm_transport))
 
     return app
 

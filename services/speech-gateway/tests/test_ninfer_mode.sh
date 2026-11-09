@@ -48,13 +48,13 @@ printf '#!/usr/bin/env bash\nexit 0\n' > "$T/bin/sleep"
 chmod +x "$T/bin/"*
 
 run_main() { # name desired state_file_mode [running_mode, default = state_file_mode]
-  rm -f "$T/calls" "$T/curlcount" "$T/state/mode-state.json"
+  rm -f "$T/calls" "$T/curlcount" "$T/state/mode-state.json" "$T/tier"
   mkdir -p "$T/state"
   echo "$2" > "$T/state/desired-mode"
   [[ -n "$3" ]] && echo "{\"mode\":\"$3\",\"state\":\"ready\",\"busy\":false}" > "$T/state/mode-state.json"
   local running="${4:-$3}" active=ninfer.service
   [[ "$running" == speech ]] && active=ninfer-speech.service
-  STUB_ACTIVE="$active" STUB_DIR="$T" SPEECH_GATEWAY_STATE_DIR="$T/state" PATH="$T/bin:$PATH" NINFER_HEALTH_TIMEOUT=4 \
+  STUB_ACTIVE="$active" STUB_DIR="$T" LLM_TIER_FILE="$T/tier" SPEECH_GATEWAY_STATE_DIR="$T/state" PATH="$T/bin:$PATH" NINFER_HEALTH_TIMEOUT=4 \
     bash "$script"
 }
 expect() { # name want_state_json want_calls
@@ -97,5 +97,19 @@ STUB_FAIL_START="" run_main x speech switching full
 expect "unrecognised state-file mode with full running still switches" \
   '{"mode":"speech","state":"ready","busy":false}' \
   "stop ninfer.service|start ninfer-speech.service"
+
+# --- shared tier: Ollama is live, ninfer is never touched ---
+echo "$L running=0 prefilling=0 decode_ready=0 waiting=0" > "$T/dockerlog"
+rm -f "$T/calls"; mkdir -p "$T/state"; echo speech > "$T/state/desired-mode"
+printf 'shared\n' > "$T/tier"
+STUB_ACTIVE="" STUB_DIR="$T" LLM_TIER_FILE="$T/tier" SPEECH_GATEWAY_STATE_DIR="$T/state" PATH="$T/bin:$PATH" bash "$script"
+expect "shared tier writes shared and never switches" \
+  '{"mode":"shared","state":"ready","busy":false}' ""
+
+# mode-state.json saying shared no longer matters when the tier file says full.
+rm -f "$T/calls" "$T/tier"; echo '{"mode":"shared","state":"ready","busy":false}' > "$T/state/mode-state.json"
+STUB_ACTIVE="ninfer.service" STUB_DIR="$T" LLM_TIER_FILE="$T/tier" SPEECH_GATEWAY_STATE_DIR="$T/state" PATH="$T/bin:$PATH" NINFER_HEALTH_TIMEOUT=4 bash "$script"
+expect "state file saying shared is ignored" \
+  '{"mode":"speech","state":"ready","busy":false}' "stop ninfer.service|start ninfer-speech.service"
 
 exit $fail

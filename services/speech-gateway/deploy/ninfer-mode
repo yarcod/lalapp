@@ -26,10 +26,10 @@ current_mode() {
   if systemctl is-active --quiet ninfer-speech.service; then echo speech; else echo full; fi
 }
 
-# "shared" is written by something other than this script, so it is read from the file.
-state_file_mode() {
-  [[ -f "$STATE_DIR/mode-state.json" ]] \
-    && grep -Eo '"mode" *: *"[a-z]+"' "$STATE_DIR/mode-state.json" | grep -Eo '[a-z]+"$' | tr -d '"'
+# "shared" (Ollama is the live backend, there is no ninfer to switch) comes from the boot
+# tier file written by llm-tier, not from mode-state.json. Missing or anything else is full.
+tier() {
+  { tr -d "[:space:]" < "${LLM_TIER_FILE:-/run/llm-tier}"; } 2>/dev/null
 }
 
 unit_for() { [[ "$1" == speech ]] && echo ninfer-speech.service || echo ninfer.service; }
@@ -47,7 +47,7 @@ main() {
   local want cur
   want="$(tr -d '[:space:]' < "$STATE_DIR/desired-mode" 2>/dev/null)"
   [[ "$want" == speech || "$want" == full ]] || { echo "bad desired-mode: $want" >&2; exit 2; }
-  if [[ "$(state_file_mode)" == shared ]]; then exit 0; fi
+  if [[ "$(tier)" == shared ]]; then write_state shared ready false; exit 0; fi
   cur="$(current_mode)"
   if [[ "$want" == "$cur" ]]; then write_state "$cur" ready false; exit 0; fi
 
