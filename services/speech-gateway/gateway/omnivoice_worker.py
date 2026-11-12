@@ -66,7 +66,7 @@ def main() -> None:
         if not line.strip():
             continue
         try:
-            reply = handle(json.loads(line), state)
+            reply: dict = handle(json.loads(line), state)
         except Exception as exc:  # noqa: BLE001
             reply = {"error": f"{type(exc).__name__}: {exc}"}
             if is_oom(exc):  # e.g. while loading the model
