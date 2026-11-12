@@ -82,7 +82,8 @@ def reconcile(engines, session, vram_gb: float) -> None:
     """Hold the GPU engines exactly while the session is ready or shared."""
     if session.state in GPU_STATES:
         engines.tts.load()
-        engines.whisper.preload(*whisper_choice(PRELOAD_LANGUAGE, vram_gb))
+        if engines.whisper.held_model is None:  # keep a model a transcribe already swapped in
+            engines.whisper.preload(*whisper_choice(PRELOAD_LANGUAGE, vram_gb))
     else:
         engines.tts.unload()
         engines.whisper.unload()

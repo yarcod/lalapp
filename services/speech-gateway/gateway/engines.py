@@ -147,6 +147,11 @@ class WhisperEngine:
             env=worker_env(self._python),
         )
 
+    @property
+    def held_model(self) -> tuple[str, str] | None:
+        """The (model, device) the worker holds, or None when nothing is loaded."""
+        return self._loaded
+
     def preload(self, model: str, device: str) -> None:
         """Start the worker and load a model now, so the first request does not wait for it."""
         self.load()

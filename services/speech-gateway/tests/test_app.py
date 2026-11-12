@@ -49,6 +49,7 @@ class FakeWhisper:
         self.calls = []
         self.preloaded = []
         self.loaded = False
+        self.held_model = None
 
     def load(self):
         self.loaded = True
@@ -56,9 +57,11 @@ class FakeWhisper:
     def preload(self, model, device):
         self.preloaded.append((model, device))
         self.loaded = True
+        self.held_model = (model, device)
 
     def unload(self):
         self.loaded = False
+        self.held_model = None
 
     def transcribe(self, audio, language, model, device):
         self.calls.append((language, model, device))
@@ -251,6 +254,26 @@ def test_reconcile_preloads_whisper_for_the_english_plan_model(vram, expected):
     eng = Engines()
     reconcile(eng, FakeSession(SessionState.READY), vram)
     assert eng.whisper.preloaded == [expected]
+
+
+def test_reconcile_keeps_a_whisper_model_already_loaded():
+    from gateway.app import reconcile
+
+    eng = Engines()
+    eng.whisper.held_model = ("kbmedium-es", "cuda")  # swapped in by a Spanish utterance
+    reconcile(eng, FakeSession(SessionState.READY), 24.0)
+    assert eng.whisper.preloaded == []
+    assert eng.whisper.held_model == ("kbmedium-es", "cuda")
+
+
+def test_reconcile_preloads_again_after_the_whisper_worker_was_unloaded():
+    from gateway.app import reconcile
+
+    eng = Engines()
+    reconcile(eng, FakeSession(SessionState.READY), 24.0)
+    reconcile(eng, FakeSession(SessionState.BUSY), 24.0)
+    reconcile(eng, FakeSession(SessionState.READY), 24.0)
+    assert len(eng.whisper.preloaded) == 2
 
 
 def test_single_sentence_ends_with_room_tone(refs):
