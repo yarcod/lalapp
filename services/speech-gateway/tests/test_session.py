@@ -134,7 +134,7 @@ async def test_release_retries_until_idle():
     await mgr.tick()
     assert fake.requests == ["speech", "full"]
     assert fake.mode == "speech"
-    assert mgr.state == SessionState.READY  # voice stays usable
+    assert mgr.state == SessionState.SWITCHING  # released: speech is no longer served
     clock.now += 29
     await mgr.tick()
     assert fake.requests == ["speech", "full"]
@@ -150,6 +150,60 @@ async def test_release_retries_until_idle():
     clock.now += 100
     await mgr.tick()
     assert len(fake.requests) == 4
+
+
+class GpuEngines:
+    """Stands in for reconcile: the engines hold the GPU until unload() runs."""
+
+    def __init__(self, fake):
+        self.fake = fake
+        self.loaded = True
+
+    def idle(self):
+        return not self.loaded
+
+
+@sync
+async def test_release_unloads_the_engines_before_requesting_full():
+    fake, clock = FakeMode(), Clock()
+    gpu = GpuEngines(fake)
+    mgr = SessionManager(fake, clock, gpu_idle=gpu.idle)
+    states_at_request = []
+    real_request = fake.request
+
+    def request(mode):
+        states_at_request.append((mode, mgr.state, gpu.loaded))
+        real_request(mode)
+
+    fake.request = request
+    await mgr.open()
+    await mgr.tick()
+    assert mgr.state == SessionState.READY
+    clock.now += 700
+    await mgr.tick()
+    assert mgr.state == SessionState.SWITCHING  # reconcile unloads on this state
+    assert fake.requests == ["speech"]  # full waits for the unload
+    await mgr.tick()
+    assert fake.requests == ["speech"]
+    gpu.loaded = False  # reconcile ran
+    await mgr.tick()
+    assert fake.requests == ["speech", "full"]
+    assert states_at_request[-1] == ("full", SessionState.SWITCHING, False)
+    assert mgr.state == SessionState.OFF
+
+
+@sync
+async def test_open_while_release_waits_for_the_unload_keeps_speech():
+    fake, clock = FakeMode(), Clock()
+    gpu = GpuEngines(fake)
+    mgr = SessionManager(fake, clock, gpu_idle=gpu.idle)
+    await mgr.open()
+    clock.now += 700
+    await mgr.tick()
+    assert mgr.state == SessionState.SWITCHING
+    assert await mgr.open() == SessionState.READY
+    assert fake.requests == ["speech", "speech"]
+    assert fake.mode == "speech"
 
 
 @sync

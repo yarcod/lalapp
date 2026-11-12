@@ -73,17 +73,22 @@ RETRY_EVERY = 30.0
 class SessionManager:
     """The host script is the only authority on busy: every desired mode is written and the
     script accepts or refuses it. A refusal reads as mode != desired with busy and state ready;
-    the write is repeated at most every 30 s until accepted."""
+    the write is repeated at most every 30 s until accepted.
+
+    Releasing stops serving speech at once (SWITCHING), and `full` is written only once
+    `gpu_idle` reports the GPU engines unloaded: full ninfer needs the memory they hold."""
 
     def __init__(
         self,
         mode: ModeControl,
         clock: Callable[[], float],
         release_after: float = 600.0,
+        gpu_idle: Callable[[], bool] = lambda: True,
     ) -> None:
         self._mode = mode
         self._clock = clock
         self._release_after = release_after
+        self._gpu_idle = gpu_idle
         self._active = False
         self._wrote_speech = False  # a speech write may still take effect
         self._written: str | None = None
@@ -139,6 +144,9 @@ class SessionManager:
             return
 
         desired = "speech" if self._active else "full"
+        if desired == "full" and not self._gpu_idle():
+            self.state = SessionState.SWITCHING  # reconcile unloads; `full` waits for it
+            return
         mode, status = info.get("mode"), info.get("state")
         reopened = False  # speech re-requested while a full write is outstanding
         if self._force or self._written != desired or (
@@ -155,8 +163,6 @@ class SessionManager:
                 self._wrote_speech = False
                 self._written = None
                 self.state = SessionState.OFF
-            elif mode == "speech" and status == "ready":
-                self.state = SessionState.READY  # speech stays usable until accepted
             else:
                 self.state = SessionState.SWITCHING
         elif refused:

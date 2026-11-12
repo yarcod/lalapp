@@ -5,6 +5,7 @@ import contextlib
 import json
 import os
 import subprocess
+import sys
 import threading
 from pathlib import Path
 
@@ -12,9 +13,9 @@ import numpy as np
 
 CPU_TIER_BELOW_GB = 10.0
 WHISPER_PYTHON = "/opt/whisper-env/bin/python"
-OMNIVOICE_SR = 24000
 WORKER_LOAD_TIMEOUT = 120.0
 WORKER_REQUEST_TIMEOUT = 60.0
+OMNIVOICE_LOAD_TIMEOUT = 300.0  # weights load from disk into a fresh CUDA context
 
 
 class EngineOOM(Exception):
@@ -68,50 +69,6 @@ class ParakeetEngine:
             return str(self._model.recognize(audio, sample_rate=16000)).strip()
 
 
-class OmniVoiceEngine:
-    def __init__(self) -> None:
-        self._model = None
-
-    def load(self) -> None:
-        if self._model is not None:
-            return
-        import torch
-        from omnivoice import OmniVoice
-
-        self._model = OmniVoice.from_pretrained(
-            "k2-fsa/OmniVoice", device_map="cuda:0", dtype=torch.float16
-        )
-
-    def unload(self) -> None:
-        if self._model is None:
-            return
-        self._model = None
-        import gc
-
-        import torch
-
-        gc.collect()
-        torch.cuda.empty_cache()
-
-    def synth(
-        self, text: str, language: str, ref_audio: str, ref_text: str
-    ) -> tuple[np.ndarray, int]:
-        if self._model is None:
-            self.load()
-        import torch
-
-        try:
-            out = self._model.generate(
-                text=text, language=language, ref_audio=ref_audio, ref_text=ref_text
-            )[0]
-        except torch.cuda.OutOfMemoryError as exc:
-            torch.cuda.empty_cache()
-            raise EngineOOM from exc
-        if hasattr(out, "detach"):
-            out = out.detach().float().cpu().numpy()
-        return np.asarray(out, dtype=np.float32).reshape(-1), OMNIVOICE_SR
-
-
 def worker_env(python: str) -> dict[str, str]:
     """Environment for the worker alone: the CUDA 12 libraries installed in its venv.
 
@@ -125,43 +82,41 @@ def worker_env(python: str) -> dict[str, str]:
     }
 
 
-class WhisperEngine:
-    """Client for the faster-whisper child process."""
+class WorkerClient:
+    """A child process answering one JSON line per request line. Unloading ends the process,
+    which is the only way to hand its CUDA context back to the GPU."""
 
-    def __init__(self, python: str = WHISPER_PYTHON) -> None:
-        self._python = python
-        self._cmd = [python, "-m", "gateway.whisper_worker"]
+    name = "worker"
+
+    def __init__(self, cmd: list[str], env: dict[str, str] | None = None) -> None:
+        self._cmd = cmd
+        self._env = env
         self._proc: subprocess.Popen | None = None
-        self._loaded: tuple[str, str] | None = None  # the model the worker holds
 
-    def load(self) -> None:
-        if self._proc is not None and self._proc.poll() is None:
+    @property
+    def loaded(self) -> bool:
+        """True while a worker process exists, including one still loading its model."""
+        return self._proc is not None and self._proc.poll() is None
+
+    def _forget(self) -> None:
+        """Drop what the client knows about the worker's model."""
+
+    def start(self) -> None:
+        if self.loaded:
             return
-        self._loaded = None
+        self._forget()
         self._proc = subprocess.Popen(  # noqa: S603
             self._cmd,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             text=True,
             bufsize=1,
-            env=worker_env(self._python),
+            env=self._env,
         )
-
-    @property
-    def held_model(self) -> tuple[str, str] | None:
-        """The (model, device) the worker holds, or None when nothing is loaded."""
-        return self._loaded
-
-    def preload(self, model: str, device: str) -> None:
-        """Start the worker and load a model now, so the first request does not wait for it."""
-        self.load()
-        if self._loaded != (model, device):
-            self._call({"op": "load", "model": model, "device": device}, WORKER_LOAD_TIMEOUT)
-            self._loaded = (model, device)
 
     def unload(self) -> None:
         proc, self._proc = self._proc, None
-        self._loaded = None
+        self._forget()
         if proc is None:
             return
         proc.terminate()  # exiting frees the model and its CUDA context
@@ -169,11 +124,13 @@ class WhisperEngine:
             proc.wait(timeout=10)
         except subprocess.TimeoutExpired:
             proc.kill()
+            with contextlib.suppress(subprocess.TimeoutExpired):
+                proc.wait(timeout=10)
 
     def _kill(self) -> None:
         """A hung worker ignores SIGTERM, so unload's polite wait would only waste time."""
         proc, self._proc = self._proc, None
-        self._loaded = None
+        self._forget()
         if proc is None:
             return
         proc.kill()
@@ -187,11 +144,11 @@ class WhisperEngine:
         reader.join(timeout)
         if reader.is_alive():  # the reader ends once the kill closes the pipe
             self._kill()
-            raise EngineError(f"whisper worker timed out after {timeout:g} s")
+            raise EngineError(f"{self.name} worker timed out after {timeout:g} s")
         return lines[0]
 
     def _call(self, req: dict, timeout: float) -> dict:
-        self.load()
+        self.start()
         proc = self._proc
         try:
             proc.stdin.write(json.dumps(req) + "\n")
@@ -199,14 +156,84 @@ class WhisperEngine:
             line = self._readline(proc, timeout)
         except OSError as exc:
             self.unload()
-            raise EngineError("whisper worker died") from exc
+            raise EngineError(f"{self.name} worker died") from exc
         if not line:
             self.unload()
-            raise EngineError("whisper worker exited")
+            raise EngineError(f"{self.name} worker exited")
         reply = json.loads(line)
+        if reply.get("oom"):
+            raise EngineOOM(reply.get("error", "out of GPU memory"))
         if "error" in reply:
             raise EngineError(reply["error"])
         return reply
+
+
+class OmniVoiceEngine(WorkerClient):
+    """Client for the OmniVoice child process, which runs in the gateway's own Python env."""
+
+    name = "omnivoice"
+
+    def __init__(self, python: str = sys.executable) -> None:
+        super().__init__([python, "-m", "gateway.omnivoice_worker"])
+        self._ready = False  # the worker holds the model
+
+    def _forget(self) -> None:
+        self._ready = False
+
+    def load(self) -> None:
+        self.start()
+        if not self._ready:
+            self._call({"op": "load"}, OMNIVOICE_LOAD_TIMEOUT)
+            self._ready = True
+
+    def synth(
+        self, text: str, language: str, ref_audio: str, ref_text: str
+    ) -> tuple[np.ndarray, int]:
+        self.load()
+        reply = self._call(
+            {
+                "op": "synth",
+                "text": text,
+                "language": language,
+                "ref_audio": ref_audio,
+                "ref_text": ref_text,
+            },
+            WORKER_REQUEST_TIMEOUT,
+        )
+        audio = np.frombuffer(base64.b64decode(reply["audio"]), dtype=np.float32).copy()
+        return audio, int(reply["sample_rate"])
+
+
+class WhisperEngine(WorkerClient):
+    """Client for the faster-whisper child process."""
+
+    name = "whisper"
+
+    def __init__(self, python: str = WHISPER_PYTHON) -> None:
+        super().__init__([python, "-m", "gateway.whisper_worker"])
+        self._python = python
+        self._loaded: tuple[str, str] | None = None  # the model the worker holds
+
+    def _forget(self) -> None:
+        self._loaded = None
+
+    def start(self) -> None:
+        self._env = worker_env(self._python)
+        super().start()
+
+    load = start
+
+    @property
+    def held_model(self) -> tuple[str, str] | None:
+        """The (model, device) the worker holds, or None when nothing is loaded."""
+        return self._loaded
+
+    def preload(self, model: str, device: str) -> None:
+        """Start the worker and load a model now, so the first request does not wait for it."""
+        self.start()
+        if self._loaded != (model, device):
+            self._call({"op": "load", "model": model, "device": device}, WORKER_LOAD_TIMEOUT)
+            self._loaded = (model, device)
 
     def transcribe(self, audio: np.ndarray, language: str, model: str, device: str) -> str:
         b64 = base64.b64encode(np.asarray(audio, dtype=np.float32).tobytes()).decode()

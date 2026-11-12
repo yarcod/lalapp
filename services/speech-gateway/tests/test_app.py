@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 
 from gateway.app import create_app
 from gateway import engines as engines_module
-from gateway.engines import EngineError, EngineOOM, WhisperEngine, worker_env
+from gateway.engines import EngineError, EngineOOM, OmniVoiceEngine, WhisperEngine, worker_env
 from gateway.session import SessionState
 
 
@@ -415,6 +415,150 @@ def test_whisper_worker_protocol():
     assert loads[-1] == ("kbmedium", "cuda")
     assert handle({"op": "unload"}, state, loader) == {"ok": True}
     assert state == {}
+
+
+OMNIVOICE_WORKER = (
+    "import base64, json, sys\n"
+    "import numpy as np\n"
+    "for line in sys.stdin:\n"
+    "    req = json.loads(line)\n"
+    "    if req['op'] == 'load':\n"
+    "        print(json.dumps({'ok': True}), flush=True)\n"
+    "    elif req['text'] == 'oom':\n"
+    "        print(json.dumps({'error': 'out of GPU memory', 'oom': True}), flush=True)\n"
+    "    elif req['text'] == 'bad':\n"
+    "        print(json.dumps({'error': 'ValueError: bad'}), flush=True)\n"
+    "    else:\n"
+    "        a = np.full(4, 0.5, dtype=np.float32).tobytes()\n"
+    "        print(json.dumps({'audio': base64.b64encode(a).decode(), 'sample_rate': 24000}),\n"
+    "              flush=True)\n"
+)
+
+
+def omnivoice(script=OMNIVOICE_WORKER):
+    engine = OmniVoiceEngine(sys.executable)
+    engine._cmd = [sys.executable, "-u", "-c", script]
+    return engine
+
+
+def test_omnivoice_runs_in_a_worker_and_unload_ends_it():
+    engine = omnivoice()
+    try:
+        engine.load()
+        proc = engine._proc
+        assert engine.loaded and proc.poll() is None
+        audio, sr = engine.synth("Hej.", "sv", "/refs/sv.wav", "hej")
+        assert sr == 24000 and audio.dtype == np.float32
+        assert audio.tolist() == [0.5] * 4
+        engine.unload()
+        assert proc.poll() is not None  # the process, and its CUDA context, are gone
+        assert not engine.loaded
+    finally:
+        engine.unload()
+
+
+def test_omnivoice_oom_raises_engine_oom_and_other_errors_engine_error():
+    engine = omnivoice()
+    try:
+        with pytest.raises(EngineOOM):
+            engine.synth("oom", "sv", "r.wav", "r")
+        with pytest.raises(EngineError):
+            engine.synth("bad", "sv", "r.wav", "r")
+        assert engine.synth("ok", "sv", "r.wav", "r")[1] == 24000  # the worker survives both
+    finally:
+        engine.unload()
+
+
+def test_omnivoice_hung_worker_is_killed(monkeypatch):
+    monkeypatch.setattr(engines_module, "OMNIVOICE_LOAD_TIMEOUT", 0.2)
+    engine = omnivoice(HUNG_WORKER)
+    engine.start()
+    proc = engine._proc
+    with pytest.raises(EngineError, match="timed out"):
+        engine.load()
+    assert engine._proc is None and proc.poll() is not None
+
+
+def test_omnivoice_loads_the_model_once_until_unloaded(monkeypatch):
+    engine = omnivoice()
+    calls = []
+    real = engine._call
+    monkeypatch.setattr(engine, "_call", lambda req, t: (calls.append(req["op"]), real(req, t))[1])
+    try:
+        engine.load()
+        engine.load()
+        engine.synth("ok", "sv", "r.wav", "r")
+        assert calls == ["load", "synth"]
+        engine.unload()
+        engine.load()
+        assert calls == ["load", "synth", "load"]
+    finally:
+        engine.unload()
+
+
+def test_omnivoice_worker_protocol():
+    import base64
+
+    from gateway.omnivoice_worker import handle
+
+    class OutOfMemoryError(RuntimeError):
+        pass
+
+    class Model:
+        def generate(self, text, language, ref_audio, ref_text):
+            if text == "oom":
+                raise OutOfMemoryError("CUDA out of memory")
+            if text == "bad":
+                raise ValueError("bad")
+            return [np.ones(3, dtype=np.float64)]
+
+    loads, state = [], {}
+
+    def loader():
+        loads.append(1)
+        return Model()
+
+    assert handle({"op": "load"}, state, loader) == {"ok": True}
+    req = {"op": "synth", "text": "hi", "language": "en", "ref_audio": "a", "ref_text": "b"}
+    reply = handle(req, state, loader)
+    assert reply["sample_rate"] == 24000
+    assert np.frombuffer(base64.b64decode(reply["audio"]), dtype=np.float32).tolist() == [1.0] * 3
+    assert handle({**req, "text": "oom"}, state, loader)["oom"] is True
+    with pytest.raises(ValueError):
+        handle({**req, "text": "bad"}, state, loader)
+    assert loads == [1]
+    assert "error" in handle({"op": "nope"}, state, loader)
+
+
+def test_omnivoice_worker_does_not_import_torch():
+    import subprocess
+
+    code = "import sys, gateway.omnivoice_worker; print('torch' in sys.modules)"
+    root = Path(__file__).resolve().parent.parent
+    out = subprocess.run(
+        [sys.executable, "-c", code], capture_output=True, text=True, check=True, cwd=root
+    ).stdout
+    assert out.strip() == "False"
+
+
+def test_default_session_waits_for_the_gpu_engines_before_releasing(tmp_path, monkeypatch):
+    seen = {}
+
+    class Recorder:
+        def __init__(self, mode, clock, gpu_idle):
+            seen["idle"] = gpu_idle
+            self.state = SessionState.OFF
+
+    monkeypatch.setattr("gateway.app.SessionManager", Recorder)
+    eng = Engines()
+    create_app(
+        engines=eng, refs_dir=tmp_path, vram_gb=24, background=False, llm_tier_file=tmp_path / "t"
+    )
+    assert seen["idle"]() is True
+    eng.tts.loaded = True
+    assert seen["idle"]() is False
+    eng.tts.loaded, eng.whisper.loaded = False, True
+    assert seen["idle"]() is False
 
 
 def test_onnx_asr_is_installed_with_its_runtime():

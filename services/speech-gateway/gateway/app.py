@@ -101,7 +101,11 @@ def create_app(
 ) -> FastAPI:
     engines = engines or Engines()
     tier_file = Path(llm_tier_file or os.environ.get("LLM_TIER_FILE", DEFAULT_TIER_FILE))
-    session = session or SessionManager(FileModeControl(tier_file=tier_file), time.monotonic)
+    session = session or SessionManager(
+        FileModeControl(tier_file=tier_file),
+        time.monotonic,
+        gpu_idle=lambda: not engines.tts.loaded and not engines.whisper.loaded,
+    )
     refs_dir = Path(refs_dir or os.environ.get("REFS_DIR", "/models/refs"))
     vram = detect_vram_gb() if vram_gb is None else vram_gb
     gpu_lock = asyncio.Lock()
@@ -173,6 +177,8 @@ def create_app(
         if device == "cuda" and session.state not in GPU_STATES:
             raise HTTPException(503, "speech session not ready")
         async with gpu_lock:
+            if device == "cuda" and session.state not in GPU_STATES:  # released while waiting
+                raise HTTPException(503, "speech session not ready")
             try:
                 text = await asyncio.to_thread(
                     engines.whisper.transcribe, audio, spoken, model, device
@@ -213,10 +219,15 @@ def create_app(
             return encoder(np.concatenate(parts), sr)
 
         async with gpu_lock:
+            if session.state not in GPU_STATES:  # released while waiting: do not reload
+                raise HTTPException(503, "speech session not ready")
             try:
                 mp3 = await asyncio.to_thread(render)
             except EngineOOM as exc:
                 raise HTTPException(503, "out of GPU memory") from exc
+            except EngineError as exc:
+                log.error("speech synthesis failed: %s", exc)
+                raise HTTPException(503, "speech engine failed") from exc
         return Response(mp3, media_type="audio/mpeg")
 
     app.post("/v1/chat/completions")(make_handler(tier_file, llm_transport, session))
