@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { create } from 'zustand'
 import { apiFetch } from '@/lib/api'
 import { useAuthStore } from '@/store/auth'
+import { useLanguageStore } from '@/store/language'
 
 interface HomeProfile {
   is_child: boolean
@@ -28,6 +29,10 @@ let pendingSaves = 0
 // requests started under an earlier session.
 let trackedVersion: number | undefined
 let epoch = 0
+// The learner's languages the profile was last checked against. A plan change
+// (new language, new level) refreshes them, and with them tagged_languages.
+const UNTRACKED = Symbol('untracked')
+let trackedLanguages: unknown = UNTRACKED
 
 export const useHomeProfileStore = create<HomeProfileStore>((set, get) => ({
   isChild: false,
@@ -104,19 +109,29 @@ function resetForNewSession(): void {
   })
 }
 
-// Loads the profile once, the first time any consumer needs it.
+// Loads the profile the first time any consumer needs it, and again when the
+// learner's languages change so tagged_languages follows plan changes.
 export function useEnsureHomeProfile(): void {
   const loaded = useHomeProfileStore((s) => s.loaded)
   const version = useAuthStore((s) => s.sessionVersion)
+  const languages = useLanguageStore((s) => s.userLanguages)
   useEffect(() => {
     if (trackedVersion !== version) {
       if (trackedVersion !== undefined) resetForNewSession()
       trackedVersion = version
     }
+    if (trackedLanguages !== languages) {
+      const changed = trackedLanguages !== UNTRACKED
+      trackedLanguages = languages
+      if (changed && loaded) {
+        void useHomeProfileStore.getState().load()
+        return
+      }
+    }
     if (loaded || autoLoadStarted) return
     autoLoadStarted = true
     void useHomeProfileStore.getState().load()
-  }, [loaded, version])
+  }, [loaded, version, languages])
 }
 
 // Tagged replies mix languages line by line, which one read-aloud voice cannot

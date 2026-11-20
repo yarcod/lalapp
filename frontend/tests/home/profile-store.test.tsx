@@ -11,6 +11,7 @@ vi.mock('@/lib/api', () => ({ apiFetch: mocks.apiFetch }))
 import { ChildProfileToggle } from '@/home/components/ChildProfileToggle'
 import { useHomeProfileStore } from '@/home/store/profile'
 import { useAuthStore } from '@/store/auth'
+import { useLanguageStore } from '@/store/language'
 
 function json(data: unknown, ok = true) {
   return { ok, status: ok ? 200 : 500, json: () => Promise.resolve(data) }
@@ -111,6 +112,28 @@ describe('home profile store session handling', () => {
     render(<ChildProfileToggle />)
     await waitFor(() =>
       expect(useHomeProfileStore.getState().isChild).toBe(true)
+    )
+    expect(mocks.apiFetch).toHaveBeenCalledTimes(2)
+  })
+
+  it('reloads tagged languages when the learner languages change', async () => {
+    mocks.apiFetch.mockResolvedValueOnce(
+      json({ is_child: false, tagged_languages: [] })
+    )
+    render(<ChildProfileToggle />)
+    await waitFor(() =>
+      expect(useHomeProfileStore.getState().loaded).toBe(true)
+    )
+
+    mocks.apiFetch.mockResolvedValueOnce(
+      json({ is_child: false, tagged_languages: ['en-GB'] })
+    )
+    const before = useLanguageStore.getState().userLanguages
+    act(() => {
+      useLanguageStore.setState({ userLanguages: [...before] })
+    })
+    await waitFor(() =>
+      expect(useHomeProfileStore.getState().taggedLanguages).toEqual(['en-GB'])
     )
     expect(mocks.apiFetch).toHaveBeenCalledTimes(2)
   })
