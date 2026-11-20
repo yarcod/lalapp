@@ -1,0 +1,16 @@
+backend/app/main.py
+backend/app/core/deps.py
+backend/app/routers/conversation.py
+backend/app/routers/games.py
+backend/app/routers/chat.py
+backend/app/services/conversation_pipeline.py
+backend/app/services/games.py
+backend/app/services/prompts/tutor.py
+backend/app/services/prompts/lesson.py
+backend/app/services/llm_adapter.py
+backend/app/services/tts_service.py
+frontend/src/components/conversation/ConversationMode.tsx
+frontend/src/components/games/GameCatalog.tsx
+frontend/src/components/settings/ProfileSection.tsx
+frontend/src/i18n/request.ts
+frontend/src/app/(app)/chat/page.tsx
