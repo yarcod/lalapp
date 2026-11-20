@@ -9,14 +9,18 @@ export function ChildProfileToggle() {
   const isChild = useHomeProfileStore((s) => s.isChild)
   const setChild = useHomeProfileStore((s) => s.setChild)
   const [failed, setFailed] = useState(false)
+  const [saving, setSaving] = useState(false)
   useEnsureHomeProfile()
 
   async function onChange(value: boolean) {
     setFailed(false)
+    setSaving(true)
     try {
       await setChild(value)
     } catch {
       setFailed(true)
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -27,6 +31,7 @@ export function ChildProfileToggle() {
           id="is-child"
           type="checkbox"
           checked={isChild}
+          disabled={saving}
           onChange={(e) => void onChange(e.target.checked)}
           className="accent-fl-accent mt-0.5 h-4 w-4 flex-shrink-0 cursor-pointer"
         />

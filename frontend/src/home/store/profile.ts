@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { create } from 'zustand'
 import { apiFetch } from '@/lib/api'
+import { useAuthStore } from '@/store/auth'
 
 interface HomeProfile {
   is_child: boolean
@@ -16,9 +17,17 @@ interface HomeProfileStore {
 }
 
 let inflight: Promise<void> | null = null
-// The hook starts at most one automatic load; a failed one is not retried on
-// every render. An explicit load() call always tries again.
+// The hook starts at most one automatic load at a time; a failed load clears
+// the flag so the next mount retries. An explicit load() call always tries.
 let autoLoadStarted = false
+// Last value the server confirmed, the rollback target for a failed save.
+let confirmedChild = false
+let pendingSaves = 0
+
+// The session the store content belongs to, and a counter that invalidates
+// requests started under an earlier session.
+let trackedVersion: number | undefined
+let epoch = 0
 
 export const useHomeProfileStore = create<HomeProfileStore>((set, get) => ({
   isChild: false,
@@ -27,27 +36,34 @@ export const useHomeProfileStore = create<HomeProfileStore>((set, get) => ({
 
   load: () => {
     if (inflight) return inflight
+    const version = epoch
     inflight = (async () => {
       try {
         const res = await apiFetch('/api/home/profile')
         if (!res.ok) return
         const data: HomeProfile = await res.json()
+        if (version !== epoch) return
+        confirmedChild = data.is_child === true
         set({
-          isChild: data.is_child === true,
+          isChild: confirmedChild,
           taggedLanguages: data.tagged_languages ?? [],
           loaded: true,
         })
       } catch {
         // Keep the defaults: the learner is treated as not a child.
       } finally {
-        inflight = null
+        if (version === epoch) inflight = null
+        if (!get().loaded && version === epoch) {
+          autoLoadStarted = false
+        }
       }
     })()
     return inflight
   },
 
   setChild: async (value) => {
-    const previous = get().isChild
+    const version = epoch
+    if (pendingSaves++ === 0) confirmedChild = get().isChild
     set({ isChild: value })
     try {
       const res = await apiFetch('/api/home/profile', {
@@ -57,26 +73,50 @@ export const useHomeProfileStore = create<HomeProfileStore>((set, get) => ({
       })
       if (!res.ok) throw new Error(`PUT /api/home/profile ${res.status}`)
       const data: HomeProfile = await res.json()
+      if (version !== epoch) return
+      confirmedChild = data.is_child === true
       set({
-        isChild: data.is_child === true,
+        isChild: confirmedChild,
         taggedLanguages: data.tagged_languages ?? [],
         loaded: true,
       })
     } catch (err) {
-      set({ isChild: previous })
+      if (version === epoch) set({ isChild: confirmedChild })
       throw err
+    } finally {
+      if (version === epoch) pendingSaves -= 1
     }
   },
 }))
 
+// The profile belongs to one session: a login, logout or user switch drops it,
+// and responses still in flight from the old session are discarded.
+function resetForNewSession(): void {
+  epoch += 1
+  inflight = null
+  autoLoadStarted = false
+  confirmedChild = false
+  pendingSaves = 0
+  useHomeProfileStore.setState({
+    isChild: false,
+    taggedLanguages: [],
+    loaded: false,
+  })
+}
+
 // Loads the profile once, the first time any consumer needs it.
 export function useEnsureHomeProfile(): void {
   const loaded = useHomeProfileStore((s) => s.loaded)
+  const version = useAuthStore((s) => s.sessionVersion)
   useEffect(() => {
+    if (trackedVersion !== version) {
+      if (trackedVersion !== undefined) resetForNewSession()
+      trackedVersion = version
+    }
     if (loaded || autoLoadStarted) return
     autoLoadStarted = true
     void useHomeProfileStore.getState().load()
-  }, [loaded])
+  }, [loaded, version])
 }
 
 // Tagged replies mix languages line by line, which one read-aloud voice cannot
