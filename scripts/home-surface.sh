@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Print the footprint of this fork on upstream-owned files (home-owned paths excluded).
+# Print the footprint of this fork on upstream-path files, modified, added or deleted
+# (home-owned paths excluded).
 # With --since <rev>, print the upstream commits in <rev>..upstream/main that touch a path
-# listed in backend/app/home/SEAMS.md (the upstream files home hooks into), grouped by path.
+# listed in backend/app/home/SEAMS.md (the upstream files the fork modifies), grouped by path.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -41,7 +42,7 @@ fi
 
 base=$(git merge-base HEAD upstream/main)
 
-stats=$(git diff --numstat --diff-filter=M "$base"..HEAD -- . \
+stats=$(git diff --numstat --no-renames --diff-filter=AMD "$base"..HEAD -- . \
   ':(exclude)backend/app/home/' \
   ':(exclude)backend/alembic_home/' \
   ':(exclude)backend/alembic_home.ini' \

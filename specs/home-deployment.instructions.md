@@ -13,7 +13,7 @@ fork. Where this spec and an upstream spec disagree about a home feature, this s
 
 - `backend/app/home/`: home backend code (context, profile, prompts, chat, conversation, provisional
   turns, spoken lines, games, game stock, speech session, settings, models, installer).
-- `backend/app/home/SEAMS.md`: the list of upstream files that carry hooks, read by the sync report.
+- `backend/app/home/SEAMS.md`: the list of upstream files the fork modifies, read by the sync report.
 - `backend/alembic_home/` and `backend/alembic_home.ini`: the home migration history.
 - `backend/tests/home/`: home tests, including `test_upstream_seams.py`.
 - `frontend/src/home/` and `frontend/tests/home/`: home components, hooks, stores and libraries.
@@ -44,8 +44,9 @@ upstream settings.
   plan languages for which tagged replies apply. Upstream `/api/auth/me` does not carry the flag.
 - The frontend profile store (`frontend/src/home/store/profile.ts`) holds the profile. The Settings
   profile section shows a child checkbox that saves on click; if the request fails the checkbox
-  returns to its saved value and shows the shared error alert. Saves are serialized and the store
-  resets on session change.
+  returns to its saved value and shows the shared error alert. Saves are serialized, the store
+  resets on session change, and it reloads when the language store's `userLanguages` change so
+  `tagged_languages` follows plan changes.
 - `app/home/context.py` holds the current learner (`is_child`, native language) in a context variable.
   `get_current_user` sets it once per authenticated request through `enter_user`; the
   conversation WebSocket sets it where it resolves the user; background work uses `use_learner`.
@@ -211,7 +212,8 @@ Serving (`POST /api/games/{game_type}` in stock mode):
   lists up to five completed games, newest first, as `{id, mode, completed_at, score, total,
   xp_earned}`. An empty response stores no request, so the UUID stays reusable and uses no quota.
 - The catalog shows the empty result as a friendly note with replay buttons (`StockEmptyNote`), not
-  as an alert or paywall. A catalog start is blocked while a replay is running.
+  as an alert or paywall. Starting a replay clears the catalog's error alert, and catalog starts and
+  other replays stay blocked while it runs and, after success, until the page navigates.
 
 Replay: `POST /api/games/sessions/{id}/replay` (10/min, maintenance checked) requires an owned
 `completed` session (otherwise 409 `game_not_completed`). It returns the plan's active game of that
@@ -283,9 +285,11 @@ and run on the GPU host; the workflows do not publish it.
 ## Hook points in upstream files
 
 Every upstream file the fork still modifies, with the reason. Every hook line calls a function or
-renders a component whose module path starts with `app.home` or `@/home`. The list of backend and
-frontend paths is mirrored in `backend/app/home/SEAMS.md`, and `backend/tests/home/test_upstream_seams.py`
-fails with a message naming the seam when upstream changes one.
+renders a component whose module path starts with `app.home` or `@/home`. Every backend and frontend
+path below, including the non-hook `manifest.ts` change, is listed in `backend/app/home/SEAMS.md`.
+`backend/tests/home/test_upstream_seams.py` pins the upstream signatures the home modules build on and
+checks that the hook calls are still present in the upstream sources (by substring); a failure names
+the seam or the missing hook.
 
 Backend:
 
@@ -328,7 +332,9 @@ Frontend:
 - `frontend/src/components/games/GameCatalog.tsx`: renders `StockEmptyNote` for an empty result.
 - `frontend/src/components/settings/ProfileSection.tsx`: renders `ChildProfileToggle`.
 - `frontend/src/i18n/request.ts`: merges `messages/home/<locale>.json` over upstream messages,
-  falling back to the English home file for a missing locale or key.
+  falling back to the English home file for a missing locale or key. It passes the home import to
+  `loadHomeMessages` next to its own messages import, so both resolve in the same layout (`/app` in
+  the image); a missing English home file throws instead of rendering raw keys.
 - `frontend/tests/components/ConversationMode.test.tsx`: the "sends the same detected voice" case
   accounts for provisional audio frames.
 - `frontend/vitest.config.mts`: adds the home test setup file, which defaults the speech state to
@@ -342,8 +348,9 @@ isLikelySpeech, logger }` and returns a stable object with `onFrame`, `onSpeechE
 
 ## Footprint and upstream sync
 
-`./scripts/home-surface.sh` prints the upstream files the branch modifies relative to the merge base
-with `upstream/main` (home-owned paths excluded), with added and removed lines, and a total. It fails
+`./scripts/home-surface.sh` prints the upstream-path files the branch modifies, adds or deletes
+relative to the merge base with `upstream/main` (home-owned paths excluded), with added and removed
+lines, and a total. It fails
 with a clear message if the `upstream` remote or `upstream/main` is missing. `./scripts/home-surface.sh
 --since <rev>` prints, for `<rev>..upstream/main`, the upstream commits that touch a path listed in
 `SEAMS.md`, grouped by path, with a count.

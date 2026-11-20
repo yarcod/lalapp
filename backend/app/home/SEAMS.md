@@ -14,3 +14,8 @@ frontend/src/components/games/GameCatalog.tsx
 frontend/src/components/settings/ProfileSection.tsx
 frontend/src/i18n/request.ts
 frontend/src/app/(app)/chat/page.tsx
+frontend/src/app/(app)/layout.tsx
+frontend/src/components/conversation/MicButton.tsx
+frontend/src/app/manifest.ts
+frontend/tests/components/ConversationMode.test.tsx
+frontend/vitest.config.mts
