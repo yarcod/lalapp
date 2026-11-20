@@ -29,7 +29,13 @@ export default getRequestConfig(async () => {
     messages = (await import(`../../messages/${defaultLocale}.json`)).default
   }
 
-  messages = mergeMessages(messages, await loadHomeMessages(locale))
+  messages = mergeMessages(
+    messages,
+    await loadHomeMessages(
+      locale,
+      (l) => import(`../../messages/home/${l}.json`)
+    )
+  )
 
   return {
     locale,

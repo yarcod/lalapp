@@ -18,19 +18,31 @@ export function mergeMessages(base: Messages, overlay: Messages): Messages {
   return merged
 }
 
-async function readHomeFile(locale: string): Promise<Messages | null> {
-  try {
-    return (await import(`../../../messages/home/${locale}.json`)).default
-  } catch {
-    return null
-  }
-}
+// Imports messages/home/<locale>.json. The caller supplies the import so the path
+// sits next to upstream's messages import and resolves in the same layout.
+export type HomeMessagesLoader = (
+  locale: string
+) => Promise<{ default: Messages }>
 
 // Home strings for a locale. English fills any missing locale file or key, so
-// a raw message key is never shown.
-export async function loadHomeMessages(locale: string): Promise<Messages> {
-  const english = (await readHomeFile('en')) ?? {}
+// a raw message key is never shown. A missing English file is a broken build
+// (wrong path or layout), so it throws instead of rendering raw keys.
+export async function loadHomeMessages(
+  locale: string,
+  load: HomeMessagesLoader
+): Promise<Messages> {
+  let english: Messages
+  try {
+    english = (await load('en')).default
+  } catch (error) {
+    throw new Error('Home messages for "en" could not be loaded', {
+      cause: error,
+    })
+  }
   if (locale === 'en') return english
-  const localized = await readHomeFile(locale)
-  return localized ? mergeMessages(english, localized) : english
+  try {
+    return mergeMessages(english, (await load(locale)).default)
+  } catch {
+    return english
+  }
 }
