@@ -60,25 +60,43 @@ def test_pipeline_seam_exists_with_expected_parameters(name: str) -> None:
         )
 
 
+# Methods the home class defines that upstream does not have (new behaviour, not overrides).
+HOME_ONLY_METHODS = {
+    "_confirm_provisional",
+    "_abort_provisional",
+    "_run_held_memory_calls",
+    "_current_turn",
+    "_effort_kwargs",
+    "_holding_executor",
+    "_generate_opener",
+    "_collect_reply",
+    "_tagged_text",
+    "_build_spoken_lines",
+    "discard_last_turn",
+}
+
+
 def test_pipeline_overridden_methods_exist() -> None:
-    overridden = [
+    defined = [
         name
         for name, member in vars(HomeConversationPipeline).items()
-        if callable(member) and not name.startswith("__") and hasattr(ConversationPipeline, name)
+        if callable(member) and not name.startswith("__")
     ]
-    assert overridden, "HomeConversationPipeline overrides nothing; the seam check lost its input"
-    for name in overridden:
-        base = _params(getattr(ConversationPipeline, name))
-        home = [p for p in _params(getattr(HomeConversationPipeline, name))]
-        home_shared = [p for p in home if p not in HOME_ONLY_PARAMS]
-        assert base == home_shared, (
-            f"upstream ConversationPipeline.{name} changed (now {base}); "
-            f"HomeConversationPipeline overrides it with {home_shared}"
+    for name in defined:
+        if name in HOME_ONLY_METHODS:
+            continue
+        assert hasattr(ConversationPipeline, name), (
+            f"upstream ConversationPipeline.{name} is gone (or {name} is a new home-only "
+            "method missing from HOME_ONLY_METHODS); HomeConversationPipeline overrides it"
         )
-    for name in ("handle_control", "_chat", "_process", "handle_audio", "_add_reply"):
-        assert name in overridden or not hasattr(
-            ConversationPipeline, name
-        ), f"HomeConversationPipeline no longer overrides {name}"
+        base = _params(getattr(ConversationPipeline, name))
+        home = [
+            p for p in _params(getattr(HomeConversationPipeline, name)) if p not in HOME_ONLY_PARAMS
+        ]
+        assert base == home, (
+            f"upstream ConversationPipeline.{name} changed (now {base}); "
+            f"HomeConversationPipeline overrides it with {home}"
+        )
 
 
 def test_pipeline_constructor_accepts_router_kwargs() -> None:
@@ -164,3 +182,11 @@ async def test_provisional_chat_fails_loudly_when_user_message_is_not_in_history
 
     with pytest.raises(RuntimeError, match=r"ConversationPipeline\._process_turn changed"):
         await pipeline._chat([{"role": "user", "content": "hi"}])
+
+
+def test_home_only_methods_are_not_upstream_methods() -> None:
+    shadowed = sorted(n for n in HOME_ONLY_METHODS if hasattr(ConversationPipeline, n))
+    assert not shadowed, (
+        f"upstream ConversationPipeline now defines {shadowed}; HomeConversationPipeline "
+        "overrides them: move them out of HOME_ONLY_METHODS so their signatures are checked"
+    )
