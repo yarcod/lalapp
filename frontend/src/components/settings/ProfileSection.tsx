@@ -8,6 +8,7 @@ import { mapUser } from '@/lib/mappers'
 import { useAuthStore } from '@/store/auth'
 import { SUPPORTED_LOCALES } from '@/lib/locales'
 import { AuthAvatarImage } from '@/components/AuthAvatarImage'
+import { ChildProfileToggle } from '@/home/components/ChildProfileToggle'
 
 const LANGUAGES = [
   'en',
@@ -70,7 +71,6 @@ export function ProfileSection({ title }: { title?: string } = {}) {
   const [nativeLanguage, setNativeLanguage] = useState('es')
   const [uiLocale, setUiLocale] = useState(currentLocale)
   const [bio, setBio] = useState('')
-  const [isChild, setIsChild] = useState(false)
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [message, setMessage] = useState<{
@@ -90,7 +90,6 @@ export function ProfileSection({ title }: { title?: string } = {}) {
       setNativeLanguage(user.native_language || 'es')
       setUiLocale(user.ui_locale || currentLocale)
       setBio(user.bio || '')
-      setIsChild(user.is_child ?? false)
     }
   }, [user, currentLocale])
 
@@ -166,7 +165,6 @@ export function ProfileSection({ title }: { title?: string } = {}) {
           native_language: nativeLanguage,
           ui_locale: uiLocale,
           bio: bio || null,
-          is_child: isChild,
           ...(password ? { password } : {}),
         }),
       })
@@ -318,26 +316,7 @@ export function ProfileSection({ title }: { title?: string } = {}) {
         </p>
       </div>
 
-      <div>
-        <div className="flex items-start gap-3">
-          <input
-            id="is-child"
-            type="checkbox"
-            checked={isChild}
-            onChange={(e) => setIsChild(e.target.checked)}
-            className="accent-fl-accent mt-0.5 h-4 w-4 flex-shrink-0 cursor-pointer"
-          />
-          <label
-            htmlFor="is-child"
-            className="text-fl-muted-2 cursor-pointer font-mono text-xs tracking-widest uppercase select-none"
-          >
-            {t('isChild')}
-          </label>
-        </div>
-        <p className="text-fl-hint text-fl-muted-4 mt-1 font-mono">
-          {t('isChildHint')}
-        </p>
-      </div>
+      <ChildProfileToggle />
 
       <div>
         <label className="text-fl-muted-2 mb-2 block font-mono text-xs tracking-widest uppercase">

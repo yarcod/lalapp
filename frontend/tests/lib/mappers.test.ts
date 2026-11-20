@@ -40,7 +40,6 @@ describe('mapUser', () => {
       role: 'user',
       conversation_max_duration: 300,
       conversation_inactivity_timeout: 30,
-      is_child: false,
       avatar: 'https://example.com/avatar.png',
       is_verified: true,
       bio: 'Hello',

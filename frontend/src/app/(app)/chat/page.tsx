@@ -24,6 +24,7 @@ import { MemorySavedToast } from '@/components/memory/MemorySavedToast'
 import { useTransientToast } from '@/hooks/useTransientToast'
 import { readSseData } from '@/lib/sse'
 import LinguAvatar from '@/components/lingu/LinguAvatar'
+import { useTaggedReplies } from '@/home/store/profile'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -57,11 +58,7 @@ export default function ChatPage() {
   const user = useAuthStore((s) => s.user)
   const sessionVersion = useAuthStore((s) => s.sessionVersion)
   const activeLanguage = useLanguageStore((s) => s.activeLanguage)
-  // Tagged replies mix languages line by line, which one read-aloud voice cannot speak.
-  const taggedReplies = useLanguageStore(
-    (s) =>
-      s.userLanguages.find((l) => l.is_active)?.plan?.tagged_replies ?? false
-  )
+  const taggedReplies = useTaggedReplies(activeLanguage?.code ?? null)
   const {
     selectedWord,
     tooltipPos,

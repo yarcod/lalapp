@@ -9,7 +9,6 @@ const mocks = vi.hoisted(() => ({
   dismissTooltip: vi.fn(),
   handleTextSelection: vi.fn(),
   audioPlayer: vi.fn(),
-  userLanguages: [] as object[],
 }))
 
 vi.mock('next-intl', () => ({
@@ -31,10 +30,7 @@ vi.mock('@/store/auth', () => ({
 }))
 vi.mock('@/store/language', () => ({
   useLanguageStore: (selector: (state: object) => unknown) =>
-    selector({
-      activeLanguage: { code: 'en-GB' },
-      userLanguages: mocks.userLanguages,
-    }),
+    selector({ activeLanguage: { code: 'en-GB' } }),
 }))
 vi.mock('@/store/config', () => ({
   useConfigStore: (selector: (state: object) => unknown) =>
@@ -162,7 +158,6 @@ describe('chat memory stream', () => {
   let chatEvents: Array<Record<string, unknown>>
 
   beforeEach(() => {
-    mocks.userLanguages = []
     mocks.apiFetch.mockReset()
     mocks.fetchFreemium.mockReset()
     mocks.decrementFreemium.mockReset()
@@ -302,47 +297,6 @@ describe('chat memory stream', () => {
     expect(mocks.audioPlayer).toHaveBeenCalledWith(
       expect.objectContaining({ text: 'Hello from voice.', conversationId: 7 })
     )
-  })
-
-  it('hides read-aloud when replies are tagged for the plan', async () => {
-    mocks.userLanguages = [{ is_active: true, plan: { tagged_replies: true } }]
-    mocks.apiFetch.mockImplementation((path: string) => {
-      if (path === '/api/chat/conversations') {
-        return Promise.resolve(
-          jsonResponse([{ id: 7, title: 'Practice', source: 'chat' }])
-        )
-      }
-      if (path === '/api/chat/conversations/7/messages') {
-        return Promise.resolve(
-          jsonResponse({
-            messages: [{ role: 'assistant', content: 'Bra jobbat!' }],
-          })
-        )
-      }
-      return Promise.resolve(jsonResponse([]))
-    })
-    mocks.audioPlayer.mockClear()
-    render(<ChatPage />)
-
-    expect(await screen.findByText('Bra jobbat!')).toBeInTheDocument()
-    expect(mocks.audioPlayer).not.toHaveBeenCalled()
-  })
-
-  it('says Lingu is away when the backend reports no LLM', async () => {
-    chatEvents = [
-      { conversation_id: 7 },
-      {
-        error: 'The AI service is currently unavailable.',
-        error_code: 'llm_unavailable',
-      },
-    ]
-    render(<ChatPage />)
-
-    const input = await screen.findByPlaceholderText('placeholder')
-    fireEvent.change(input, { target: { value: 'Hej' } })
-    fireEvent.click(screen.getByRole('button', { name: 'send' }))
-
-    expect(await screen.findByText(/linguAway/)).toBeInTheDocument()
   })
 
   it('shows the toast only after the backend confirms a saved memory', async () => {

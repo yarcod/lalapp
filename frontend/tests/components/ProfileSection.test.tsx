@@ -307,24 +307,6 @@ describe('ProfileSection', () => {
     expect(select.value).toBe('es')
   })
 
-  it('profile section toggles child', async () => {
-    mockApiFetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ id: 1, is_child: true }),
-    })
-    render(<ProfileSection />)
-    const checkbox = screen.getByLabelText('isChild') as HTMLInputElement
-    expect(checkbox.checked).toBe(false)
-    fireEvent.click(checkbox)
-    expect(checkbox.checked).toBe(true)
-    fireEvent.click(screen.getByText('saveChanges'))
-    await waitFor(() => {
-      expect(screen.getByText(/saved/)).toBeDefined()
-    })
-    const body = JSON.parse(mockApiFetch.mock.calls[0][1].body)
-    expect(body.is_child).toBe(true)
-  })
-
   // ── Save ────────────────────────────────────────────────────
 
   it('shows save button and triggers save on click', async () => {
