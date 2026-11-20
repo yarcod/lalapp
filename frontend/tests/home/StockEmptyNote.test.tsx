@@ -87,6 +87,29 @@ describe('StockEmptyNote', () => {
     expect(call[1]?.method).toBe('POST')
   })
 
+  it('stays busy after a successful replay until navigation', async () => {
+    const onBusyChange = vi.fn()
+    const onStart = vi.fn()
+    vi.mocked(gameRequest).mockResolvedValueOnce({ id: 'new-1' })
+    render(
+      <StockEmptyNote
+        empty={withReplay}
+        gamePath="error-detective"
+        disabled={false}
+        onStart={onStart}
+        onBusyChange={onBusyChange}
+        onError={onError}
+      />
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'replay' }))
+    await waitFor(() => expect(push).toHaveBeenCalledTimes(1))
+    expect(onStart).toHaveBeenCalledTimes(1)
+    expect(onBusyChange.mock.calls).toEqual([[true]])
+    expect(screen.getByRole('button', { name: 'replay' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: 'replay' }))
+    expect(gameRequest).toHaveBeenCalledTimes(1)
+  })
+
   it('disables replay while the catalog is busy', () => {
     render(
       <StockEmptyNote

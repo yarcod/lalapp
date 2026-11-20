@@ -13,12 +13,14 @@ export function StockEmptyNote({
   empty,
   gamePath,
   disabled,
+  onStart,
   onBusyChange,
   onError,
 }: {
   empty: GameStockEmpty
   gamePath: string
   disabled: boolean
+  onStart?: () => void
   onBusyChange?: (busy: boolean) => void
   onError: () => void
 }) {
@@ -30,6 +32,8 @@ export function StockEmptyNote({
 
   useEffect(() => () => operation.current?.abort(), [])
 
+  // On success busy and pending stay set until the page navigates away, so no
+  // second replay or catalog start can begin in between.
   async function replay(id: string) {
     if (busy || disabled || pending.current) return
     const controller = new AbortController()
@@ -37,23 +41,21 @@ export function StockEmptyNote({
     operation.current = controller
     pending.current = id
     setBusy(true)
+    onStart?.()
     onBusyChange?.(true)
     try {
       const session = await gameRequest<Pick<DetectiveSession, 'id'>>(
         `/sessions/${id}/replay`,
         { method: 'POST', signal: controller.signal }
       )
-      if (!controller.signal.aborted)
-        router.push(`/games/${gamePath}/${session.id}`)
+      if (controller.signal.aborted) pending.current = null
+      else router.push(`/games/${gamePath}/${session.id}`)
     } catch {
-      if (controller.signal.aborted) return
       pending.current = null
+      if (controller.signal.aborted) return
+      setBusy(false)
+      onBusyChange?.(false)
       onError()
-    } finally {
-      if (!controller.signal.aborted) {
-        setBusy(false)
-        onBusyChange?.(false)
-      }
     }
   }
 

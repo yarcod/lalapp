@@ -100,6 +100,10 @@ describe('GameCatalog stock-empty note', () => {
     await waitFor(() =>
       expect(push).toHaveBeenCalledWith('/games/error-detective/new-1')
     )
+    // Until the page navigates away nothing else can start.
+    expect(screen.getByRole('button', { name: 'replay' })).toBeDisabled()
+    for (const b of screen.getAllByRole('button', { name: 'loading' }))
+      expect(b).toBeDisabled()
   })
 
   it('shows the shared alert with retry when a replay fails', async () => {
@@ -112,5 +116,21 @@ describe('GameCatalog stock-empty note', () => {
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('errorMessage')
     expect(screen.getByRole('button', { name: 'retry' })).toBeInTheDocument()
+  })
+
+  it('clears a stale shared error when a replay starts', async () => {
+    vi.mocked(gameRequest)
+      .mockResolvedValueOnce(catalog)
+      .mockResolvedValueOnce(empty)
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockReturnValueOnce(new Promise(() => {}))
+    await showNote()
+    fireEvent.click(screen.getByRole('button', { name: 'replay' }))
+    await screen.findByRole('alert')
+    fireEvent.click(screen.getByRole('button', { name: 'replay' }))
+    await waitFor(() =>
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    )
+    expect(vi.mocked(gameRequest)).toHaveBeenCalledTimes(4)
   })
 })

@@ -198,6 +198,7 @@ export function GameCatalog({
               empty={empty}
               gamePath={gamePath}
               disabled={busy || switching}
+              onStart={() => setError('')}
               onBusyChange={setBusy}
               onError={() => setError(common('errorMessage'))}
             />
