@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import decode_access_token
+from app.home.context import enter_user
 from app.models.study_plan import StudyPlan
 from app.models.user import User
 from app.services.subscription_service import is_subscribed
@@ -37,6 +38,7 @@ async def get_current_user(
     user = await db.get(User, user_id)
     if not user or not user.is_active:
         raise HTTPException(status_code=401, detail="User not found or inactive")
+    await enter_user(db, user)
     return user
 
 
