@@ -198,6 +198,8 @@ export function GameCatalog({
               empty={empty}
               gamePath={gamePath}
               disabled={busy || switching}
+              onBusyChange={setBusy}
+              onError={() => setError(common('errorMessage'))}
             />
           )}
           <div className="grid gap-3 sm:grid-cols-3">

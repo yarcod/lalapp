@@ -3,9 +3,10 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 const { push } = vi.hoisted(() => ({ push: vi.fn() }))
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }))
-vi.mock('next-intl', () => ({
-  useTranslations: () => (key: string) => key,
-}))
+vi.mock('next-intl', () => {
+  const translate = (key: string) => key
+  return { useTranslations: () => translate }
+})
 vi.mock('@/lib/detective', async (original) => ({
   ...(await original<typeof import('@/lib/detective')>()),
   gameRequest: vi.fn(),
@@ -30,6 +31,8 @@ const withReplay: GameStockEmpty = {
   ],
 }
 
+const onError = vi.fn()
+
 describe('StockEmptyNote', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -41,6 +44,7 @@ describe('StockEmptyNote', () => {
         empty={withReplay}
         gamePath="error-detective"
         disabled={false}
+        onError={onError}
       />
     )
     expect(screen.getByRole('status')).toHaveTextContent('stockEmpty')
@@ -54,6 +58,7 @@ describe('StockEmptyNote', () => {
         empty={{ status: 'empty', first_games_pending: true, replayable: [] }}
         gamePath="error-detective"
         disabled={false}
+        onError={onError}
       />
     )
     expect(screen.getByText('firstGamesPending')).toBeInTheDocument()
@@ -70,6 +75,7 @@ describe('StockEmptyNote', () => {
         empty={withReplay}
         gamePath="error-detective"
         disabled={false}
+        onError={onError}
       />
     )
     fireEvent.click(screen.getByRole('button', { name: 'replay' }))
@@ -83,22 +89,31 @@ describe('StockEmptyNote', () => {
 
   it('disables replay while the catalog is busy', () => {
     render(
-      <StockEmptyNote empty={withReplay} gamePath="error-detective" disabled />
+      <StockEmptyNote
+        empty={withReplay}
+        gamePath="error-detective"
+        disabled
+        onError={onError}
+      />
     )
     expect(screen.getByRole('button', { name: 'replay' })).toBeDisabled()
   })
 
-  it('shows the generic error and re-enables on failure', async () => {
+  it('reports busy changes and calls onError on failure', async () => {
+    const onBusyChange = vi.fn()
     vi.mocked(gameRequest).mockRejectedValueOnce(new Error('boom'))
     render(
       <StockEmptyNote
         empty={withReplay}
         gamePath="error-detective"
         disabled={false}
+        onBusyChange={onBusyChange}
+        onError={onError}
       />
     )
     fireEvent.click(screen.getByRole('button', { name: 'replay' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('errorMessage')
+    await waitFor(() => expect(onError).toHaveBeenCalledTimes(1))
+    expect(onBusyChange.mock.calls).toEqual([[true], [false]])
     expect(screen.getByRole('button', { name: 'replay' })).toBeEnabled()
     expect(push).not.toHaveBeenCalled()
   })
