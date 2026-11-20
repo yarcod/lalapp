@@ -1,0 +1,23 @@
+{
+  "detective": {
+    "stockEmpty": "Uau, ai învățat deja atât de multe! Ai jucat toate jocurile pe care le aveam pregătite. Revino altă zi pentru altele noi.",
+    "firstGamesPending": "Primele tale jocuri sunt pe drum! Lingu le pregătește. Revino curând.",
+    "replayHeading": "Sau joacă din nou unul dintre jocurile terminate",
+    "replay": "Joacă din nou · {score}/{total} · {date}"
+  },
+  "settings": {
+    "isChild": "Acest cursant este un copil",
+    "isChildHint": "Lingu va folosi cuvinte simple, un ton cald și subiecte de zi cu zi pentru un copil de aproximativ 9-11 ani."
+  },
+  "chat": {
+    "linguAway": "Lingu nu este aici acum. Încearcă din nou puțin mai târziu."
+  },
+  "conversation": {
+    "heardLabel": "Lingu a auzit:",
+    "redo": "Încearcă din nou",
+    "speechSwitching": "Vocea lui Lingu se pregătește. Durează un moment.",
+    "speechBusy": "Vocea lui Lingu este ocupată o clipă.",
+    "speechAway": "Lingu este plecat acum, așa că nu există voce.",
+    "speechUseText": "Scrie-i lui Lingu în schimb"
+  }
+}

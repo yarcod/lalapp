@@ -1,5 +1,6 @@
 import { getRequestConfig } from 'next-intl/server'
 import { cookies, headers } from 'next/headers'
+import { loadHomeMessages, mergeMessages } from '@/home/i18n'
 import { SUPPORTED_LOCALES, type Locale } from '@/lib/locales'
 
 function resolveLocale(raw: string | undefined): Locale {
@@ -27,6 +28,8 @@ export default getRequestConfig(async () => {
     const defaultLocale = 'en'
     messages = (await import(`../../messages/${defaultLocale}.json`)).default
   }
+
+  messages = mergeMessages(messages, await loadHomeMessages(locale))
 
   return {
     locale,

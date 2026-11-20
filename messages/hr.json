@@ -175,10 +175,6 @@
     "assessment": "Procijeni moju razinu",
     "history": "Tvoje igre na ovom jeziku",
     "noHistory": "Spremljene igre pojavit će se ovdje.",
-    "stockEmpty": "Vau, već si naučio/la toliko toga! Odigrao/la si sve igre koje smo imali spremne. Vrati se neki drugi dan po nove.",
-    "firstGamesPending": "Tvoje prve igre stižu! Lingu ih priprema. Vrati se uskoro.",
-    "replayHeading": "Ili ponovno odigraj jednu od završenih igara",
-    "replay": "Igraj ponovno · {score}/{total} · {date}",
     "generating": "Priprema",
     "ready": "Nastavi igru",
     "completed": "Igra završena",
@@ -374,8 +370,6 @@
     "bio": "Reci Linguu nešto o sebi",
     "bioPlaceholder": "Npr. radim kao programer i često putujem zbog posla...",
     "bioHint": "Lingu će upotrijebiti ove podatke kako bi prilagodio razgovore tebi.",
-    "isChild": "Ovaj učenik je dijete",
-    "isChildHint": "Lingu će koristiti jednostavne riječi, topao ton i svakodnevne teme za dijete od otprilike 9-11 godina.",
     "saveChanges": "Spremi promjene",
     "saving": "Spremanje...",
     "saved": "Profil je ažuriran.",
@@ -972,7 +966,6 @@
     "thinking": "Razmišljam...",
     "takingLonger": "Traje dulje nego što smo očekivali...",
     "errorMessage": "Nešto je pošlo po zlu. Pokušaj ponovno.",
-    "linguAway": "Lingu trenutno nije tu. Pokušaj ponovno malo kasnije.",
     "deleteTitle": "Izbriši chat",
     "deleteMessage": "Ovaj će razgovor biti trajno izbrisan.",
     "deleteConfirm": "Izbriši",
@@ -1426,13 +1419,7 @@
       "Planovi za vikend",
       "Posao i ciljevi u karijeri",
       "Rad od kuće"
-    ],
-    "heardLabel": "Lingu je čuo:",
-    "redo": "Pokušaj ponovno",
-    "speechSwitching": "Lingov glas se priprema. To traje trenutak.",
-    "speechBusy": "Lingov glas je na trenutak zauzet.",
-    "speechAway": "Lingu je trenutno odsutan pa nema glasa.",
-    "speechUseText": "Umjesto toga napiši Linguu"
+    ]
   },
   "voiceRecorder": {
     "record": "Snimi",

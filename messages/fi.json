@@ -175,10 +175,6 @@
     "assessment": "Arvioi tasoni",
     "history": "Pelisi tällä kielellä",
     "noHistory": "Tallennetut pelisi näkyvät täällä.",
-    "stockEmpty": "Vau, olet jo oppinut paljon! Olet pelannut kaikki valmiina olleet pelit. Tule takaisin toisena päivänä uusien pelien pariin.",
-    "firstGamesPending": "Ensimmäiset pelisi ovat tulossa! Lingu valmistelee niitä. Tule pian takaisin.",
-    "replayHeading": "Tai pelaa jokin päättynyt pelisi uudelleen",
-    "replay": "Pelaa uudelleen · {score}/{total} · {date}",
     "generating": "Valmistellaan",
     "ready": "Jatka peliä",
     "completed": "Peli suoritettu",
@@ -374,8 +370,6 @@
     "bio": "Kerro Lingulle itsestäsi",
     "bioPlaceholder": "Esimerkiksi: Olen ohjelmistokehittäjä ja matkustan usein työni vuoksi...",
     "bioHint": "Lingu mukauttaa keskustelut sinulle sopiviksi näiden tietojen avulla.",
-    "isChild": "Oppija on lapsi",
-    "isChildHint": "Lingu käyttää yksinkertaisia sanoja, lämmintä sävyä ja arkisia aiheita noin 9-11-vuotiaalle lapselle.",
     "saveChanges": "Tallenna muutokset",
     "saving": "Tallennetaan...",
     "saved": "Profiili päivitetty.",
@@ -972,7 +966,6 @@
     "thinking": "Miettii...",
     "takingLonger": "Kestää odotettua kauemmin...",
     "errorMessage": "Jokin meni pieleen. Yritä uudelleen.",
-    "linguAway": "Lingu on nyt poissa. Yritä hetken päästä uudelleen.",
     "deleteTitle": "Poista chatti",
     "deleteMessage": "Tämä keskustelu poistetaan pysyvästi.",
     "deleteConfirm": "Poista",
@@ -1426,13 +1419,7 @@
       "Viikonlopun suunnitelmat",
       "Työ ja uratavoitteet",
       "Etätyö"
-    ],
-    "heardLabel": "Lingu kuuli:",
-    "redo": "Yritä uudelleen",
-    "speechSwitching": "Lingun ääni valmistautuu. Se kestää hetken.",
-    "speechBusy": "Lingun ääni on hetken varattu.",
-    "speechAway": "Lingu on nyt poissa, joten ääntä ei ole.",
-    "speechUseText": "Kirjoita Linguille sen sijaan"
+    ]
   },
   "voiceRecorder": {
     "record": "Nauhoita",

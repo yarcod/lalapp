@@ -175,10 +175,6 @@
     "assessment": "Avaliar o meu nível",
     "history": "As tuas partidas neste idioma",
     "noHistory": "As tuas partidas guardadas aparecerão aqui.",
-    "stockEmpty": "Uau, já aprendeste tanto! Jogaste todas as partidas que tínhamos prontas. Volta noutro dia para ver novas.",
-    "firstGamesPending": "As tuas primeiras partidas estão a caminho! O Lingu está a prepará-las. Volta em breve.",
-    "replayHeading": "Ou joga outra vez uma das tuas partidas terminadas",
-    "replay": "Jogar outra vez · {score}/{total} · {date}",
     "generating": "A preparar",
     "ready": "Retomar partida",
     "completed": "Partida concluída",
@@ -374,8 +370,6 @@
     "bio": "Conte a Lingu sobre você",
     "bioPlaceholder": "ex: Sou desenvolvedor/a e viajo muito a trabalho...",
     "bioHint": "Lingu usará essas informações para adaptar as conversas a você.",
-    "isChild": "Este aluno é uma criança",
-    "isChildHint": "Lingu usará palavras simples, um tom caloroso e temas do dia a dia para uma criança de cerca de 9-11 anos.",
     "saveChanges": "Salvar alterações",
     "saving": "Salvando...",
     "saved": "Perfil atualizado.",
@@ -972,7 +966,6 @@
     "thinking": "Pensando...",
     "takingLonger": "Está a demorar mais do que o esperado...",
     "errorMessage": "Algo deu errado. Por favor, tente novamente.",
-    "linguAway": "O Lingu não está disponível agora. Tenta novamente daqui a pouco.",
     "deleteTitle": "Eliminar conversa",
     "deleteMessage": "Esta conversa será eliminada permanentemente.",
     "deleteConfirm": "Eliminar",
@@ -1426,13 +1419,7 @@
       "Planos para o fim de semana",
       "Trabalho e objetivos de carreira",
       "Trabalho em casa"
-    ],
-    "heardLabel": "Lingu ouviu:",
-    "redo": "Tentar de novo",
-    "speechSwitching": "A voz do Lingu está a preparar-se. Demora um momento.",
-    "speechBusy": "A voz do Lingu está ocupada por um momento.",
-    "speechAway": "O Lingu está ausente neste momento, por isso não há voz.",
-    "speechUseText": "Escrever ao Lingu em vez disso"
+    ]
   },
   "voiceRecorder": {
     "record": "Gravar",

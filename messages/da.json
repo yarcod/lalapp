@@ -175,10 +175,6 @@
     "assessment": "Vurder mit niveau",
     "history": "Dine spil på dette sprog",
     "noHistory": "Dine gemte spil vises her.",
-    "stockEmpty": "Wow, du har allerede lært så meget! Du har spillet alle de spil, vi havde klar. Kom tilbage en anden dag for at få nye.",
-    "firstGamesPending": "Dine første spil er på vej! Lingu gør dem klar. Kom snart tilbage.",
-    "replayHeading": "Eller spil et af dine afsluttede spil igen",
-    "replay": "Spil igen · {score}/{total} · {date}",
     "generating": "Forbereder",
     "ready": "Fortsæt spil",
     "completed": "Spil gennemført",
@@ -374,8 +370,6 @@
     "bio": "Fortæl Lingu om dig selv",
     "bioPlaceholder": "F.eks.: Jeg er softwareudvikler og rejser ofte med arbejdet...",
     "bioHint": "Lingu bruger disse oplysninger til at tilpasse samtalerne til dig.",
-    "isChild": "Denne elev er et barn",
-    "isChildHint": "Lingu bruger enkle ord, en varm tone og hverdagsemner til et barn på cirka 9-11 år.",
     "saveChanges": "Gem ændringer",
     "saving": "Gemmer...",
     "saved": "Profilen er opdateret.",
@@ -972,7 +966,6 @@
     "thinking": "Tænker...",
     "takingLonger": "Det tager længere tid end forventet...",
     "errorMessage": "Noget gik galt. Prøv igen.",
-    "linguAway": "Lingu er væk lige nu. Prøv igen om lidt.",
     "deleteTitle": "Slet chat",
     "deleteMessage": "Denne samtale slettes permanent.",
     "deleteConfirm": "Slet",
@@ -1426,13 +1419,7 @@
       "Weekendplaner",
       "Arbejde og karrieremål",
       "At arbejde hjemmefra"
-    ],
-    "heardLabel": "Lingu hørte:",
-    "redo": "Prøv igen",
-    "speechSwitching": "Lingus stemme gør sig klar. Det tager et øjeblik.",
-    "speechBusy": "Lingus stemme er optaget et øjeblik.",
-    "speechAway": "Lingu er væk lige nu, så der er ingen stemme.",
-    "speechUseText": "Skriv til Lingu i stedet"
+    ]
   },
   "voiceRecorder": {
     "record": "Optag",

@@ -1,0 +1,23 @@
+{
+  "detective": {
+    "stockEmpty": "Wow, du hast schon so viel gelernt! Du hast alle bereitliegenden Spiele gespielt. Komm an einem anderen Tag wieder, dann gibt es neue.",
+    "firstGamesPending": "Deine ersten Spiele sind unterwegs! Lingu bereitet sie vor. Komm bald wieder.",
+    "replayHeading": "Oder spiel eines deiner beendeten Spiele noch einmal",
+    "replay": "Nochmal spielen · {score}/{total} · {date}"
+  },
+  "settings": {
+    "isChild": "Dieser Lernende ist ein Kind",
+    "isChildHint": "Lingu verwendet einfache Wörter, einen herzlichen Ton und Alltagsthemen für ein Kind von etwa 9-11 Jahren."
+  },
+  "chat": {
+    "linguAway": "Lingu ist gerade weg. Versuch es bitte gleich noch einmal."
+  },
+  "conversation": {
+    "heardLabel": "Lingu hat gehört:",
+    "redo": "Nochmal versuchen",
+    "speechSwitching": "Lingus Stimme wird vorbereitet. Das dauert einen Moment.",
+    "speechBusy": "Lingus Stimme ist gerade kurz beschäftigt.",
+    "speechAway": "Lingu ist gerade weg, deshalb gibt es keine Stimme.",
+    "speechUseText": "Stattdessen Lingu schreiben"
+  }
+}

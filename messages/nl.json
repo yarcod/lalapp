@@ -175,10 +175,6 @@
     "assessment": "Mijn niveau bepalen",
     "history": "Je spellen in deze taal",
     "noHistory": "Je opgeslagen spellen verschijnen hier.",
-    "stockEmpty": "Wauw, je hebt al zoveel geleerd! Je hebt alle spellen gespeeld die klaarstonden. Kom een andere dag terug voor nieuwe.",
-    "firstGamesPending": "Je eerste spellen komen eraan! Lingu maakt ze klaar. Kom snel terug.",
-    "replayHeading": "Of speel een van je afgeronde spellen nog eens",
-    "replay": "Opnieuw spelen · {score}/{total} · {date}",
     "generating": "Voorbereiden",
     "ready": "Spel hervatten",
     "completed": "Spel voltooid",
@@ -374,8 +370,6 @@
     "bio": "Vertel Lingu over jezelf",
     "bioPlaceholder": "bijv. Ik ben ontwikkelaar en reis veel voor mijn werk...",
     "bioHint": "Lingu gebruikt deze informatie om de gesprekken op jou af te stemmen.",
-    "isChild": "Deze leerling is een kind",
-    "isChildHint": "Lingu gebruikt eenvoudige woorden, een warme toon en alledaagse onderwerpen voor een kind van ongeveer 9-11 jaar.",
     "saveChanges": "Wijzigingen opslaan",
     "saving": "Opslaan...",
     "saved": "Profiel bijgewerkt.",
@@ -972,7 +966,6 @@
     "thinking": "Nadenken...",
     "takingLonger": "Duurt langer dan verwacht...",
     "errorMessage": "Er ging iets mis. Probeer opnieuw.",
-    "linguAway": "Lingu is er nu even niet. Probeer het zo meteen nog eens.",
     "deleteTitle": "Chat verwijderen",
     "deleteMessage": "Dit gesprek wordt permanent verwijderd.",
     "deleteConfirm": "Verwijderen",
@@ -1426,13 +1419,7 @@
       "Weekendplannen",
       "Werk en carrièredoelen",
       "Thuiswerken"
-    ],
-    "heardLabel": "Lingu hoorde:",
-    "redo": "Probeer opnieuw",
-    "speechSwitching": "Lingus stem wordt klaargemaakt. Dat duurt even.",
-    "speechBusy": "Lingus stem is heel even bezet.",
-    "speechAway": "Lingu is er nu niet, dus er is geen stem.",
-    "speechUseText": "Schrijf in plaats daarvan naar Lingu"
+    ]
   },
   "voiceRecorder": {
     "record": "Opnemen",

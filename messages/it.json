@@ -175,10 +175,6 @@
     "assessment": "Valuta il mio livello",
     "history": "Le tue partite in questa lingua",
     "noHistory": "Le partite salvate appariranno qui.",
-    "stockEmpty": "Wow, hai già imparato così tanto! Hai giocato tutte le partite pronte. Torna un altro giorno per quelle nuove.",
-    "firstGamesPending": "Le tue prime partite stanno arrivando! Lingu le sta preparando. Torna presto.",
-    "replayHeading": "Oppure rigioca una delle tue partite finite",
-    "replay": "Gioca ancora · {score}/{total} · {date}",
     "generating": "Preparazione",
     "ready": "Riprendi la partita",
     "completed": "Partita completata",
@@ -374,8 +370,6 @@
     "bio": "Racconta a Lingu qualcosa di te",
     "bioPlaceholder": "es: Sono sviluppatore/trice e viaggio spesso per lavoro...",
     "bioHint": "Lingu userà queste informazioni per adattare le conversazioni a te.",
-    "isChild": "Chi studia è un bambino",
-    "isChildHint": "Lingu userà parole semplici, un tono caloroso e argomenti quotidiani per un bambino di circa 9-11 anni.",
     "saveChanges": "Salva modifiche",
     "saving": "Salvataggio...",
     "saved": "Profilo aggiornato.",
@@ -972,7 +966,6 @@
     "thinking": "Sto pensando...",
     "takingLonger": "Ci sta mettendo più del previsto...",
     "errorMessage": "Qualcosa è andato storto. Per favore riprova.",
-    "linguAway": "Lingu ora non c'è. Riprova tra un po'.",
     "deleteTitle": "Elimina chat",
     "deleteMessage": "Questa conversazione verrà eliminata definitivamente.",
     "deleteConfirm": "Elimina",
@@ -1426,13 +1419,7 @@
       "Piani per il weekend",
       "Lavoro e obiettivi di carriera",
       "Lavorare da casa"
-    ],
-    "heardLabel": "Lingu ha sentito:",
-    "redo": "Riprova",
-    "speechSwitching": "La voce di Lingu si sta preparando. Ci vuole un momento.",
-    "speechBusy": "La voce di Lingu è occupata per un momento.",
-    "speechAway": "Lingu non c'è in questo momento, quindi non c'è la voce.",
-    "speechUseText": "Scrivi a Lingu invece"
+    ]
   },
   "voiceRecorder": {
     "record": "Registra",

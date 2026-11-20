@@ -175,10 +175,6 @@
     "assessment": "Evaluar mi nivel",
     "history": "Tus partidas en este idioma",
     "noHistory": "Aquí aparecerán tus partidas guardadas.",
-    "stockEmpty": "¡Guau, ya has aprendido muchísimo! Has jugado todas las partidas que teníamos listas. Vuelve otro día para ver las nuevas.",
-    "firstGamesPending": "¡Tus primeras partidas están en camino! Lingu las está preparando. Vuelve pronto.",
-    "replayHeading": "O juega otra vez una de tus partidas terminadas",
-    "replay": "Jugar otra vez · {score}/{total} · {date}",
     "generating": "Preparando",
     "ready": "Reanudar partida",
     "completed": "Partida completada",
@@ -374,8 +370,6 @@
     "bio": "Cuéntale a Lingu sobre ti",
     "bioPlaceholder": "p.ej. Soy desarrollador/a y viajo mucho por trabajo...",
     "bioHint": "Lingu usará esta información para adaptar las conversaciones a ti.",
-    "isChild": "Este estudiante es un niño",
-    "isChildHint": "Lingu usará palabras sencillas, un tono cercano y temas cotidianos para un niño de unos 9-11 años.",
     "saveChanges": "Guardar cambios",
     "saving": "Guardando...",
     "saved": "Perfil actualizado.",
@@ -972,7 +966,6 @@
     "thinking": "Pensando...",
     "takingLonger": "Está tardando más de lo esperado...",
     "errorMessage": "Algo salió mal. Por favor inténtalo de nuevo.",
-    "linguAway": "Lingu no está ahora mismo. Inténtalo de nuevo dentro de un rato.",
     "deleteTitle": "Eliminar chat",
     "deleteMessage": "Esta conversación se eliminará permanentemente.",
     "deleteConfirm": "Eliminar",
@@ -1426,13 +1419,7 @@
       "Planes de fin de semana",
       "Trabajo y objetivos profesionales",
       "Trabajar desde casa"
-    ],
-    "heardLabel": "Lingu ha oído:",
-    "redo": "Intentar de nuevo",
-    "speechSwitching": "La voz de Lingu se está preparando. Tarda un momento.",
-    "speechBusy": "La voz de Lingu está ocupada un momento.",
-    "speechAway": "Lingu no está ahora mismo, así que no hay voz.",
-    "speechUseText": "Escribir a Lingu en su lugar"
+    ]
   },
   "voiceRecorder": {
     "record": "Grabar",

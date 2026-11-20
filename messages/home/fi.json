@@ -1,0 +1,23 @@
+{
+  "detective": {
+    "stockEmpty": "Vau, olet jo oppinut paljon! Olet pelannut kaikki valmiina olleet pelit. Tule takaisin toisena päivänä uusien pelien pariin.",
+    "firstGamesPending": "Ensimmäiset pelisi ovat tulossa! Lingu valmistelee niitä. Tule pian takaisin.",
+    "replayHeading": "Tai pelaa jokin päättynyt pelisi uudelleen",
+    "replay": "Pelaa uudelleen · {score}/{total} · {date}"
+  },
+  "settings": {
+    "isChild": "Oppija on lapsi",
+    "isChildHint": "Lingu käyttää yksinkertaisia sanoja, lämmintä sävyä ja arkisia aiheita noin 9-11-vuotiaalle lapselle."
+  },
+  "chat": {
+    "linguAway": "Lingu on nyt poissa. Yritä hetken päästä uudelleen."
+  },
+  "conversation": {
+    "heardLabel": "Lingu kuuli:",
+    "redo": "Yritä uudelleen",
+    "speechSwitching": "Lingun ääni valmistautuu. Se kestää hetken.",
+    "speechBusy": "Lingun ääni on hetken varattu.",
+    "speechAway": "Lingu on nyt poissa, joten ääntä ei ole.",
+    "speechUseText": "Kirjoita Linguille sen sijaan"
+  }
+}

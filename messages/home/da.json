@@ -1,0 +1,23 @@
+{
+  "detective": {
+    "stockEmpty": "Wow, du har allerede lært så meget! Du har spillet alle de spil, vi havde klar. Kom tilbage en anden dag for at få nye.",
+    "firstGamesPending": "Dine første spil er på vej! Lingu gør dem klar. Kom snart tilbage.",
+    "replayHeading": "Eller spil et af dine afsluttede spil igen",
+    "replay": "Spil igen · {score}/{total} · {date}"
+  },
+  "settings": {
+    "isChild": "Denne elev er et barn",
+    "isChildHint": "Lingu bruger enkle ord, en varm tone og hverdagsemner til et barn på cirka 9-11 år."
+  },
+  "chat": {
+    "linguAway": "Lingu er væk lige nu. Prøv igen om lidt."
+  },
+  "conversation": {
+    "heardLabel": "Lingu hørte:",
+    "redo": "Prøv igen",
+    "speechSwitching": "Lingus stemme gør sig klar. Det tager et øjeblik.",
+    "speechBusy": "Lingus stemme er optaget et øjeblik.",
+    "speechAway": "Lingu er væk lige nu, så der er ingen stemme.",
+    "speechUseText": "Skriv til Lingu i stedet"
+  }
+}

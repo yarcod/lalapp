@@ -1,0 +1,23 @@
+{
+  "detective": {
+    "stockEmpty": "Vay, şimdiden çok şey öğrendin! Hazır olan tüm oyunları oynadın. Yenileri için başka bir gün tekrar gel.",
+    "firstGamesPending": "İlk oyunların yolda! Lingu onları hazırlıyor. Yakında tekrar gel.",
+    "replayHeading": "Ya da bitirdiğin oyunlardan birini yeniden oyna",
+    "replay": "Tekrar oyna · {score}/{total} · {date}"
+  },
+  "settings": {
+    "isChild": "Bu öğrenci bir çocuk",
+    "isChildHint": "Lingu, yaklaşık 9-11 yaşındaki bir çocuk için basit sözcükler, sıcak bir üslup ve günlük konular kullanır."
+  },
+  "chat": {
+    "linguAway": "Lingu şu anda burada değil. Biraz sonra tekrar dene."
+  },
+  "conversation": {
+    "heardLabel": "Lingu şunu duydu:",
+    "redo": "Tekrar dene",
+    "speechSwitching": "Lingu'nun sesi hazırlanıyor. Bu biraz sürer.",
+    "speechBusy": "Lingu'nun sesi kısa süreliğine meşgul.",
+    "speechAway": "Lingu şu an yok, bu yüzden ses yok.",
+    "speechUseText": "Bunun yerine Lingu'ya yaz"
+  }
+}

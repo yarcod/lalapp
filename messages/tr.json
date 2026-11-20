@@ -175,10 +175,6 @@
     "assessment": "Seviyemi değerlendir",
     "history": "Bu dildeki oyunların",
     "noHistory": "Kaydedilen oyunların burada görünecek.",
-    "stockEmpty": "Vay, şimdiden çok şey öğrendin! Hazır olan tüm oyunları oynadın. Yenileri için başka bir gün tekrar gel.",
-    "firstGamesPending": "İlk oyunların yolda! Lingu onları hazırlıyor. Yakında tekrar gel.",
-    "replayHeading": "Ya da bitirdiğin oyunlardan birini yeniden oyna",
-    "replay": "Tekrar oyna · {score}/{total} · {date}",
     "generating": "Hazırlanıyor",
     "ready": "Oyuna devam et",
     "completed": "Oyun tamamlandı",
@@ -374,8 +370,6 @@
     "bio": "Lingu'ya kendinizden bahsedin",
     "bioPlaceholder": "ör. İş nedeniyle sık sık seyahat eden bir yazılım geliştiricisiyim...",
     "bioHint": "Lingu, konuşmaları size uyarlamak için bu bilgileri kullanır.",
-    "isChild": "Bu öğrenci bir çocuk",
-    "isChildHint": "Lingu, yaklaşık 9-11 yaşındaki bir çocuk için basit sözcükler, sıcak bir üslup ve günlük konular kullanır.",
     "saveChanges": "Değişiklikleri Kaydet",
     "saving": "Kaydediliyor...",
     "saved": "Profil güncellendi.",
@@ -972,7 +966,6 @@
     "thinking": "Düşünüyor...",
     "takingLonger": "Beklenenden uzun sürüyor...",
     "errorMessage": "Bir şeyler ters gitti. Lütfen tekrar deneyin.",
-    "linguAway": "Lingu şu anda burada değil. Biraz sonra tekrar dene.",
     "deleteTitle": "Sohbeti Sil",
     "deleteMessage": "Bu konuşma kalıcı olarak silinecek.",
     "deleteConfirm": "Sil",
@@ -1426,13 +1419,7 @@
       "Hafta sonu planları",
       "İş ve kariyer hedefleri",
       "Evden çalışma"
-    ],
-    "heardLabel": "Lingu şunu duydu:",
-    "redo": "Tekrar dene",
-    "speechSwitching": "Lingu'nun sesi hazırlanıyor. Bu biraz sürer.",
-    "speechBusy": "Lingu'nun sesi kısa süreliğine meşgul.",
-    "speechAway": "Lingu şu an yok, bu yüzden ses yok.",
-    "speechUseText": "Bunun yerine Lingu'ya yaz"
+    ]
   },
   "voiceRecorder": {
     "record": "Kaydet",

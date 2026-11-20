@@ -1,0 +1,23 @@
+{
+  "detective": {
+    "stockEmpty": "Wow, hai già imparato così tanto! Hai giocato tutte le partite pronte. Torna un altro giorno per quelle nuove.",
+    "firstGamesPending": "Le tue prime partite stanno arrivando! Lingu le sta preparando. Torna presto.",
+    "replayHeading": "Oppure rigioca una delle tue partite finite",
+    "replay": "Gioca ancora · {score}/{total} · {date}"
+  },
+  "settings": {
+    "isChild": "Chi studia è un bambino",
+    "isChildHint": "Lingu userà parole semplici, un tono caloroso e argomenti quotidiani per un bambino di circa 9-11 anni."
+  },
+  "chat": {
+    "linguAway": "Lingu ora non c'è. Riprova tra un po'."
+  },
+  "conversation": {
+    "heardLabel": "Lingu ha sentito:",
+    "redo": "Riprova",
+    "speechSwitching": "La voce di Lingu si sta preparando. Ci vuole un momento.",
+    "speechBusy": "La voce di Lingu è occupata per un momento.",
+    "speechAway": "Lingu non c'è in questo momento, quindi non c'è la voce.",
+    "speechUseText": "Scrivi a Lingu invece"
+  }
+}

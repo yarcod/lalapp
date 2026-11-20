@@ -175,10 +175,6 @@
     "assessment": "Évaluer mon niveau",
     "history": "Tes parties dans cette langue",
     "noHistory": "Tes parties enregistrées apparaîtront ici.",
-    "stockEmpty": "Waouh, tu as déjà tant appris ! Tu as joué à toutes les parties prêtes. Reviens un autre jour pour de nouvelles.",
-    "firstGamesPending": "Tes premières parties arrivent ! Lingu les prépare. Reviens bientôt.",
-    "replayHeading": "Ou rejoue à l’une de tes parties terminées",
-    "replay": "Rejouer · {score}/{total} · {date}",
     "generating": "Préparation",
     "ready": "Reprendre la partie",
     "completed": "Partie terminée",
@@ -374,8 +370,6 @@
     "bio": "Parlez de vous à Lingu",
     "bioPlaceholder": "ex : Je suis développeur/euse et je voyage souvent pour le travail...",
     "bioHint": "Lingu utilisera ces informations pour adapter les conversations à vos besoins.",
-    "isChild": "Cet apprenant est un enfant",
-    "isChildHint": "Lingu utilisera des mots simples, un ton chaleureux et des sujets du quotidien pour un enfant d'environ 9-11 ans.",
     "saveChanges": "Sauvegarder",
     "saving": "Sauvegarde...",
     "saved": "Profil mis à jour.",
@@ -972,7 +966,6 @@
     "thinking": "Réflexion...",
     "takingLonger": "Cela prend plus de temps que prévu...",
     "errorMessage": "Une erreur s'est produite. Veuillez réessayer.",
-    "linguAway": "Lingu est absent pour le moment. Réessaie dans un petit moment.",
     "deleteTitle": "Supprimer le chat",
     "deleteMessage": "Cette conversation sera définitivement supprimée.",
     "deleteConfirm": "Supprimer",
@@ -1426,13 +1419,7 @@
       "Plans du week-end",
       "Travail et objectifs de carrière",
       "Travail à domicile"
-    ],
-    "heardLabel": "Lingu a entendu :",
-    "redo": "Réessayer",
-    "speechSwitching": "La voix de Lingu se prépare. Cela prend un instant.",
-    "speechBusy": "La voix de Lingu est occupée un instant.",
-    "speechAway": "Lingu est absent pour le moment, il n'y a donc pas de voix.",
-    "speechUseText": "Écrire à Lingu à la place"
+    ]
   },
   "voiceRecorder": {
     "record": "Enregistrer",

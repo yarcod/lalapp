@@ -175,10 +175,6 @@
     "assessment": "Mein Niveau ermitteln",
     "history": "Deine Spiele in dieser Sprache",
     "noHistory": "Deine gespeicherten Spiele erscheinen hier.",
-    "stockEmpty": "Wow, du hast schon so viel gelernt! Du hast alle bereitliegenden Spiele gespielt. Komm an einem anderen Tag wieder, dann gibt es neue.",
-    "firstGamesPending": "Deine ersten Spiele sind unterwegs! Lingu bereitet sie vor. Komm bald wieder.",
-    "replayHeading": "Oder spiel eines deiner beendeten Spiele noch einmal",
-    "replay": "Nochmal spielen · {score}/{total} · {date}",
     "generating": "Wird vorbereitet",
     "ready": "Spiel fortsetzen",
     "completed": "Spiel abgeschlossen",
@@ -374,8 +370,6 @@
     "bio": "Erzähle Lingu von dir",
     "bioPlaceholder": "z.B. Ich bin Entwickler/in und reise viel für die Arbeit...",
     "bioHint": "Lingu nutzt diese Informationen, um die Gespräche auf dich abzustimmen.",
-    "isChild": "Dieser Lernende ist ein Kind",
-    "isChildHint": "Lingu verwendet einfache Wörter, einen herzlichen Ton und Alltagsthemen für ein Kind von etwa 9-11 Jahren.",
     "saveChanges": "Änderungen speichern",
     "saving": "Wird gespeichert...",
     "saved": "Profil aktualisiert.",
@@ -972,7 +966,6 @@
     "thinking": "Denke nach...",
     "takingLonger": "Dauert länger als erwartet...",
     "errorMessage": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
-    "linguAway": "Lingu ist gerade weg. Versuch es bitte gleich noch einmal.",
     "deleteTitle": "Chat löschen",
     "deleteMessage": "Dieses Gespräch wird dauerhaft gelöscht.",
     "deleteConfirm": "Löschen",
@@ -1426,13 +1419,7 @@
       "Wochendpläne",
       "Arbeit und Karriereziele",
       "Homeoffice"
-    ],
-    "heardLabel": "Lingu hat gehört:",
-    "redo": "Nochmal versuchen",
-    "speechSwitching": "Lingus Stimme wird vorbereitet. Das dauert einen Moment.",
-    "speechBusy": "Lingus Stimme ist gerade kurz beschäftigt.",
-    "speechAway": "Lingu ist gerade weg, deshalb gibt es keine Stimme.",
-    "speechUseText": "Stattdessen Lingu schreiben"
+    ]
   },
   "voiceRecorder": {
     "record": "Aufnehmen",
