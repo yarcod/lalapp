@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import engine
+from app.home.context import load_learner
 from app.home.speech_session import _gateway
 from app.models.game import GameSession, GameStock
 from app.models.study_plan import StudyPlan
@@ -149,7 +150,7 @@ async def generate_item(db: AsyncSession, bucket: Bucket, *, replacement: bool) 
         native_language=user.native_language,
         level=plan.cefr_level,
         context=bucket.context,
-        is_child=user.is_child,
+        is_child=(await load_learner(db, user)).is_child,
     )
     # Never hold a transaction open while waiting for the provider.
     await db.commit()

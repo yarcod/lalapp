@@ -10,6 +10,15 @@ from typing import TYPE_CHECKING
 
 from app.core.app_logger import get_logger
 from app.home.settings import home_settings
+from app.home.spoken_lines import (
+    SCREEN,
+    SWEDISH,
+    SpokenLine,
+    display_text,
+    invalid_swedish_lines,
+    parse_reply,
+    tagged_replies_enabled,
+)
 from app.models.user import User
 from app.services.language_helpers import (
     get_iso639,
@@ -41,15 +50,6 @@ from app.services.provisional_turn import (
     build_opener_messages,
 )
 from app.services.quota_service import record_session_seconds
-from app.services.spoken_lines import (
-    SCREEN,
-    SWEDISH,
-    SpokenLine,
-    display_text,
-    invalid_swedish_lines,
-    parse_reply,
-    tagged_replies_enabled,
-)
 from app.utils.db import db_session
 
 if TYPE_CHECKING:
@@ -80,9 +80,7 @@ def _build_conversation_system_prompt(
     language_prompt_overlay: str = "",
     memory_tools_enabled: bool = True,
     lesson_practice_context: str = "",
-    native_code: str = "",
     target_code: str = "",
-    is_child: bool = False,
 ) -> str:
     return build_conversation_system_prompt(
         student_name=student_name,
@@ -94,9 +92,7 @@ def _build_conversation_system_prompt(
         language_prompt_overlay=language_prompt_overlay,
         memory_tools_enabled=memory_tools_enabled,
         lesson_practice_context=lesson_practice_context,
-        native_code=native_code,
         target_code=target_code,
-        is_child=is_child,
     )
 
 
@@ -332,9 +328,7 @@ class ConversationPipeline:
             "user_context": user_context,
             "language_prompt_overlay": language_prompt_overlay,
             "lesson_practice_context": lesson_practice_context,
-            "native_code": native_language,
             "target_code": target_language,
-            "is_child": is_child,
         }
         self.system_prompt = _build_conversation_system_prompt(
             **self._prompt_args,

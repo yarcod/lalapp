@@ -1,7 +1,8 @@
 import json
 
+from app.home.prompts import child_instruction
 from app.services.language_helpers import get_language_name, get_native_language_name
-from app.services.prompts.common import child_instruction, get_language_prompt_overlay
+from app.services.prompts.common import get_language_prompt_overlay
 
 
 def _with_child(prompt: str, is_child: bool) -> str:

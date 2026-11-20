@@ -1,4 +1,4 @@
-from app.services.spoken_lines import (
+from app.home.spoken_lines import (
     SpokenLine,
     display_text,
     invalid_swedish_lines,

@@ -8,6 +8,7 @@ import pytest
 from sqlalchemy import func, select
 
 from app.core.config import settings
+from app.home.models import HomeProfile
 from app.models.game import GameAdmission, GameRequest, GameSession, GameStock
 from app.models.lesson import Lesson
 from app.models.study_plan import StudyPlan
@@ -72,7 +73,7 @@ async def test_refill_fills_to_target(
 
 async def test_child_flag_stored_and_passed(db_session, test_user_with_plan, gateway, generate):
     user, _ = test_user_with_plan
-    user.is_child = True
+    db_session.add(HomeProfile(user_id=user.id, is_child=True))
     await db_session.commit()
     await game_stock.refill_once(db_session)
     assert generate.call_args_list[0].args[0].is_child is True

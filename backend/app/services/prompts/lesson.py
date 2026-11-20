@@ -1,6 +1,6 @@
 """Prompt templates and builders for lesson generation and evaluation."""
 
-from app.services.prompts.common import child_instruction
+from app.home.prompts import child_suffix
 
 LESSON_TYPE_GUIDANCE: dict[str, str] = {
     "grammar": (
@@ -532,7 +532,6 @@ def build_lesson_generation_prompt(
     language_prompt_overlay: str = "",
     native_language_name: str = "none",
     previous_lessons_summary: str = "",
-    is_child: bool = False,
 ) -> str:
     prompt = LESSON_GENERATION_PROMPT.format(
         lesson_type_guidance=build_lesson_type_guidance(lesson_type),
@@ -551,9 +550,7 @@ def build_lesson_generation_prompt(
         valid_slugs=valid_slugs,
         language_prompt_overlay=language_prompt_overlay,
     )
-    if is_child:
-        prompt += f"\n\n{child_instruction()}"
-    return prompt
+    return prompt + child_suffix()
 
 
 def build_fill_blank_eval_prompt(

@@ -21,6 +21,7 @@ from app.core.config import settings
 from app.data.curriculum import COMPLETION_UNIT_IDS, get_curriculum_units
 from app.data.grammar import get_grammar_topics
 from app.data.vocabulary import get_vocabulary_by_level
+from app.home.context import current_learner
 from app.models.game import GameAdmission, GameRequest, GameSession, GameStock
 from app.models.lesson import Exercise, Lesson
 from app.models.progress_reward import ProgressReward
@@ -279,8 +280,9 @@ async def create_game(
     plan: StudyPlan | None,
     body: GameCreate,
     game_type: GameType = "detective",
-    stock_taker: Callable[[AsyncSession, StudyPlan, str, str], Awaitable[GameStock | None]]
-    | None = None,
+    stock_taker: (
+        Callable[[AsyncSession, StudyPlan, str, str], Awaitable[GameStock | None]] | None
+    ) = None,
 ) -> tuple[GameSession | None, bool]:
     """With a stock_taker, games come only from stock and None means the stock is empty."""
     await lock_user(db, user.id)
@@ -408,7 +410,7 @@ async def create_game(
         target_language=plan.target_language,
         native_language=user.native_language,
         level=plan.cefr_level,
-        is_child=user.is_child,
+        is_child=current_learner().is_child,
         status="generating",
         context=context,
         created_at=now,

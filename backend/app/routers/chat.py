@@ -16,6 +16,7 @@ from app.core.deps import (
     require_subscription_or_freemium_readonly,
 )
 from app.core.limiter import limiter
+from app.home.spoken_lines import display_text, parse_reply, tagged_replies_enabled
 from app.models.chat_history import ChatHistory
 from app.models.conversation import Conversation
 from app.models.llm_usage import LLMUsage
@@ -47,7 +48,6 @@ from app.services.memory_service import (
 from app.services.progress_rewards import reward_conversation
 from app.services.prompts.common import get_language_prompt_overlay
 from app.services.prompts.tutor import build_tutor_system_prompt
-from app.services.spoken_lines import display_text, parse_reply, tagged_replies_enabled
 from app.utils.db import db_session
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
@@ -69,9 +69,7 @@ def _build_tutor_system_prompt(
     memory_context: str,
     language_prompt_overlay: str = "",
     memory_tools_enabled: bool = True,
-    native_code: str = "",
     target_code: str = "",
-    is_child: bool = False,
 ) -> str:
     return build_tutor_system_prompt(
         student_name=student_name,
@@ -86,9 +84,7 @@ def _build_tutor_system_prompt(
         memory_context=memory_context,
         language_prompt_overlay=language_prompt_overlay,
         memory_tools_enabled=memory_tools_enabled,
-        native_code=native_code,
         target_code=target_code,
-        is_child=is_child,
     )
 
 
@@ -351,9 +347,7 @@ async def chat(
         user_context=user_context,
         memory_context=memory_context,
         language_prompt_overlay=language_prompt_overlay,
-        native_code=current_user.native_language,
         target_code=target_language,
-        is_child=current_user.is_child,
     )
     fallback_system_prompt = _build_tutor_system_prompt(
         student_name=current_user.display_name,
@@ -368,9 +362,7 @@ async def chat(
         memory_context=memory_context,
         language_prompt_overlay=language_prompt_overlay,
         memory_tools_enabled=False,
-        native_code=current_user.native_language,
         target_code=target_language,
-        is_child=current_user.is_child,
     )
 
     user_message = ChatHistory(

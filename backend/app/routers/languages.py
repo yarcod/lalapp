@@ -6,6 +6,7 @@ from app.core.app_logger import get_logger
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.core.limiter import limiter
+from app.home.spoken_lines import tagged_replies_enabled
 from app.models.chat_history import ChatHistory
 from app.models.conversation import Conversation
 from app.models.llm_usage import LLMUsage
@@ -22,7 +23,6 @@ from app.schemas.language import (
     UserLanguageOut,
 )
 from app.services.progress_service import current_streak as get_current_streak
-from app.services.spoken_lines import tagged_replies_enabled
 from app.services.user_language_service import (
     add_language,
     get_active_language,

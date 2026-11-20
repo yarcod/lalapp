@@ -43,13 +43,6 @@ class User(Base):
         default=0,
         server_default="0",
     )
-    # The student is a child of about 9-11; prompts then use simple words and everyday topics.
-    is_child: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        default=False,
-        server_default="false",
-    )
     conversation_weekly_sessions: Mapped[int] = mapped_column(
         Integer,
         nullable=False,

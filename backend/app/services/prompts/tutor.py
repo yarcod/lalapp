@@ -1,23 +1,11 @@
 """Prompt builders for text chat and real-time voice tutoring."""
 
+from app.home.prompts import tutor_suffix
 from app.services.prompts.common import (
     PLAIN_TEXT_OUTPUT_INSTRUCTION,
     TUTOR_DISPLAY_NAME,
-    child_instruction,
     get_memory_system_instruction,
-    instruction_language_rules,
 )
-
-
-def _extra_sections(*, cefr_level: str, native_code: str, target_code: str, is_child: bool) -> str:
-    parts = []
-    if is_child:
-        parts.append(child_instruction())
-    rules = instruction_language_rules(cefr_level, native_code, target_code)
-    if rules:
-        parts.append(rules)
-    return "".join(f"\n{part}\n" for part in parts)
-
 
 CHAT_OUTPUT_INSTRUCTION = (
     "OUTPUT FORMAT: You may use Markdown bold, italics, bullet or numbered lists, and paragraphs "
@@ -42,9 +30,7 @@ def build_tutor_system_prompt(
     memory_context: str,
     language_prompt_overlay: str = "",
     memory_tools_enabled: bool = True,
-    native_code: str = "",
     target_code: str = "",
-    is_child: bool = False,
 ) -> str:
     overlay_section = f"{language_prompt_overlay}\n" if language_prompt_overlay else ""
     prompt = f"""\
@@ -94,12 +80,7 @@ Guidelines:
   They are strictly forbidden because responses may be read aloud by a text-to-speech
   engine and emoticons produce unnatural noise (e.g. "face with tears of joy").
 """
-    prompt += _extra_sections(
-        cefr_level=cefr_level,
-        native_code=native_code,
-        target_code=target_code,
-        is_child=is_child,
-    )
+    prompt += tutor_suffix(cefr_level, target_code)
     if memory_tools_enabled:
         return prompt + "\n" + get_memory_system_instruction(native_language)
     return prompt
@@ -115,9 +96,7 @@ def build_conversation_system_prompt(
     memory_context: str,
     language_prompt_overlay: str = "",
     memory_tools_enabled: bool = True,
-    native_code: str = "",
     target_code: str = "",
-    is_child: bool = False,
     lesson_practice_context: str = "",
 ) -> str:
     overlay_section = f"{language_prompt_overlay}\n" if language_prompt_overlay else ""
@@ -180,12 +159,7 @@ Lesson-linked speaking practice:
 {lesson_practice_context}
 </lesson_practice>
 """
-    prompt += _extra_sections(
-        cefr_level=cefr_level,
-        native_code=native_code,
-        target_code=target_code,
-        is_child=is_child,
-    )
+    prompt += tutor_suffix(cefr_level, target_code)
     if memory_tools_enabled:
         return prompt + "\n" + get_memory_system_instruction(native_language)
     return prompt

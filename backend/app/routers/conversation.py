@@ -19,6 +19,7 @@ from app.core.deps import (
 )
 from app.core.limiter import limiter
 from app.core.security import decode_access_token
+from app.home.context import enter_user
 from app.home.speech_session import live_llm_is_small
 from app.models.conversation import Conversation as ConversationModel
 from app.models.study_plan import StudyPlan
@@ -395,7 +396,7 @@ async def conversation_ws(
             max_duration = min(max_duration, freemium_remaining_seconds)
         inactivity_timeout = user.conversation_inactivity_timeout
         native_language = user.native_language
-        user_is_child = user.is_child
+        user_is_child = (await enter_user(db, user)).is_child
         student_name = user.display_name
         user_bio = user.bio
         user_learning_goals = user.learning_goals

@@ -9,6 +9,7 @@ from pydantic import ValidationError
 from sqlalchemy import func, select
 
 from app.core.config import settings
+from app.home.context import HomeLearner, use_learner
 from app.models.game import GameAdmission, GameRequest, GameSession
 from app.models.lesson import Lesson
 from app.models.progress import Progress
@@ -685,12 +686,14 @@ def test_too_few_valid_raises():
 
 async def test_child_flag_reaches_prompt_and_session(db_session, test_user_with_plan, monkeypatch):
     user, _ = test_user_with_plan
-    user.is_child = True
-    await db_session.commit()
     plan = await db_session.scalar(select(StudyPlan))
-    session, _ = await games.create_game(
-        db_session, user, plan, GameCreate(request_id=uuid4(), study_plan_id=plan.id, mode="free")
-    )
+    with use_learner(HomeLearner(is_child=True)):
+        session, _ = await games.create_game(
+            db_session,
+            user,
+            plan,
+            GameCreate(request_id=uuid4(), study_plan_id=plan.id, mode="free"),
+        )
     assert session.is_child is True
     mocked = AsyncMock(
         side_effect=[
@@ -701,7 +704,7 @@ async def test_child_flag_reaches_prompt_and_session(db_session, test_user_with_
     monkeypatch.setattr(games.llm_adapter, "structured_output", mocked)
     result = await games.generate_content(session, 1e12)
     assert len(result.challenges) == 5
-    from app.services.prompts.common import child_instruction
+    from app.home.prompts import child_instruction
 
     assert child_instruction() in mocked.call_args_list[0].args[0][0]["content"]
     assert mocked.call_args_list[0].args[1] is DetectiveDraftContent

@@ -151,7 +151,6 @@ class UserResponse(BaseModel):
     conversation_max_duration: int
     conversation_inactivity_timeout: int
     conversation_speech_pause: int = 0
-    is_child: bool = False
     avatar: str | None = None
     bio: str | None = None
     learning_goals: list[str] | None = None
@@ -198,7 +197,6 @@ class UserUpdateRequest(BaseModel):
     conversation_max_duration: int | None = None
     conversation_inactivity_timeout: int | None = None
     conversation_speech_pause: int | None = None
-    is_child: bool | None = None
     bio: str | None = Field(default=None, max_length=500)
     learning_goals: list[str] | None = None
 

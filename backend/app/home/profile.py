@@ -7,9 +7,9 @@ from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.core.limiter import limiter
 from app.home.models import HomeProfile
+from app.home.spoken_lines import tagged_replies_enabled
 from app.models.study_plan import StudyPlan
 from app.models.user import User
-from app.services.spoken_lines import tagged_replies_enabled
 
 router = APIRouter(prefix="/api/home/profile", tags=["home-profile"])
 
