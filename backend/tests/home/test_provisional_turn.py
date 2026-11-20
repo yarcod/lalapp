@@ -9,8 +9,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from app.home import speech_session
+from app.home.conversation import HomeConversationPipeline
 from app.home.speech_session import SpeechSessionState, live_llm_is_small
-from app.services.conversation_pipeline import ConversationPipeline
 from app.services.llm_adapter import (
     LLMAdapter,
     LLMToolCall,
@@ -73,9 +73,9 @@ class FakeWS:
         return [d for t, d in self.sent if t == "bytes"]
 
 
-def _pipeline(**kwargs) -> ConversationPipeline:
+def _pipeline(**kwargs) -> HomeConversationPipeline:
     kwargs.setdefault("generated_opener", True)
-    pipeline = ConversationPipeline(
+    pipeline = HomeConversationPipeline(
         llm=AsyncMock(),
         tts=AsyncMock(),
         stt=AsyncMock(),
@@ -86,9 +86,7 @@ def _pipeline(**kwargs) -> ConversationPipeline:
     )
     pipeline.stt.transcribe = AsyncMock(return_value="I have a cat")
     pipeline.tts.synthesize = AsyncMock(side_effect=lambda text, *_: text.encode())
-    pipeline.llm.chat = AsyncMock(
-        side_effect=[Stream("Oh, a cat!"), Stream(" What colour is it?")]
-    )
+    pipeline.llm.chat = AsyncMock(side_effect=[Stream("Oh, a cat!"), Stream(" What colour is it?")])
     pipeline._save_turn = AsyncMock()
     pipeline._save_usage = AsyncMock()
     return pipeline
@@ -100,10 +98,12 @@ async def _settle() -> None:
 
 
 def _memory_call() -> LLMToolCall:
-    return LLMToolCall(id="c1", name="save_user_memory", arguments={"content": "Has a cat"}, raw_arguments="")
+    return LLMToolCall(
+        id="c1", name="save_user_memory", arguments={"content": "Has a cat"}, raw_arguments=""
+    )
 
 
-def _scripted_tool_chat(pipeline: ConversationPipeline, reply: str) -> list[dict]:
+def _scripted_tool_chat(pipeline: HomeConversationPipeline, reply: str) -> list[dict]:
     """A chat fake that, on the reply call, runs the tool executor like LLMToolStream does."""
     calls: list[dict] = []
 
@@ -379,9 +379,9 @@ async def test_opener_failure_falls_back_to_a_plain_reply() -> None:
 async def test_opener_without_audio_is_not_prefilled() -> None:
     pipeline = _pipeline()
     pipeline.tts.synthesize = AsyncMock(
-        side_effect=lambda text, *_: (_ for _ in ()).throw(RuntimeError("tts"))
-        if text.startswith("Oh")
-        else text.encode()
+        side_effect=lambda text, *_: (
+            (_ for _ in ()).throw(RuntimeError("tts")) if text.startswith("Oh") else text.encode()
+        )
     )
     calls: list[list[dict]] = []
     streams = iter([Stream("Oh, a cat!"), Stream("Reply one.")])

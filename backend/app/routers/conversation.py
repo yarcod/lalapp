@@ -20,7 +20,7 @@ from app.core.deps import (
 from app.core.limiter import limiter
 from app.core.security import decode_access_token
 from app.home.context import enter_user
-from app.home.speech_session import live_llm_is_small
+from app.home.conversation import build_pipeline
 from app.models.conversation import Conversation as ConversationModel
 from app.models.study_plan import StudyPlan
 from app.models.user import User
@@ -30,7 +30,6 @@ from app.services.assessment_voice_trial import (
     consume_assessment_voice_trial_token,
     validate_assessment_voice_trial_token,
 )
-from app.services.conversation_pipeline import ConversationPipeline
 from app.services.freemium_service import (
     check_voice_quota,
     is_freemium_trial_active,
@@ -396,7 +395,7 @@ async def conversation_ws(
             max_duration = min(max_duration, freemium_remaining_seconds)
         inactivity_timeout = user.conversation_inactivity_timeout
         native_language = user.native_language
-        user_is_child = (await enter_user(db, user)).is_child
+        await enter_user(db, user)
         student_name = user.display_name
         user_bio = user.bio
         user_learning_goals = user.learning_goals
@@ -539,10 +538,7 @@ async def conversation_ws(
         except Exception:
             pass
 
-        # Decided once for the connection: the opener and reasoning effort depend on the tier.
-        small_llm = await live_llm_is_small()
-
-        pipeline = ConversationPipeline(
+        pipeline = await build_pipeline(
             llm=llm_adapter,
             tts=tts_service,
             stt=stt_service,
@@ -562,9 +558,6 @@ async def conversation_ws(
             study_plan_id=study_plan_id_for_conv,
             lesson_practice_context=lesson_practice.context if lesson_practice else "",
             user_agent=websocket.headers.get("user-agent", ""),
-            is_child=user_is_child,
-            small_llm=small_llm,
-            generated_opener=settings.LLM_PROVIDER == "ollama" and not small_llm,
         )
         pipeline._redis = redis
         pipeline._freemium_voice = freemium_ok
