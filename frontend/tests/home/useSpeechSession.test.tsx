@@ -4,8 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 const apiFetch = vi.hoisted(() => vi.fn())
 vi.mock('@/lib/api', () => ({ apiFetch }))
 
-import { useSpeechSession } from '@/hooks/useSpeechSession'
-import { useSpeechSessionStore } from '@/store/speech-session'
+import { useSpeechSession } from '@/home/hooks/useSpeechSession'
+import { useSpeechSessionStore } from '@/home/store/speech-session'
 
 function answer(state: string) {
   apiFetch.mockResolvedValue({ ok: true, json: async () => ({ state }) })

@@ -4,7 +4,7 @@ import {
   SPEECH_SESSION_STATES,
   useSpeechSessionStore,
   type SpeechSessionState,
-} from '@/store/speech-session'
+} from '@/home/store/speech-session'
 
 const KEEPALIVE_INTERVAL_MS = 60_000
 const SETTLING_POLL_INTERVAL_MS = 5_000

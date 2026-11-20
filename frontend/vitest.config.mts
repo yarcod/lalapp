@@ -4,7 +4,7 @@ import path from 'path'
 export default defineConfig({
   test: {
     environment: 'jsdom',
-    setupFiles: ['./tests/setup.ts'],
+    setupFiles: ['./tests/setup.ts', './tests/home/setup.ts'],
     include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
     globals: true,
   },

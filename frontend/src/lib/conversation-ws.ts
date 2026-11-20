@@ -90,14 +90,6 @@ export type WsMessage =
   | MemoryUpdatedMessage
   | TurnCompleteMessage
 
-// ─── Provisional turn control frames (client to server) ──────────────────────
-
-export type TurnControl = 'provisional' | 'confirm' | 'abort'
-
-export function turnControl(type: TurnControl): string {
-  return JSON.stringify({ type })
-}
-
 // ─── Chat context passed from tutor chat to voice session ────────────────────
 
 export interface ChatContextItem {

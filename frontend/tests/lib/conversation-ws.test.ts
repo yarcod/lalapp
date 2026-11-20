@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { buildConversationWsUrl, turnControl } from '@/lib/conversation-ws'
+import { buildConversationWsUrl } from '@/lib/conversation-ws'
 
 describe('buildConversationWsUrl', () => {
   const originalEnv = process.env.NEXT_PUBLIC_API_URL
@@ -59,13 +59,4 @@ describe('buildConversationWsUrl', () => {
     const url = buildConversationWsUrl()
     expect(url).toBe('wss://api.example.com/ws/conversation')
   })
-})
-
-describe('turnControl', () => {
-  it.each(['provisional', 'confirm', 'abort'] as const)(
-    'encodes %s as a typed control frame',
-    (type) => {
-      expect(JSON.parse(turnControl(type))).toEqual({ type })
-    }
-  )
 })

@@ -9,28 +9,6 @@
 
 export const SPEECH_PAUSE_AUTO = 0
 
-// Silence after which the whole utterance so far goes to the backend provisionally.
-export const PROVISIONAL_SILENCE_MS = 800
-
-// At or below this pause the head start over the end of the turn is too short.
-const PROVISIONAL_MIN_REDEMPTION_MS = 1000
-
-export function provisionalTurnsEnabled(redemptionMs: number): boolean {
-  return redemptionMs > PROVISIONAL_MIN_REDEMPTION_MS
-}
-
-export function joinAudioFrames(frames: Float32Array[]): Float32Array {
-  const audio = new Float32Array(
-    frames.reduce((total, frame) => total + frame.length, 0)
-  )
-  let offset = 0
-  for (const frame of frames) {
-    audio.set(frame, offset)
-    offset += frame.length
-  }
-  return audio
-}
-
 export const SPEECH_PAUSE_OPTIONS = [
   SPEECH_PAUSE_AUTO,
   1000,

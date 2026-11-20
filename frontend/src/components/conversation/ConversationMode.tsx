@@ -1,26 +1,12 @@
 'use client'
 
-import {
-  Fragment,
-  useEffect,
-  useRef,
-  useState,
-  useCallback,
-  useMemo,
-} from 'react'
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { useMicVAD } from '@ricky0123/vad-react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import { TargetLanguageText } from '@/components/TargetLanguageText'
 import { useAuthStore } from '@/store/auth'
-import { useSpeechSessionStore } from '@/store/speech-session'
-import {
-  joinAudioFrames,
-  PROVISIONAL_SILENCE_MS,
-  provisionalTurnsEnabled,
-  resolveVadRedemptionMs,
-} from '@/lib/conversation-vad'
+import { resolveVadRedemptionMs } from '@/lib/conversation-vad'
 import { useConfigStore } from '@/store/config'
 import { apiFetch } from '@/lib/api'
 import { float32ToWav, createAudioQueue, type AudioQueue } from '@/lib/audio'
@@ -29,7 +15,6 @@ import { mapUser } from '@/lib/mappers'
 import { splitYearlyCta, type BillingInterval } from '@/lib/billing-copy'
 import {
   buildConversationWsUrl,
-  turnControl,
   type WsMessage,
   type ChatContextItem,
   type SessionWarningMessage,
@@ -48,6 +33,11 @@ import { shouldShowVoiceReviewPrompt } from '@/lib/review-prompt-triggers'
 import { MemorySavedToast } from '@/components/memory/MemorySavedToast'
 import { useTransientToast } from '@/hooks/useTransientToast'
 import LinguAvatar from '@/components/lingu/LinguAvatar'
+import { HeardLine } from '@/home/components/HeardLine'
+import { SpeechStatusNotice } from '@/home/components/SpeechStatusNotice'
+import { useProvisionalTurn } from '@/home/hooks/useProvisionalTurn'
+import { discardLastTurn, dropLastUserTurn } from '@/home/lib/conversation'
+import { useCanStartVoice } from '@/home/store/speech-session'
 
 interface TranscriptEntry {
   id: number
@@ -276,10 +266,6 @@ const INTERRUPTION_RMS_THRESHOLD = 0.03
 const BARGE_IN_STARTUP_GUARD_MS = 900
 const VAD_MAX_RMS = 0.25
 const VAD_POSITIVE_SPEECH_THRESHOLD = 0.3
-// The VAD's own defaults, mirrored so the provisional window follows its silence.
-const VAD_NEGATIVE_SPEECH_THRESHOLD = 0.25
-const VAD_PRE_SPEECH_PAD_MS = 800
-const VAD_SAMPLE_RATE = 16000
 // Allow the backend's 60-second provider budget plus transport/auth overhead.
 const WARMUP_TIMEOUT_MS = 75_000
 const warmupLogger = getLogger('conversation-warmup')
@@ -321,8 +307,7 @@ export default function ConversationMode({
   const accessToken = useAuthStore((s) => s.accessToken)
   const user = useAuthStore((s) => s.user)
   const setUser = useAuthStore((s) => s.setUser)
-  const speechState = useSpeechSessionStore((s) => s.state)
-  const canStartVoice = speechState === 'ready' || speechState === 'shared'
+  const canStartVoice = useCanStartVoice()
 
   // ─── UI State ────────────────────────────────────────────────────────────
   const [status, setStatus] = useState<ConvStatus>('loading')
@@ -400,11 +385,6 @@ export default function ConversationMode({
   const assistantTurnActiveRef = useRef(false)
   const speechStartedAtRef = useRef<number | null>(null)
   const speechEnergyRef = useRef({ sumSquares: 0, samples: 0 })
-  // The browser's own copy of the utterance, for sending it before the VAD ends it.
-  const utteranceFramesRef = useRef<Float32Array[]>([])
-  const silenceMsRef = useRef(0)
-  const provisionalSentRef = useRef(false)
-  const provisionalTailRef = useRef(false)
   const sessionActiveRef = useRef(false)
   const ttsChunkIndexRef = useRef(0)
   const lastAssistantAudioAtRef = useRef(0)
@@ -454,86 +434,16 @@ export default function ConversationMode({
     if (!stream) throw new Error('No active microphone stream')
     return stream
   }, [])
-  const redemptionMs = resolveVadRedemptionMs(
-    user?.conversation_speech_pause,
-    cefrLevel
-  )
-
-  const resetProvisional = useCallback(() => {
-    utteranceFramesRef.current = []
-    silenceMsRef.current = 0
-    provisionalSentRef.current = false
-    provisionalTailRef.current = false
-  }, [])
-
-  const abortProvisional = useCallback(() => {
-    if (!provisionalSentRef.current) return
-    provisionalSentRef.current = false
-    provisionalTailRef.current = false
-    const ws = wsRef.current
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(turnControl('abort'))
-    }
-  }, [])
-
-  const sendProvisional = useCallback(() => {
-    const ws = wsRef.current
-    if (
-      !ws ||
-      ws.readyState !== WebSocket.OPEN ||
-      assistantTurnActiveRef.current ||
-      assistantSpeakingRef.current
-    )
-      return
-    const audio = joinAudioFrames(utteranceFramesRef.current)
-    if (!isLikelySpeech(audio).isSpeech) return
-    try {
-      ws.send(turnControl('provisional'))
-      ws.send(float32ToWav(audio, VAD_SAMPLE_RATE))
-      provisionalSentRef.current = true
-      convLogger.info('sent provisional utterance', {
-        samples: audio.length,
-      })
-    } catch {
-      provisionalSentRef.current = false
-    }
-  }, [isLikelySpeech])
-
-  const trackProvisionalWindow = (speech: number, frame: Float32Array) => {
-    const frames = utteranceFramesRef.current
-    frames.push(frame)
-    if (speechStartedAtRef.current === null) {
-      // Before speech starts, keep only the VAD's pre-speech padding.
-      const frameMs = (frame.length / VAD_SAMPLE_RATE) * 1000
-      const padFrames = Math.floor(VAD_PRE_SPEECH_PAD_MS / frameMs)
-      if (speech < VAD_POSITIVE_SPEECH_THRESHOLD) {
-        while (frames.length > padFrames) frames.shift()
-      }
-      return
-    }
-    if (speech >= VAD_POSITIVE_SPEECH_THRESHOLD) {
-      silenceMsRef.current = 0
-      abortProvisional()
-      return
-    }
-    if (speech >= VAD_NEGATIVE_SPEECH_THRESHOLD) {
-      // Below the speech threshold but not silence: a quiet trailing word the
-      // provisional audio does not contain.
-      if (provisionalSentRef.current) provisionalTailRef.current = true
-      return
-    }
-    const before = silenceMsRef.current
-    const after = before + (frame.length / VAD_SAMPLE_RATE) * 1000
-    silenceMsRef.current = after
-    if (
-      before < PROVISIONAL_SILENCE_MS &&
-      after >= PROVISIONAL_SILENCE_MS &&
-      provisionalTurnsEnabled(redemptionMs)
-    ) {
-      sendProvisional()
-    }
-  }
-
+  const provisional = useProvisionalTurn({
+    wsRef,
+    speechPause: user?.conversation_speech_pause,
+    cefrLevel,
+    speechStartedAtRef,
+    assistantTurnActiveRef,
+    assistantSpeakingRef,
+    isLikelySpeech,
+    logger: convLogger,
+  })
   const vad = useMicVAD({
     baseAssetPath: '/vad/',
     onnxWASMBasePath: '/vad/',
@@ -542,21 +452,27 @@ export default function ConversationMode({
     getStream: getMicStream,
     resumeStream: getMicStream,
     positiveSpeechThreshold: VAD_POSITIVE_SPEECH_THRESHOLD,
-    redemptionMs,
+    redemptionMs: resolveVadRedemptionMs(
+      user?.conversation_speech_pause,
+      cefrLevel
+    ),
     ortConfig: (ort) => {
       // Single-threaded ONNX — no SharedArrayBuffer / COOP headers required
       ort.env.wasm.numThreads = 1
     },
     onFrameProcessed: (probabilities, frame) => {
-      if (!sessionActiveRef.current) return
-      if (probabilities.isSpeech >= VAD_POSITIVE_SPEECH_THRESHOLD) {
-        // VAD emits this before onSpeechStart. Keep the triggering frame's energy,
-        // but exclude padding and non-speech frames from the volume measurement.
-        const energy = speechEnergyRef.current
-        for (const sample of frame) energy.sumSquares += sample * sample
-        energy.samples += frame.length
-      }
-      trackProvisionalWindow(probabilities.isSpeech, frame)
+      if (sessionActiveRef.current)
+        provisional.onFrame(frame, probabilities.isSpeech)
+      if (
+        !sessionActiveRef.current ||
+        !(probabilities.isSpeech >= VAD_POSITIVE_SPEECH_THRESHOLD)
+      )
+        return
+      // VAD emits this before onSpeechStart. Keep the triggering frame's energy,
+      // but exclude padding and non-speech frames from the volume measurement.
+      const energy = speechEnergyRef.current
+      for (const sample of frame) energy.sumSquares += sample * sample
+      energy.samples += frame.length
     },
     onSpeechStart: () => {
       if (!sessionActiveRef.current) return
@@ -568,16 +484,13 @@ export default function ConversationMode({
       if (!assistantTurnActiveRef.current) setAssistantThinking(false)
     },
     onVADMisfire: () => {
-      abortProvisional()
-      resetProvisional()
+      provisional.abort()
       speechStartedAtRef.current = null
       speechEnergyRef.current = { sumSquares: 0, samples: 0 }
       if (mountedRef.current) setUserSpeaking(false)
     },
     onSpeechEnd: (audio: Float32Array) => {
       if (!mountedRef.current) return
-      const provisionalSent = provisionalSentRef.current
-      const provisionalHasTail = provisionalTailRef.current
       const minUtteranceMs = assistantTurnActiveRef.current
         ? INTERRUPTION_MIN_UTTERANCE_MS
         : MIN_UTTERANCE_MS
@@ -593,49 +506,28 @@ export default function ConversationMode({
       })
       speechStartedAtRef.current = null
       speechEnergyRef.current = { sumSquares: 0, samples: 0 }
+      const provisionalTurn = provisional.onSpeechEnd(isSpeech)
       if (!isSpeech) {
-        abortProvisional()
-        resetProvisional()
         setUserSpeaking(false)
         return
       }
-      resetProvisional()
       setUserSpeaking(false)
 
       // Ignore accidental detections when the session ended.
       if (!sessionActiveRef.current) {
         return
       }
-
-      const sendTurn = (send: (ws: WebSocket) => void) => {
-        const ws = wsRef.current
-        if (!ws || ws.readyState !== WebSocket.OPEN) return
-        assistantTurnActiveRef.current = true
-        try {
-          send(ws)
-          setAssistantThinking(true)
-          setErrorMsg(null)
-          setStatus('live')
-        } catch {
-          assistantTurnActiveRef.current = false
-          setErrorMsg(t('errorConnection'))
-          setStatus('error')
-          finalizeSession()
-        }
+      const settled = provisional.settle(provisionalTurn)
+      if (settled === 'sent') {
+        setAssistantThinking(true)
+        setErrorMsg(null)
+        setStatus('live')
+      } else if (settled === 'failed') {
+        setErrorMsg(t('errorConnection'))
+        setStatus('error')
+        finalizeSession()
       }
-
-      if (provisionalSent) {
-        // The audio already went out provisionally, so the pause only confirms it.
-        if (!provisionalHasTail) {
-          sendTurn((ws) => ws.send(turnControl('confirm')))
-          return
-        }
-        // Quiet speech followed it: drop the shorter audio and send the full turn.
-        const ws = wsRef.current
-        if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(turnControl('abort'))
-        }
-      }
+      if (settled) return
 
       // Never interrupt the tutor turn. While the backend is generating or
       // sending chunked audio, any detected speech is ignored to avoid lost
@@ -710,14 +602,26 @@ export default function ConversationMode({
         setAssistantSpeaking(false)
       }
 
-      sendTurn((ws) => {
-        const wav = float32ToWav(audio, VAD_SAMPLE_RATE)
-        convLogger.info('sent user utterance to backend', {
-          bytes: wav.byteLength,
-          assistantSpeaking: assistantSpeakingRef.current,
-        })
-        ws.send(wav)
-      })
+      const ws = wsRef.current
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        assistantTurnActiveRef.current = true
+        try {
+          const wav = float32ToWav(audio, 16000)
+          convLogger.info('sent user utterance to backend', {
+            bytes: wav.byteLength,
+            assistantSpeaking: assistantSpeakingRef.current,
+          })
+          ws.send(wav)
+          setAssistantThinking(true)
+          setErrorMsg(null)
+          setStatus('live')
+        } catch {
+          assistantTurnActiveRef.current = false
+          setErrorMsg(t('errorConnection'))
+          setStatus('error')
+          finalizeSession()
+        }
+      }
     },
   })
   const pauseVadRef = useRef(vad.pause)
@@ -790,7 +694,7 @@ export default function ConversationMode({
       assistantSpeakingRef.current = false
       speechStartedAtRef.current = null
       speechEnergyRef.current = { sumSquares: 0, samples: 0 }
-      resetProvisional()
+      provisional.reset()
       const ws = wsRef.current
       wsRef.current = null
       if (ws) {
@@ -835,28 +739,19 @@ export default function ConversationMode({
         dismissTooltip()
       }
     },
-    [dismissTooltip, resetProvisional]
+    [dismissTooltip, provisional]
   )
 
-  // Redo: drop what Lingu heard and everything after it, stop any reply in
-  // progress, and let the child speak again. The backend forgets the turn.
   const handleRedo = useCallback(() => {
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(
-        JSON.stringify({ type: 'client_event', event: 'discard_last_turn' })
-      )
-    }
+    discardLastTurn(wsRef.current)
     audioQueueRef.current?.cancel()
     assistantTurnActiveRef.current = false
-    provisionalSentRef.current = false
+    provisional.forget()
     setAssistantThinking(false)
     setAssistantSpeaking(false)
     setStreamingText(null)
-    setTranscript((prev) => {
-      const last = prev.map((e) => e.role).lastIndexOf('user')
-      return last === -1 ? prev : prev.slice(0, last)
-    })
-  }, [])
+    setTranscript(dropLastUserTurn)
+  }, [provisional])
 
   // Auto-scroll transcript to bottom. Any transcript mutation moves the bubbles,
   // so a word tooltip anchored to old viewport coordinates is dropped with it.
@@ -1420,28 +1315,7 @@ export default function ConversationMode({
 
       <MemorySavedToast visible={memoryToast} announcementId={memoryToastId} />
 
-      {(speechState === 'switching' ||
-        speechState === 'off' ||
-        speechState === 'busy' ||
-        speechState === 'away') && (
-        <div
-          role="status"
-          className="border-fl-border bg-fl-surface text-fl-muted-1 mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 border px-4 py-3 font-sans text-sm"
-        >
-          <span>
-            {speechState === 'switching' || speechState === 'off'
-              ? t('speechSwitching')
-              : speechState === 'busy'
-                ? t('speechBusy')
-                : t('speechAway')}
-          </span>
-          {speechState !== 'switching' && speechState !== 'off' && (
-            <Link href="/chat" className="text-fl-accent underline">
-              {t('speechUseText')}
-            </Link>
-          )}
-        </div>
-      )}
+      <SpeechStatusNotice />
 
       {/* Transcript area */}
       <div className="mb-4 min-h-0 flex-1 space-y-3 overflow-y-auto px-2">
@@ -1455,40 +1329,28 @@ export default function ConversationMode({
             (acc, e, j) => (e.role === 'user' ? j : acc),
             -1
           )
-          return transcript.map((entry, i) => (
-            <Fragment key={entry.id}>
-              <TranscriptBubble
-                role={entry.role}
-                text={entry.text}
-                speaking={
-                  entry.role === 'user' && userSpeaking && i === lastUserIdx
-                }
-                userAvatar={user?.avatar}
-                userInitial={(user?.displayName || user?.username || '?')[0]}
-                languageCode={targetLanguage}
-                onPointerUp={
-                  entry.role === 'assistant'
-                    ? () =>
-                        handleTextSelection(entry.text, cefrLevel ?? undefined)
-                    : undefined
-                }
-              />
-              {i === lastUserIdx && status === 'live' && (
-                <div className="flex items-center justify-end gap-3 pr-9">
-                  <span className="text-fl-caption text-fl-muted-2 font-sans">
-                    {t('heardLabel')}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleRedo}
-                    className="text-fl-muted-1 border-fl-border hover:border-fl-border-2 hover:text-fl-fg border px-3 py-1 font-mono text-xs tracking-wide transition-colors"
-                  >
-                    {t('redo')}
-                  </button>
-                </div>
-              )}
-            </Fragment>
-          ))
+          return transcript.flatMap((entry, i) => [
+            <TranscriptBubble
+              key={entry.id}
+              role={entry.role}
+              text={entry.text}
+              speaking={
+                entry.role === 'user' && userSpeaking && i === lastUserIdx
+              }
+              userAvatar={user?.avatar}
+              userInitial={(user?.displayName || user?.username || '?')[0]}
+              languageCode={targetLanguage}
+              onPointerUp={
+                entry.role === 'assistant'
+                  ? () =>
+                      handleTextSelection(entry.text, cefrLevel ?? undefined)
+                  : undefined
+              }
+            />,
+            i === lastUserIdx && status === 'live' && (
+              <HeardLine key={`${entry.id}:heard`} onRedo={handleRedo} />
+            ),
+          ])
         })()}
         {streamingText !== null && (
           <TranscriptBubble
