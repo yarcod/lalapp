@@ -447,7 +447,8 @@ async def chat(
 
             if (cleaned := tagged_stream.final()) is not None:
                 full_response = cleaned
-                yield f"data: {json.dumps({'token': cleaned})}\n\n"
+                if cleaned:
+                    yield f"data: {json.dumps({'token': cleaned})}\n\n"
 
             memory_updated = any(
                 result.content.get("saved") is True

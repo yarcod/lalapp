@@ -23,7 +23,7 @@ class TaggedChatStream:
         self._text = ""
 
     def final(self) -> str | None:
-        """Return the cleaned reply for a tagged reply, otherwise None."""
+        """Return the cleaned reply ('' when nothing is left) for a tagged reply, otherwise None."""
         if not self._tagged:
             return None
-        return display_text(parse_reply(self._text, self._target_code), sep="\n") or None
+        return display_text(parse_reply(self._text, self._target_code), sep="\n")

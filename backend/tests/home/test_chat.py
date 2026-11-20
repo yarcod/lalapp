@@ -164,5 +164,48 @@ def test_stream_reset_drops_buffered_text():
     assert stream.final() == "new"
 
 
-def test_stream_final_is_none_for_empty_tagged_reply():
-    assert TaggedChatStream("sv", "A1", "en-GB").final() is None
+def test_stream_final_is_empty_for_tagged_reply_with_only_tags():
+    stream = TaggedChatStream("sv", "A1", "en-GB")
+    stream.token("[sv] \n[en]")
+    assert stream.final() == ""
+    assert TaggedChatStream("sv", "A1", "en-GB").final() == ""
+
+
+@pytest.mark.asyncio
+async def test_tagged_reply_that_cleans_to_empty_is_saved_empty(client, test_user, db_session):
+    """A tagged reply with only tags sends no token and is saved as '' (not the raw tags)."""
+    from sqlalchemy import select
+
+    from app.models.chat_history import ChatHistory
+
+    user, headers = test_user
+    user.native_language = "sv"
+    await db_session.commit()
+
+    async def fake_stream():
+        for token in ("[sv] \n[e", "n]  "):
+            yield token
+
+    with (
+        patch(
+            "app.routers.chat._resolve_chat_context",
+            new_callable=AsyncMock,
+            return_value=("A1", "en-GB", None),
+        ),
+        patch(
+            "app.routers.chat.llm_adapter.chat",
+            new_callable=AsyncMock,
+            return_value=fake_stream(),
+        ),
+    ):
+        response = await client.post("/api/chat", headers=headers, json={"message": "Hej"})
+
+    assert response.status_code == 200
+    assert '"token"' not in response.text
+    rows = (
+        (await db_session.execute(select(ChatHistory).where(ChatHistory.role == "assistant")))
+        .scalars()
+        .all()
+    )
+    assert len(rows) == 1
+    assert rows[0].content == ""
