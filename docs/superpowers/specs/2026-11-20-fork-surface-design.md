@@ -113,12 +113,15 @@ Each upstream file keeps at most a few lines. The intended hooks:
 - Conversation: `ConversationPipeline` returns to upstream. `HomeConversationPipeline` in
   `app/home/conversation.py` subclasses it and carries streamed speech, provisional turns, the
   generated opener, tagged spoken lines, sentence splitting and reasoning effort. The conversation
-  router constructs the home class through one line. Where upstream has no method to override, the
-  builder adds the smallest possible split in the upstream file (for example extracting a method)
-  rather than copying a large method.
+  router builds it through `build_pipeline`. Where upstream has no method to override, the upstream
+  file gains the smallest possible base method (a seam) whose body is the code it replaced; a base
+  `handle_control` that does nothing carries the home control frames, so upstream never imports
+  home code.
 - Games: the stock, replay, salvage, finalize and reshuffle logic leaves `services/games.py` for
   `app/home/games.py`. The replay endpoint moves to a home router. The upstream games router keeps
-  one hook where a new game is started, to serve from stock. Prompt changes to the game prompts
+  hooks where a new game is started and where an empty stock is answered. Stock mode runs only when
+  `HOME_GAME_STOCK` is true and `LLM_PROVIDER` is `ollama`; otherwise upstream's on-demand
+  generation is used. Prompt changes to the game prompts
   (eight detective challenges and similar) move to home prompt functions selected at that hook.
 - `llm_adapter.py` and `tts_service.py`: small changes (reasoning effort, 503 as unavailable,
   prefilled assistant turn, language-aware TTS). Keep them as small patches if no clean seam exists;
@@ -143,7 +146,7 @@ Each upstream file keeps at most a few lines. The intended hooks:
   `mappers.ts` and `store/auth.ts` return to upstream.
 - Chat page, `MicButton`, `conversation-vad.ts`, `conversation-ws.ts`, `detective.ts`,
   `(app)/layout.tsx`, `store/language.ts`: each moves into home code where a seam exists, and
-  otherwise stays a small patch. The builder records which.
+  otherwise stays a small patch. The remaining patches are listed in the home spec.
 
 ### Tests
 

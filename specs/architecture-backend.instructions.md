@@ -38,15 +38,8 @@ deadline fence late background results. Detective, Sentence Order and Vocabulary
 prompts and deterministic answer evaluation through the same admission and reward service.
 Vocabulary Pairs uses canonical vocabulary sources in free mode and a bounded, sequential attempt
 log in the existing JSON answer state; failed attempts permanently mark both involved pairs as assisted.
-Answers and plan-owned XP commit atomically. Game starts are served from `game_stock`
-(`services/game_stock.py`), which a lifespan background task refills; see
-`database-models.instructions.md` for persistence contracts and `games.instructions.md` for domain
-behavior.
-
-The speech-session proxy (`routers/speech_session.py`, `/api/speech-session/*`) forwards session calls
-to the speech gateway, and the voice WebSocket also reads the gateway tier through it. The voice
-pipeline additionally uses `services/spoken_lines.py` (tagged lines) and
-`services/provisional_turn.py` (provisional turns).
+Answers and plan-owned XP commit atomically. See `database-models.instructions.md` for persistence
+contracts and `games.instructions.md` for domain behavior.
 
 ### Core
 
@@ -54,8 +47,6 @@ pipeline additionally uses `services/spoken_lines.py` (tagged lines) and
 values, while Docker determines which values are passed into containers.
 `OPENAI_MODEL` defaults to `gpt-6-luna`. Optional `OPENAI_REASONING_EFFORT` is forwarded by both
 Compose files; an empty value omits the reasoning option and preserves the model default.
-`VOICE_REASONING_EFFORT` (default `low`; empty omits it) sets the reasoning effort for local voice
-replies; `LLMAdapter.chat` accepts `reasoning_effort` and forwards it only to the local Ollama path.
 
 Database sessions come from the async SQLAlchemy engine. Redis is optional at process startup but
 features that require Redis expose their own degraded or unavailable behavior.
@@ -134,11 +125,6 @@ The LLM adapter uses Responses for OpenAI, Chat Completions for Ollama/DeepSeek,
 API. OpenAI requests use `store=false`; each tool stream owns its native output and replays it only
 into its own continuation. Provider response IDs, reasoning items, and tool payloads are not shared
 through the singleton adapter or added to the persisted conversation transcript.
-
-The application lifespan starts one asyncio task, `game_stock.stock_loop`, only when
-`LLM_PROVIDER=ollama` and cancels it on shutdown. Each pass runs under a PostgreSQL advisory lock so
-only one worker refills, uses its own database sessions, and never fails the application: a failed
-pass is logged and the loop continues.
 
 Listening and Reading retain FastAPI background tasks with independent database/Redis resources.
 `exercise_generation.py` owns their renewable Redis leases, total generation deadline, cancellation,

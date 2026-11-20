@@ -173,6 +173,16 @@ def test_hook_lines_present(module_name: str, call: str) -> None:
     )
 
 
+def test_chat_page_hook_present() -> None:
+    page = Path(__file__).resolve().parents[3] / "frontend/src/app/(app)/chat/page.tsx"
+    if not page.exists():
+        pytest.skip("frontend sources are not available")
+    assert "useTaggedReplies(" in page.read_text(), (
+        "hook useTaggedReplies( is missing from the chat page; "
+        "tagged replies would show their language tags (lost in a merge?)"
+    )
+
+
 @pytest.mark.asyncio
 async def test_provisional_chat_fails_loudly_when_user_message_is_not_in_history() -> None:
     pipeline = HomeConversationPipeline(

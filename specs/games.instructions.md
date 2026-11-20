@@ -118,34 +118,19 @@ Context lookup does not call `/study-plan/today`, generate lessons, or advance t
 
 ## Generation and recovery
 
-`POST /api/games/{game_type}`, accepting `detective`, `sentence-order` or `vocabulary-pairs`, never
-waits for generation: games are served from stock (see "Stock and serving"). Generation happens only
-in the background refill.
+`POST /api/games/{game_type}`, accepting `detective`, `sentence-order` or `vocabulary-pairs`, persists a UUID-keyed
+session and returns 202. FastAPI background work
+uses an independent database session and the shared structured-output adapter. No provider call
+holds an open database transaction. The inference deadline comes from
+`EXERCISE_GENERATION_TIMEOUT_SECONDS`; the adapter receives the remaining monotonic budget.
 
-The model writes drafts, not finished challenges. It is asked for eight draft items per game, and
-`salvage_challenges` keeps the first five that are valid, distinct and cite an allowed source,
-dropping the rest; fewer than five valid items fails the attempt. Draft responses are validated
-leniently (1-16 raw items) so one malformed item does not reject the response.
+For Detective, Pydantic requires five distinct sentences, three distinct options, valid indices and exact fragment
+reconstruction/replacement. Fragments retain spaces and punctuation and support CJK without inserting
+word separators. Every challenge cites an allowed source. A separate structured LLM review checks
+linguistic validity, unique correction, language, level and source scope. At most two candidates are
+generated within the same budget. Semantic review reduces ambiguity but is not a formal proof.
 
-- Detective draft: `sentence` (written with exactly one error), `wrong_part` (copied exactly from the
-  sentence, occurring once, matched on word boundaries for spaced scripts), `correct_part`, two
-  `wrong_options`, `explanation` and `source_id`. The app splits the sentence into fragments, shuffles
-  the three options and computes the error and correct indices. Drafts where the parts are equal,
-  ambiguous or cannot be split are dropped.
-- Sentence Order and Vocabulary Pairs drafts use the final challenge shape and are validated per item
-  (Vocabulary Pairs needs five distinct nonempty terms and meanings; its salvage deduplicates both).
-- Items citing unpermitted sources or repeating a recent sentence are dropped.
-
-A separate structured LLM review then checks linguistic validity, unique correction, language, level
-and source scope. At most two candidates are generated within the same budget
-(`EXERCISE_GENERATION_TIMEOUT_SECONDS` for on-demand generation; the refill uses its own 600-second
-limit per game and no open database transaction while waiting). Semantic review reduces ambiguity but
-is not a formal proof. Child profiles add the child instruction to generation prompts; the flag is
-stored on stock items and sessions.
-
-Sessions have `generating`, `ready`, `completed`, `failed`, or `abandoned` state. The start endpoint
-creates only `ready` sessions (from stock or replay); `generating` and `failed` remain for the
-retained on-demand service path and legacy rows. A partial unique
+Sessions have `generating`, `ready`, `completed`, `failed`, or `abandoned` state. A partial unique
 index permits one generating/ready session per plan and game type. Repeated starts return the existing active
 session of that type. Every accepted creation UUID is persisted in `game_requests` with its submitted plan/mode/type
 and the returned session ID, including when an active game is reused. A retry returns that same
@@ -163,41 +148,6 @@ Session endpoints accept both canonical IDs and owned creation UUIDs, and return
 Leaving the catalog cancels its current request; late creation success/failure cannot navigate away
 from the user's next page.
 Leaving preserves progress. Explicit abandonment closes a ready game without XP or quota refund.
-
-## Stock and serving
-
-Games are pre-generated into `game_stock` per plan, mode and game type (a bucket).
-
-Refill rules:
-
-- A background task runs only when `LLM_PROVIDER=ollama`, every ten minutes, one worker at a time
-  (PostgreSQL advisory lock). It generates only while the speech gateway reports `off` (the full
-  model is free), rechecking before each game, and stops when a speech session starts.
-- It covers active plans of active users. A bucket exists only when its mode has sources. Each bucket
-  keeps up to three fresh items. Plans with no stock go first.
-- Each plan may generate at most three new games per UTC day (`counts_toward_cap`). A plan's first
-  fill is the exception: one game per bucket, uncapped, counted toward that day's cap.
-- Stock for `review` and `prepare` goes stale when the permitted source IDs change (hash comparison);
-  `free` stock never goes stale. A stale item is replaced once; replacements do not count toward the
-  daily cap. Surplus stale items in an already full bucket are marked replaced.
-- Rows are retained after use for cap accounting.
-
-Serving rules:
-
-- The oldest fresh item that does not repeat sentences of the plan's last five finished (completed or abandoned) games is
-  claimed atomically; repeating items are marked stale. Vocabulary Pairs are shuffled and given their
-  per-play choice indices when served.
-- The claim, session insert, request record and (for limited users) the consumed admission share one
-  transaction. If another request wins the single active-game slot, the claim is undone and the
-  winning game is returned.
-- The free-tier quota is checked before stock is touched, so an exhausted limited user receives 402
-  even when stock is empty. Stock-served games consume the quota exactly like generated ones.
-- With no stock the response is a non-error `empty` result with `first_games_pending` and up to five
-  replayable completed games. The catalog shows it as a friendly note (not an alert or paywall) with
-  replay buttons.
-
-Replay: a completed game can be started again as a new `ready` session with the same content,
-reshuffled where the game shuffles, fresh answers and no quota use. XP still obeys the daily game cap.
 
 ## Admission, activity and XP
 

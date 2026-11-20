@@ -30,13 +30,8 @@ native output, including reasoning, plus `function_call_output` items linked by 
 visible tutor text. Function definitions explicitly use `strict=false` to preserve the existing
 validation contract, and `parallel_tool_calls=false`; the adapter still enforces its one-call limit.
 
-- `chat(messages, stream=False, tools=None, tool_executor=None, fallback_messages=None,
-  reasoning_effort=None, max_tokens=None)` returns text or a normalized async stream.
-- `reasoning_effort` is sent only to the local Ollama chat path (OpenAI, Anthropic and DeepSeek ignore
-  it) and reaches the primary call, fallbacks, and tool continuations. `max_tokens` applies to the
-  OpenAI-compatible local path. A trailing prefilled assistant message is merged into the
-  continuation's assistant message so roles keep alternating. Voice uses `VOICE_REASONING_EFFORT`
-  (default `low`; empty omits it).
+- `chat(messages, stream=False, tools=None, tool_executor=None, fallback_messages=None)` returns text
+  or a normalized async stream.
 - Tool streaming executes at most the first tool call, performs one native continuation, exposes tool
   results and usage, and can reset visible output before a complete no-tools fallback.
 - Explicit tool incompatibility raises/records `LLMToolsUnsupportedError`; voice remembers that state
@@ -60,18 +55,8 @@ global daily admission under a user-row lock, and publishes structurally validat
 reviewed LLM content only before the persisted deadline. Deterministic evaluation handles Error
 Detective's detection/correction choices, Sentence Order's reconstructed sentences, and Vocabulary
 Pairs' term/meaning matches. It credits the progress/reward ledger under plan/session serialization.
-Saved content and native language are stable across active-language/profile changes. Generation
-asks for eight draft items and `salvage_challenges` keeps the first five valid, distinct ones, so
-one bad item does not discard the batch; `build_challenge` derives Error Detective fragments,
-options and indices from the model's `wrong_part`/`correct_part`. `create_game` serves games from stock
-only (`take_from_stock`), and `replay_game` clones a completed game. See `games.instructions.md`.
-
-`game_stock.py` keeps a pre-generated stock per plan, mode and game type. `stock_loop` is a
-background task started at application startup only when `LLM_PROVIDER=ollama`; every ten minutes
-`run_pass` takes a PostgreSQL advisory lock (so one worker refills) and `refill_once` generates
-content for active plans, only while the speech gateway reports `off` (rechecked before each game).
-`take_from_stock` claims the oldest fresh item that does not repeat recent sentences. The refill
-and serving rules are in `games.instructions.md`.
+Saved content and native language are stable across active-language/profile changes. See
+`games.instructions.md`.
 
 ## Assessment
 
@@ -190,16 +175,6 @@ only when supported by the configured model.
 OpenAI. `language` is required and explicit. Resource STT derives it from an owned plan; voice derives
 it from resolved session language.
 
-`spoken_lines.py` parses tagged tutor replies into spoken-language lines (`parse_reply`), validates
-Swedish lines (`invalid_swedish_lines`), builds display text without tags (`display_text`), and
-defines `tagged_replies_enabled` (Swedish native, A1/A2, English or Spanish target). `tts_service.py`
-passes each line's ISO language code to the synthesis provider.
-
-`routers/speech_session.py` proxies the speech gateway's session endpoints for the authenticated user.
-It forwards to `STT_BASE_URL` with a 3-second timeout, maps any failure or unknown state to `away`,
-and reports `ready` when `STT_PROVIDER` is not `local`. `live_llm_is_small()` reports whether the
-gateway state is `shared` (the small LLM tier); the voice router reads it once per connection.
-
 Provider details belong to `speech-services.instructions.md`.
 
 ## Listening and Reading
@@ -271,12 +246,6 @@ including the locale attribute, retain the renderer's default HTML escaping.
 
 `conversation_pipeline.py` orchestrates explicit-language STT, memory-aware LLM streaming, sentence
 TTS, serialized WebSocket writes, timeouts, interruption, and transcript persistence.
-
-It streams reply text into TTS sentence by sentence, supports tagged spoken lines, an optional
-generated opener, provisional turns and discarding the last turn. `provisional_turn.py` holds the
-`ProvisionalTurn` that buffers a provisional turn's socket frames, memory saves and usage until the
-client confirms it; it also owns the opener prompts (24-token limit). Behavior is specified in
-`voice-conversation.instructions.md`.
 
 Its in-memory prompt buffer is bounded, while complete user/assistant transcript messages are persisted
 in `chat_history` and the parent conversation is updated. Provider turn failures may remain recoverable;

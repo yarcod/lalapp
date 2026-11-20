@@ -42,17 +42,12 @@ always contains the canonical ID. A request whose session was deleted returns 40
   and reason for `review`, `prepare`, `free`, global `quota: {remaining, limit}`, `limited`, `history`
   and `total`. History is filtered by game type and includes all plans in the active language;
   `skip >= 0`, `limit=10`, maximum 50.
-- **POST `/{game_type}`** — same accepted types. 5/min, maintenance checked. Body: UUID `request_id`, positive
+- **POST `/{game_type}`** — same accepted types. 5/min, maintenance checked, 202. Body: UUID `request_id`, positive
   `study_plan_id`, `mode`. New request UUIDs require a matching active plan; a missing active plan
-  returns 404. Games are served only from pre-generated stock and nothing is generated on request.
-  Returns 202 with a session (reusing its request UUID or the plan's active game of that type, or a
-  new `ready` session built from stock). The shared game quota is consumed for new free work;
-  402 when exhausted (also when stock is empty), 409 on changed context or conflicting UUID. When the
-  stock for that plan, mode and type is empty it returns 200
-  `{status: "empty", first_games_pending, replayable}`: `first_games_pending` is true when the plan has
-  no completed game of that type yet, and `replayable` lists up to five completed games, newest first,
-  as `{id, mode, completed_at, score, total, xp_earned}`. An empty response stores no request, so the
-  UUID stays reusable and uses no quota.
+  returns 404. Returns a session, reusing its request UUID
+  or the plan's active game of that type. Reserves the shared game quota for new free work;
+  402 when exhausted, 409 on changed
+  context, conflicting UUID or missing mode sources. Only newly created work starts generation.
   Every accepted request UUID is bound to its returned session and submitted plan/mode/game type, even when
   reusing an active game of another mode. Retrying returns that same session after completion or
   abandonment without new quota, even if the active language has no plan. Accepted UUIDs are resolved
@@ -60,10 +55,6 @@ always contains the canonical ID. A request whose session was deleted returns 40
   deleted result return 409.
 - **GET `/sessions/{id}`** — 60/min. Returns saved state and remaining generation seconds. Expired
   generation is reported failed and its reservation released. Does not require an active plan.
-- **POST `/sessions/{id}/replay`** — 10/min, maintenance checked. Requires an owned `completed`
-  session (otherwise 409 `game_not_completed`). Returns the plan's active game of that type if one
-  exists, otherwise a new `ready` session with the same content reshuffled and fresh answers. A replay
-  consumes no quota; XP follows the normal daily game cap.
 - **POST `/sessions/{id}/answer`** — 60/min. Detective body: `challenge` (0–4), `step` (`detect`
   or `correct`), `choice` (fragment/option index). Sentence Order body: `challenge` (0–4),
   `step: "order"`, `order` (3–12 strict integer indices, a permutation of every fragment).
@@ -99,8 +90,8 @@ source IDs remain private; failed attempts never reveal the solution.
 - **POST `/login`** — Rate limit: 10/min. Returns access_token (JWT, 15 min) + refresh_token in httpOnly cookie (30 days)
 - **POST `/refresh`** — Rate limit: 60/min. Requires a valid refresh cookie, rotates it and returns a new `access_token`. Optional `Authorization: Bearer ...` and `X-Expected-User-ID` (positive PostgreSQL-range integer; invalid values return 422) restrict renewal to the client's known account. The bearer must have a valid HS256 signature and `sub`/`exp` claims; expiry is ignored only for this context comparison. Invalid bearer context returns 401. Each supplied expectation must match the account in Redis; a mismatch returns 409 `auth_context_changed` before consuming the refresh token or setting a replacement cookie. Expectations never authorize renewal without a valid cookie. Omitting both supports initial restoration with no known client identity.
 - **POST `/logout`** — Rate limit: 60/min. Deletes refresh token from Redis, clears cookie
-- **GET `/me`** — Rate limit: 60/min. Returns authenticated user profile, including subscription fields (`subscription_status`, `subscription_ends_at`, `cancel_at_period_end`, `trial_used`, `assessment_voice_trial_used`), freemium fields (`freemium_trial_ends_at`, `freemium_trial_used`), and nullable `dismissed_dashboard_banner_revision` and `is_child`.
-- **PATCH `/me`** — Rate limit: 60/min. Updates display name, email, password, native language, target language, UI locale, bio, learning goals, `is_child` (boolean), and conversation settings (`conversation_max_duration` ∈ {900, 1800}, `conversation_inactivity_timeout` ∈ {60, 180, 300}, `conversation_speech_pause` ∈ {0, 1000, 2000, 3000} milliseconds, where `0` means automatic). `native_language` is validated against the same supported UI-language codes used at registration (`en`, `es`, `fr`, `pt`, `de`, `it`, `ru`, `nl`, `pl`, `ro`, `tr`, `sv`, `da`, `fi`, `hr`); unsupported codes return HTTP 422 even when the API is called outside the selector-based frontend.
+- **GET `/me`** — Rate limit: 60/min. Returns authenticated user profile, including subscription fields (`subscription_status`, `subscription_ends_at`, `cancel_at_period_end`, `trial_used`, `assessment_voice_trial_used`), freemium fields (`freemium_trial_ends_at`, `freemium_trial_used`), and nullable `dismissed_dashboard_banner_revision`.
+- **PATCH `/me`** — Rate limit: 60/min. Updates display name, email, password, native language, target language, UI locale, bio, learning goals, and conversation settings (`conversation_max_duration` ∈ {900, 1800}, `conversation_inactivity_timeout` ∈ {60, 180, 300}, `conversation_speech_pause` ∈ {0, 1000, 2000, 3000} milliseconds, where `0` means automatic). `native_language` is validated against the same supported UI-language codes used at registration (`en`, `es`, `fr`, `pt`, `de`, `it`, `ru`, `nl`, `pl`, `ro`, `tr`, `sv`, `da`, `fi`, `hr`); unsupported codes return HTTP 422 even when the API is called outside the selector-based frontend.
 - **POST `/me/avatar`** — Rate limit: 60/min. Uploads the authenticated user's profile avatar (JPEG/PNG, max 2 MB). Validates the declared content type, image signature, and minimal image structure, stores the image on disk under `/app/avatars` using a non-predictable UUID filename, and returns the user profile with `avatar` set to a cache-busted internal reference (`/api/avatars/{uuid}.{ext}?v={ms}`). The file reference is not publicly served.
 - **GET `/me/avatar-file`** — Rate limit: 60/min. Authenticated current-user avatar retrieval endpoint. Returns only the authenticated user's own avatar file; this is the supported image retrieval path used by the frontend. Responses are marked `Cache-Control: private, no-store`; client-side avatar reuse is handled by the frontend blob cache keyed by the stored avatar reference.
 - **DELETE `/me/avatar`** — Rate limit: 60/min. Removes profile avatar (sets to null)
@@ -333,22 +324,6 @@ context-free requests retain literal-text synthesis. This does not alter the Web
 
 ---
 
-## Speech session — `/api/speech-session`
-
-Proxies the local speech gateway's session lifecycle. All endpoints require an authenticated user and
-return `{ "state": "off" | "switching" | "ready" | "busy" | "shared" | "away" }` with HTTP 200.
-`away` means the gateway was unreachable, answered with an error or bad body, or reported an unknown
-state. When `STT_PROVIDER` is not `local` the state is always `ready`. Calls to the gateway use a
-3-second timeout.
-
-- **POST `/open`** — Rate limit: 30/min. Requests a speech session; on a full GPU tier this asks the
-  host to switch the LLM to speech mode.
-- **POST `/keepalive`** — Rate limit: 30/min. Extends the session; the gateway releases it after ten
-  idle minutes.
-- **GET `/status`** — Rate limit: 60/min. Reports the current state.
-
----
-
 ## Contact — `/api/contact`
 
 - **POST `/api/contact`** — Rate limit: 5/hour. Submits a contact form. Body: `{ email, subject, description }`. Forwards the message to `CONTACT_EMAIL` via SMTP. Returns 204 on success, 502 if email sending fails. No auth required.
@@ -365,7 +340,7 @@ Both `POST /api/conversation/warmup` and `/ws/conversation` require an authentic
 
 **Authentication**: After the handshake, the client must send a JSON object containing a valid `token` within 10 seconds. The backend reads the token but does not require the `type` field to equal `auth`. Missing, malformed, or invalid authentication closes with code 1008.
 
-**Message flow**: Client sends audio chunks → STT transcription → LLM response streamed → sentence-level TTS as sentences complete → MP3 audio chunks returned. The server starts the greeting as a cancellable task and immediately enters the receive loop; backend barge-in protocol remains available, while the current frontend ignores user speech during active tutor turns for stability.
+**Message flow**: Client sends audio chunks → STT transcription → LLM generates full response → sentence-level TTS → MP3 audio chunks returned. The server starts the greeting as a cancellable task and immediately enters the receive loop; backend barge-in protocol remains available, while the current frontend ignores user speech during active tutor turns for stability.
 
 **Client → Server message types:**
 
@@ -374,13 +349,11 @@ Both `POST /api/conversation/warmup` and `/ws/conversation` require an authentic
   IDs must be in `1..2147483647`, matching the lesson's database column. The WebSocket rejects out-of-range IDs before lesson SQL lookup, and the frontend applies the same range before loading lesson metadata.
 - **binary frame** — Payload: raw audio bytes. Description: WAV audio chunk from VAD
 - **`interrupt`** — Payload: `{"type":"interrupt"}`. Description: Optional manual interruption; cancels current generation
-- **`provisional`**, **`confirm`**, **`abort`** — Payload: `{"type":"provisional"}` etc. `provisional` marks the next binary frame as an early copy of the utterance whose effects stay held; `confirm` releases them and `abort` drops them.
-- **`client_event`** — Payload: `{"type":"client_event","event":"discard_last_turn"}` forgets the last finished turn (history and saved rows; XP is kept). `session_close_request` requests a clean close.
 
 **Server → Client message types:**
 
 - **`status`** — Pipeline state hint; turn-associated frames can include `turn_id`.
-- **`transcript`** — User STT result and assistant text with a `final` flag: `final: false` partial text follows each audio fragment while a reply streams, and `final: true` carries the complete text; turn-associated frames can include `turn_id`.
+- **`transcript`** — User STT result and assistant streaming/final text; turn-associated frames can include `turn_id`.
 - **binary frame** — Payload: MP3 bytes. Description: MP3 audio for a TTS sentence
 - **`barge_in`** — Payload: `{}`. Description: Current greeting/response was cancelled by new audio; client cancels playback
 - **`interrupted`** — Indicates interruption/cancellation of the active turn.

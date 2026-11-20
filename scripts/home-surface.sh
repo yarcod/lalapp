@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # Print the footprint of this fork on upstream-owned files (home-owned paths excluded).
+# With --since <rev>, print the upstream commits in <rev>..upstream/main that touch a path
+# listed in backend/app/home/SEAMS.md (the upstream files home hooks into), grouped by path.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -7,6 +9,34 @@ cd "$(dirname "$0")/.."
 if ! git remote get-url upstream >/dev/null 2>&1; then
   echo "error: git remote 'upstream' is missing; add it with 'git remote add upstream <url>' and fetch it." >&2
   exit 1
+fi
+
+if ! git rev-parse --verify --quiet upstream/main >/dev/null; then
+  echo "error: 'upstream/main' does not resolve; run 'git fetch upstream' first." >&2
+  exit 1
+fi
+
+if [ "${1:-}" = "--since" ]; then
+  rev="${2:-}"
+  if [ -z "$rev" ]; then
+    echo "error: --since needs a revision, e.g. '--since <last synced upstream commit>'." >&2
+    exit 1
+  fi
+  if ! git rev-parse --verify --quiet "$rev^{commit}" >/dev/null; then
+    echo "error: '$rev' is not a known commit." >&2
+    exit 1
+  fi
+  total=0
+  while IFS= read -r path; do
+    [ -n "$path" ] || continue
+    log=$(git log --oneline "$rev"..upstream/main -- "$path")
+    [ -n "$log" ] || continue
+    echo "$path"
+    echo "$log" | sed 's/^/  /'
+    total=$((total + $(echo "$log" | wc -l)))
+  done < <(grep -E '^(backend|frontend)/' backend/app/home/SEAMS.md)
+  echo "$total upstream commits touch hooked files (a commit touching several paths is counted once per path)"
+  exit 0
 fi
 
 base=$(git merge-base HEAD upstream/main)

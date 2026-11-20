@@ -7,17 +7,14 @@ applyTo: "backend/app/models/**, backend/alembic/**"
 
 All models use SQLAlchemy 2.0 declarative style with `Mapped[T]` type annotations and async engine (`asyncpg` driver). PostgreSQL JSON columns store structured content for lessons, plans, exercises, and skill scores.
 
-## Games (`game_sessions`, `game_admissions`, `game_requests`, `game_stock`)
+## Games (`game_sessions`, `game_admissions`, `game_requests`)
 
 `GameSession` uses a UUID string primary key as creation idempotency key. Required user and plan
 foreign keys cascade on deletion. It stores game type (`detective`, `sentence-order` or `vocabulary-pairs`), mode,
-target/native languages, level, `is_child`, status, bounded
+target/native languages, level, status, bounded
 source-context JSON, private challenge JSON, answer JSON, creation/deadline timestamps, nullable
 completion/error and awarded XP. User and plan columns are indexed. `uq_game_active_plan_type` is unique
 on `(study_plan_id, game_type)` while status is `generating` or `ready`.
-
-`game_sessions.is_child` is a non-null boolean (default `false`) copied from the user or stock item at
-creation; it is added by revision `0059_game_session_is_child`, following `0058_user_is_child`.
 
 `GameAdmission` uses the same request UUID as its primary key, with user FK (account cascade), UTC
 date, status (`reserved`, `consumed`, `released`) and deadline. Its `(user_id, date)` index supports
@@ -46,15 +43,6 @@ indexed. The submitted plan ID has no FK so the identity survives learning-data 
 check the stored request parameters, not the mode of a reused session. A null session prevents
 reusing that UUID for a different result. These records do not consume admission quota.
 
-`GameStock` (`game_stock`, revision `0060_game_stock`) holds pre-generated game content per study
-plan, with an integer primary key. The plan FK cascades on deletion. Columns: `mode`, `game_type`,
-`target_language`, `native_language`, `level`, `is_child`, `content` (JSON challenge list in the
-generated format, before per-play shuffling), `source_hash` (hash of permitted source IDs, empty for
-`free`), `created_at`, `is_stale`, `replaced`, `counts_toward_cap` (booleans) and nullable `taken_at`.
-Indexes: `study_plan_id` and `(study_plan_id, mode, game_type)` (`ix_game_stock_bucket`). An item is
-claimed by setting `taken_at` from null in an atomic update. Rows are never deleted by the application,
-because daily-cap counting and first-fill detection read them.
-
 ## User (`users`)
 
 Registration, authentication, and user preferences.
@@ -73,7 +61,6 @@ Registration, authentication, and user preferences.
 - `flashcard_back_content` — varchar(20), non-null, default `definition` (ORM and database). Account-wide standard flashcard reverse-side preference: `definition` or `translation`, validated by the preferences API.
 - `is_active` — boolean; `false` means the account is disabled by an admin.
 - `is_verified` — boolean email-verification flag; ORM default `false`.
-- `is_child` — non-null boolean, default `false` (ORM and server); revision `0058_user_is_child`. Marks a child learner (about 9-11 years old); prompts then use simple words and everyday topics.
 - `conversation_max_duration` — integer max voice session duration in seconds. Default comes from `DEFAULT_CONVERSATION_MAX_DURATION` (`1800`).
 - `conversation_inactivity_timeout` — integer seconds of silence before disconnect. Default comes from `DEFAULT_CONVERSATION_INACTIVITY_TIMEOUT` (`180`).
 - `conversation_speech_pause` — integer milliseconds of silence that end a spoken turn in voice conversation. Allowed values are `0`, `1000`, `2000`, and `3000`; `0` (the default) means the window is derived from the learner's CEFR level.

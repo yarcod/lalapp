@@ -18,15 +18,6 @@ applyTo: "docker-compose*.yml, .env.example, .env.dev, backend/Dockerfile, front
 - `kokoro`: local TTS GPU image, required only when `TTS_PROVIDER=local`.
 - `whisper`: local STT GPU image, required only when `STT_PROVIDER=local`.
 
-The `backend` and `frontend` image names come from `${FREELINGO_BACKEND_IMAGE}` and
-`${FREELINGO_FRONTEND_IMAGE}`, defaulting to `ghcr.io/artcc/freelingo-backend:latest` and
-`ghcr.io/artcc/freelingo-frontend:latest`. Setting them lets an operator run a self-built or
-mirrored image without editing the Compose file.
-
-The speech gateway (`services/speech-gateway/`) is not a Compose service and is not published by the
-workflows. A home deployment builds it separately and runs it on the GPU host (see "Speech
-gateway image"), pointing `TTS_BASE_URL`, `STT_BASE_URL` and `OLLAMA_BASE_URL` at port 8090.
-
 Ollama is not a Compose service. The default configuration expects it on the host through
 `host.docker.internal:11434`. The backend service declares the Linux host-gateway mapping.
 
@@ -66,26 +57,6 @@ and `ubuntu-24.04-arm` for `arm64`. The changelog release workflow also uses `ub
 These labels select the Ubuntu 24.04 LTS series; GitHub continues updating the runner images and
 their preinstalled tools. Container base images remain defined by the Dockerfiles.
 
-## Speech gateway image
-
-`services/speech-gateway/Dockerfile` builds from `python:3.12`, installs `ffmpeg`, and creates a
-separate virtual environment at `/opt/whisper-env` for the Whisper worker. It copies `gateway/` and
-runs the gateway unit tests at build time. It serves
-`uvicorn gateway.app:build --factory` on port 8090 with working directory `/app`.
-
-Environment and mounts:
-
-- `HF_HOME=/models/hf` for model caches; `REFS_DIR` (default `/models/refs`) holds `{sv,en,es}.wav`
-  reference voices and `refs.json`; mount `/models` persistently.
-- `TORCHDYNAMO_DISABLE=1` and `PYTHONUNBUFFERED=1` are set in the image.
-- `LLM_TIER_FILE` (default `/run/llm-tier`) names the boot-time tier file (`full` or `shared`);
-  mount it read-only. A missing file means `full`.
-- The session manager reads and writes `desired-mode` and `mode-state.json` in
-  `/var/lib/speech-gateway`; the host script `deploy/ninfer-mode` applies the requested mode and
-  refuses while the LLM is busy. On the shared tier it only reports `shared`.
-- The container needs GPU access for the GPU engines; the gateway falls back to CPU Whisper on small
-  GPUs.
-
 ## Persistence
 
 The Compose files use bind mounts below `DATA_PATH`; they do not declare named volumes.
@@ -104,9 +75,6 @@ public.
 `.env.example` is the operator-facing deployment template. Compose explicitly forwards environment
 values; a field present in backend `Settings` but absent from Compose is not configurable merely by
 placing it in `.env`.
-
-`docker-compose.yml` forwards `VOICE_REASONING_EFFORT` (default `low`) to the backend;
-`docker-compose.dev.yml` does not, so the in-code default applies there.
 
 Both Compose files forward optional `OPENAI_REASONING_EFFORT` with an empty default. It controls
 `reasoning.effort` on OpenAI Responses requests only; nonempty values must be supported by the selected

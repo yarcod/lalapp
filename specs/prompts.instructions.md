@@ -18,8 +18,7 @@ considered when changing prompt-safety assumptions.
 ## Package responsibilities
 
 - `common.py`: plain-text output policy, JSON-only/retry fragments, Anthropic system-only trigger,
-  Lingu name, memory-tool policy, language overlays, `child_instruction()`, and
-  `instruction_language_rules()`.
+  Lingu name, memory-tool policy, and language overlays.
 - `tutor.py`: text and voice tutor system prompts, including the written-chat formatting policy.
 - `speech.py`: native-pronunciation instructions for all `gpt-4o-mini-tts` synthesis, including its
   snapshots. The TTS adapter gates support; legacy/unknown models receive no instructions. Supplied
@@ -32,13 +31,11 @@ considered when changing prompt-safety assumptions.
 - `flashcards.py`: deck generation and selected-word lookup.
 - `comprehension.py`: Listening and Reading generation.
 - `games.py`: generation and separate semantic review for Error Detective, Sentence Order, and
-  Vocabulary Pairs. Generation prompts ask for eight draft items so invalid ones can be dropped (see
-  `games.instructions.md`). Plan language/level, profile native language, allowed source identifiers
-  and bounded mistakes are explicit inputs. Reference data is not instructions. The upcoming lesson
-  guides relevance without authorizing unstudied material. Detective drafts contain the sentence
-  with its error, `wrong_part`, `correct_part`, two `wrong_options`, and an explanation; the app
-  builds fragments and options. Sentence Order and Vocabulary Pairs drafts use their own lenient
-  draft schemas; semantic review checks linguistic validity and ambiguity.
+  Vocabulary Pairs. Plan language/level, profile native language, allowed source identifiers and
+  bounded mistakes are explicit inputs. Reference data is not instructions. The upcoming lesson
+  guides relevance without authorizing unstudied material. Game-specific structured schemas validate
+  Detective fragments/replacements/options, Sentence Order fragments/accepted permutations, and
+  Vocabulary Pairs terms/meanings/examples; semantic review checks linguistic validity and ambiguity.
 - `assessment.py`: free-write placement, level test, and alternate assessment flow.
 - `grammar.py`, `vocabulary.py`, and `phrasebook.py`: native-language resource support.
 
@@ -75,23 +72,6 @@ language helpers rather than client labels.
 `MEMORY_SYSTEM_INSTRUCTION_BASE` and `get_memory_system_instruction()` advertise the native
 `save_user_memory` tool only when the request actually offers that tool. No-tools fallbacks may retain
 escaped memory context but must not instruct the model to call an unavailable tool.
-
-## Child setting and tagged replies
-
-Builders for the tutor, voice conversation, lesson generation and the three game generation
-prompts accept `is_child` (from `users.is_child`, default false). When true they append
-`child_instruction()`: the student is about 9-11 years old, with simple words, a warm tone and
-everyday topics. Game review prompts do not receive it.
-
-`tagged_replies_enabled(native_code, cefr_level, target_code)` (in `spoken_lines.py`) is true only for
-a Swedish native speaker at A1 or A2 learning English or Spanish. The tutor and voice builders accept
-`native_code` and `target_code`; when that predicate holds they append
-`instruction_language_rules(level, native_code, target_code)`, which overrides the
-target-language-only instruction. It requires one tagged item per line (`[sv]`, `[en]` or `[es]`,
-`[screen]`), 4 to 6 lines, no English or Spanish words inside Swedish lines, the corrected sentence in
-a target line, and a closing question followed by its Swedish meaning. Otherwise it returns an empty
-string. Voice tag handling is in `voice-conversation.instructions.md`; written chat removes the tags
-before display and saving.
 
 ## Tutor prompts
 

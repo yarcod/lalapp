@@ -12,8 +12,7 @@ spoken responses from Lingu over one WebSocket connection. The backend orchestra
 TTS, quota tracking, timeout enforcement, and transcript persistence.
 
 The browser sends one complete WAV frame per accepted utterance. Audio is not streamed continuously
-from the microphone to the backend. With the local speech gateway, a long pause may first send the
-utterance provisionally (see "Provisional turns").
+from the microphone to the backend.
 
 ## Startup and connection
 
@@ -113,9 +112,6 @@ fallback. Voice sessions without a lesson retain the existing word-save contract
 - Initial JSON: authentication and optional session context.
 - Binary: WAV PCM16 mono at 16 kHz for one detected utterance.
 - `{ "type": "interrupt" }`: cancels the active backend task.
-- `{ "type": "provisional" }`: marks the next binary frame as a provisional turn.
-- `{ "type": "confirm" }` and `{ "type": "abort" }`: release or drop the pending provisional turn.
-- `client_event/discard_last_turn`: forgets the last finished turn (see "Redo").
 - `client_event/session_close_request`: requests a clean manual or route-unload close.
 
 Initial context accepts non-empty `user` and `assistant` messages. The router inspects at most 20
@@ -125,9 +121,7 @@ items and the pipeline starts with the last 10 accepted messages.
 
 - `status`: `transcribing`, `thinking`, `speaking`, or `listening`, with `turn_id`; the current
   pipeline does not emit `speaking`.
-- `transcript`: user or assistant text with `turn_id` and a `final` flag. While a reply streams, the
-  assistant transcript is re-sent with `final: false` after each audio fragment, carrying the text
-  spoken so far; the complete `final: true` transcript follows the last audio.
+- `transcript`: final user or assistant text with `turn_id`.
 - Binary: one synthesized assistant audio fragment, without turn metadata.
 - `barge_in`: active generation was cancelled by new binary input.
 - `interrupted`: acknowledgement of an explicit interrupt; current frontend ignores it.
@@ -161,79 +155,20 @@ A normal turn:
 4. Emits the final user transcript and appends it to in-memory context.
 5. Refreshes global memories and native language best-effort.
 6. Builds the prompt from system context and up to the latest 20 messages.
-7. Streams the normalized LLM stream, including at most one native memory-tool round, and
-   synthesizes each fragment as soon as it is complete, in order, while the stream continues.
-8. Splits assistant text on full stops, keeping dots between decimal digits and consecutive dot
-   runs (ellipses) inside the same fragment. A fragment longer than 140 characters is cut at
-   clause punctuation (`, ; : -` followed by whitespace). Fragments without any Unicode letter or
-   number are not sent to TTS; the complete transcript is preserved, including for text-only output.
-9. Retries a failed fragment once.
-10. Sends each audio fragment followed by a `final: false` assistant transcript.
-11. Sends the complete `final: true` transcript after the last audio.
+7. Consumes the complete normalized LLM stream, including at most one native memory-tool round.
+8. Splits completed assistant text on full stops, keeping dots between decimal digits and consecutive
+   dot runs (ellipses) inside the same fragment. Fragments without any Unicode letter or number are
+   not sent to TTS; the complete transcript is preserved, including for text-only output.
+9. Synthesizes fragments sequentially, with one retry per failed fragment.
+10. Sends the first successful audio before the complete assistant transcript.
+11. Sends remaining audio in order.
 12. Persists the completed user and assistant messages best-effort.
 13. Emits `listening` and `turn_complete`.
 
-If every fragment fails TTS, the complete transcript is sent as a successful text-only fallback and
-the turn is persisted. If sending audio over the socket fails after output begins, the turn emits
-`tts_failed` and is not persisted. When the LLM adapter resets its stream, text not yet spoken is
-dropped and new text continues after the text already played.
-
-The local LLM is called with `reasoning_effort` from `VOICE_REASONING_EFFORT` (default `low`; empty
-means not sent). It is omitted on the shared small-LLM tier.
-
-### Spoken-line tags
-
-For a Swedish native speaker at CEFR A1 or A2 learning English or Spanish (the same predicate as
-`tagged_replies_enabled`), the tutor writes one language per line:
-
-- `[sv]` (also the default for an untagged line): Swedish only, with no quoted target-language text
-  and no English or Spanish words;
-- `[en]` or `[es]`: a full target-language sentence;
-- `[screen]`: text shown but never spoken.
-
-`spoken_lines.py` parses the reply. Each spoken line is synthesized with its own language, so the
-gateway uses the matching reference voice. Screen lines are not synthesized. Transcripts and saved
-messages show the text with tags removed; model history keeps the tags so later turns stay tagged.
-A Swedish line that contains quoted text or a word from a small English/Spanish list, or
-`ñ¿¡áíóú`, is invalid. When one appears after audio has started, it moves to `[screen]` without
-rewriting. When it appears before any audio, or the reply is empty, speech stops and one
-non-streaming rewrite pass corrects the reply; lines still invalid are moved to `[screen]`. An
-empty tagged reply is retried once, then fails as `llm_failed`. Other users and levels are not
-tagged.
-
-### Opener
-
-When the provider is local (`LLM_PROVIDER=ollama`) and the live tier is the full LLM (not the
-shared small LLM), each turn first generates a short opener: at most 24 tokens, 2-5 words
-reacting to the topic, without judgement, praise, correction, or teaching, with reasoning disabled.
-Tagged sessions request one `[sv]` line. The opener is spoken at once and the reply is generated
-as its continuation (a trailing assistant message). If the opener fails or yields no audio, the reply
-runs without it. The tier is read from the speech gateway once per connection. A short user pause
-skips only the provisional step, not the opener.
-
-### Provisional turns
-
-Provisional turns hide the pipeline latency behind a long end-of-turn pause. When the resolved pause
-exceeds 1000 ms, the browser sends the utterance so far after 800 ms of silence (`provisional`
-followed by the WAV), provided no tutor turn is active and the usual filters pass. Resumed speech
-sends `abort`; reaching the end-of-turn pause sends `confirm` in place of audio; a misfire or failed
-filter sends `abort`.
-
-The backend runs the whole turn early but holds its effects in a `ProvisionalTurn`: socket frames
-are buffered, memory saves are queued (the model is told they are queued), LLM usage is held, and
-the user message stays out of history. `confirm` flushes frames in order under the send lock, runs
-the queued saves, and lets the turn commit history and persistence. `abort` drops everything. A
-`confirm` with nothing pending is ignored. A provisional audio frame arriving while another turn
-runs cancels that turn silently.
-
-### Redo
-
-After each user transcript the interface shows "Lingu heard:" with a "Try again" button under the
-latest learner bubble. It sends `client_event/discard_last_turn`, cancels playback, and removes that
-bubble and everything after it. The backend cancels the running task, removes the last user and
-assistant entries from history, and deletes their `ChatHistory` rows (assistant first). XP already
-awarded is kept. Without a finished turn, or when an interrupted or failed turn has already
-cleared it, the event does nothing.
+TTS does not overlap with LLM generation: synthesis starts after the full visible response is
+collected. If every fragment fails TTS, the complete transcript is sent as a successful text-only
+fallback and the turn is persisted. If sending audio over the socket fails after output begins, the
+turn emits `tts_failed` and is not persisted.
 
 ## VAD and utterance filtering
 
@@ -271,19 +206,6 @@ user-speaking state.
 Automatic frontend barge-in is disabled. Speech accepted while an assistant turn or playback is
 active is discarded. The backend still supports interruption: new binary audio cancels the active
 greeting or turn and explicit `interrupt` cancels without starting another turn.
-
-## Speech session state
-
-With the local speech gateway, the app layout opens a speech session through
-`POST /api/speech-session/open` once the user is loaded, then sends a keepalive every 60 seconds
-while the tab is visible and on return to visibility. It reopens instead when the stored state is
-missing, `off` or `away`. The backend proxies these calls to the gateway; an unreachable gateway,
-bad response, or unknown state is reported as `away`. With a non-local STT provider the state is
-always `ready`.
-
-The conversation page shows a notice for three states: `switching` ("getting ready"), `busy`
-("busy for a moment") and `away` ("no voice"). `busy` and `away` link to text chat. `ready`, `shared`
-and `off` show no notice.
 
 ## Playback and turn state
 
