@@ -478,6 +478,12 @@ class HomeConversationPipeline(ConversationPipeline):
         if turn is not None:
             turn.turn_id = self._turn_id
             # A provisional turn joins the history only when it is confirmed.
+            if not self.history or self.history[-1].get("role") != "user":
+                raise RuntimeError(
+                    "upstream ConversationPipeline._process_turn changed: it no longer appends "
+                    "the user message to history before calling _chat; "
+                    "HomeConversationPipeline._chat relies on it for provisional turns"
+                )
             user_message = self.history.pop()
         speech = _StreamedSpeech(
             self,

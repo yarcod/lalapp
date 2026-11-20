@@ -593,3 +593,166 @@ async def test_discard_during_running_turn_keeps_previous_turn() -> None:
     await pipeline.discard_last_turn()
 
     assert pipeline.history == previous
+
+
+# ---------------------------------------------------------------------------
+# Upstream voice scenarios, run against the home pipeline
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("entrypoint", ["greeting", "user_turn"])
+@pytest.mark.parametrize(
+    ("response", "expected_inputs"),
+    [
+        ("Well. Let's continue.", ["Well.", "Let's continue."]),
+        ("Well... let's continue.", ["Well... let's continue."]),
+        ("... Let's continue.", ["... Let's continue."]),
+        ("Well… let's continue.", ["Well… let's continue."]),
+        ("It costs 3.50... is that OK?", ["It costs 3.50... is that OK?"]),
+        ("It costs 3.50. Let's continue.", ["It costs 3.50.", "Let's continue."]),
+        ("考えてみましょう...次に進みます。", ["考えてみましょう...次に進みます。"]),
+        ("...", []),
+        (". . .", []),
+        ("?!", []),
+    ],
+)
+async def test_home_voice_tts_never_requests_punctuation_only_fragments(
+    entrypoint, response, expected_inputs
+) -> None:
+    pipeline = _make_pipeline()
+    pipeline.stt.transcribe = AsyncMock(return_value="Can we continue?")
+    pipeline.tts.synthesize = AsyncMock(return_value=b"audio")
+
+    async def response_stream():
+        yield response
+
+    pipeline.llm.chat = AsyncMock(return_value=response_stream())
+    ws = FakeWS()
+    try:
+        if entrypoint == "greeting":
+            await pipeline._greet(ws)
+        else:
+            await pipeline._process(b"audio", ws)
+
+        transcripts = [
+            message
+            for message in ws.json_messages()
+            if message.get("type") == "transcript"
+            and message.get("role") == "assistant"
+            and message.get("final")
+        ]
+        assert transcripts[0]["text"] == response
+        assert "turn_complete" in ws.types()
+        synthesis_inputs = [call.args[0] for call in pipeline.tts.synthesize.await_args_list]
+        assert synthesis_inputs == expected_inputs
+        assert all(
+            any(char.isalnum() for char in text) for text in synthesis_inputs
+        ), synthesis_inputs
+        assert len([kind for kind, _ in ws.sent if kind == "bytes"]) == len(expected_inputs)
+        assert pipeline.history[-1] == {"role": "assistant", "content": response}
+    finally:
+        await pipeline.cleanup()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("entrypoint", ["greeting", "user_turn"])
+@pytest.mark.parametrize("amount", ["3.50", "0.05", "-1.25"])
+async def test_home_voice_tts_preserves_decimal_numbers_within_sentences(
+    entrypoint, amount
+) -> None:
+    pipeline = _make_pipeline()
+    pipeline.stt.transcribe = AsyncMock(return_value="How much does it cost?")
+    pipeline.tts.synthesize = AsyncMock(return_value=b"audio")
+    response = f"It costs {amount} pounds. Is that within your budget?"
+
+    async def fake_stream():
+        yield response
+
+    pipeline.llm.chat = AsyncMock(return_value=fake_stream())
+    ws = FakeWS()
+    try:
+        if entrypoint == "greeting":
+            await pipeline._greet(ws)
+        else:
+            await pipeline._process(b"audio", ws)
+
+        assistant_transcripts = [
+            message
+            for message in ws.json_messages()
+            if message.get("type") == "transcript"
+            and message.get("role") == "assistant"
+            and message.get("final")
+        ]
+        assert assistant_transcripts[0]["text"] == response
+        assert "turn_complete" in ws.types()
+        assert [call.args[0] for call in pipeline.tts.synthesize.await_args_list] == [
+            f"It costs {amount} pounds.",
+            "Is that within your budget?",
+        ]
+    finally:
+        await pipeline.cleanup()
+
+
+@pytest.mark.asyncio
+async def test_home_process_discards_partial_text_after_tool_stream_reset() -> None:
+    from app.services.llm_adapter import LLMToolCall, LLMToolResult, LLMToolResultEvent
+
+    pipeline = _make_pipeline(user_id=1)
+    pipeline.stt.transcribe = AsyncMock(return_value="hello")
+    pipeline.tts.synthesize = AsyncMock(return_value=b"audio")
+
+    call = LLMToolCall(
+        id="call_1",
+        name="save_user_memory",
+        arguments={"content": "The user likes tea"},
+        raw_arguments='{"content":"The user likes tea"}',
+    )
+    result = LLMToolResult(call=call, content={"saved": True})
+
+    class ResetStream:
+        tool_results = [result]
+
+        def __aiter__(self):
+            return self.iterate()
+
+        async def iterate(self):
+            yield "Partial response."
+            yield LLMToolResultEvent(result=result)
+            yield LLMStreamReset()
+            yield "Complete normal response."
+
+    pipeline.llm.chat = AsyncMock(return_value=ResetStream())
+    ws = FakeWS()
+
+    await pipeline._process(b"audio", ws)
+
+    pipeline.tts.synthesize.assert_awaited_once_with("Complete normal response.", None, "en-GB")
+    assistant_transcripts = [
+        message
+        for message in ws.json_messages()
+        if message.get("type") == "transcript"
+        and message.get("role") == "assistant"
+        and message.get("final")
+    ]
+    assert assistant_transcripts[0]["text"] == "Complete normal response."
+    assert pipeline.history[-1]["content"] == "Complete normal response."
+    assert ws.types().count("memory_updated") == 1
+
+
+@pytest.mark.asyncio
+async def test_provisional_chat_takes_the_user_message_out_of_history() -> None:
+    from app.home.provisional_turn import ProvisionalTurn
+
+    pipeline = _make_pipeline()
+    pipeline.llm.chat = AsyncMock(return_value=_stream_of("Hello."))
+    pipeline.tts.synthesize = AsyncMock(return_value=b"audio")
+    user_message = {"role": "user", "content": "hi"}
+    pipeline.history = [user_message]
+    pipeline._turn_ws = ProvisionalTurn(FakeWS(), pipeline._send_lock)
+
+    await pipeline._chat([user_message])
+
+    assert pipeline.history == []
+    assert pipeline._reply is not None
+    assert pipeline._reply.user_message is user_message
