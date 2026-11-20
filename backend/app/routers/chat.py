@@ -16,7 +16,7 @@ from app.core.deps import (
     require_subscription_or_freemium_readonly,
 )
 from app.core.limiter import limiter
-from app.home.spoken_lines import display_text, parse_reply, tagged_replies_enabled
+from app.home.chat import TaggedChatStream
 from app.models.chat_history import ChatHistory
 from app.models.conversation import Conversation
 from app.models.llm_usage import LLMUsage
@@ -398,7 +398,7 @@ async def chat(
         {"role": m.role, "content": m.content} for m in db_messages
     ]
 
-    tagged_lines = tagged_replies_enabled(current_user.native_language, cefr_level, target_language)
+    tagged_stream = TaggedChatStream(current_user.native_language, cefr_level, target_language)
 
     async def event_stream():
         full_response = ""
@@ -432,6 +432,7 @@ async def chat(
                     continue
                 if isinstance(chunk, LLMStreamReset):
                     full_response = ""
+                    tagged_stream.reset()
                     yield f"data: {json.dumps({'response_reset': True})}\n\n"
                     continue
                 token = (
@@ -441,14 +442,12 @@ async def chat(
                 )
                 if token:
                     full_response += token
-                    if not tagged_lines:
-                        yield f"data: {json.dumps({'token': token})}\n\n"
+                    if (shown := tagged_stream.token(token)) is not None:
+                        yield f"data: {json.dumps({'token': shown})}\n\n"
 
-            if tagged_lines:
-                # Tags can be split across chunks, so the cleaned reply is sent once complete.
-                full_response = display_text(parse_reply(full_response, target_language), sep="\n")
-                if full_response:
-                    yield f"data: {json.dumps({'token': full_response})}\n\n"
+            if (cleaned := tagged_stream.final()) is not None:
+                full_response = cleaned
+                yield f"data: {json.dumps({'token': cleaned})}\n\n"
 
             memory_updated = any(
                 result.content.get("saved") is True

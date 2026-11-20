@@ -398,21 +398,6 @@ class TestLanguageAPI:
         assert "zh-CN" in data["all_supported_languages"]
 
     @pytest.mark.asyncio
-    async def test_list_languages_reports_tagged_replies(self, client, db_session):
-        """Swedish speakers at A1/A2 learning English or Spanish get tagged replies."""
-        user, headers = await _make_user(db_session)
-        user.native_language = "sv"
-        await db_session.commit()
-        await _make_plan(db_session, user.id, language="en-GB", cefr="A1")
-        await _make_plan(db_session, user.id, language="es-ES", cefr="B1")
-
-        res = await client.get("/api/languages", headers=headers)
-
-        by_language = {lang["target_language"]: lang for lang in res.json()["languages"]}
-        assert by_language["en-GB"]["plan"]["tagged_replies"] is True
-        assert by_language["es-ES"]["plan"]["tagged_replies"] is False
-
-    @pytest.mark.asyncio
     async def test_remove_language_cascades(self, client, db_session):
         """Language deletion removes scoped data but preserves global memories."""
         user, headers = await _make_user(db_session)

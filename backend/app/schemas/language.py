@@ -33,7 +33,6 @@ class LanguagePlanInfo(BaseModel):
     progress_day: int
     total_days: int
     completion_pct: float
-    tagged_replies: bool
 
 
 class LanguageProgressInfo(BaseModel):

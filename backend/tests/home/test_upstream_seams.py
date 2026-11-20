@@ -157,6 +157,7 @@ def test_get_current_user_hook_present() -> None:
         ("app.main", "install_home("),
         ("app.routers.conversation", "enter_user("),
         ("app.routers.conversation", "build_pipeline("),
+        ("app.routers.chat", "TaggedChatStream("),
         ("app.routers.games", "stock_empty_response("),
         ("app.services.games", "start_from_stock("),
         ("app.services.games", "stock_mode()"),

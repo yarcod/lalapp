@@ -6,7 +6,6 @@ from app.core.app_logger import get_logger
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.core.limiter import limiter
-from app.home.spoken_lines import tagged_replies_enabled
 from app.models.chat_history import ChatHistory
 from app.models.conversation import Conversation
 from app.models.llm_usage import LLMUsage
@@ -36,7 +35,7 @@ router = APIRouter(prefix="/api/languages", tags=["languages"])
 
 
 async def _build_plan_info(
-    db: AsyncSession, user_id: int, native_language: str, target_language: str
+    db: AsyncSession, user_id: int, target_language: str
 ) -> LanguagePlanInfo | None:
     ul_result = await db.execute(
         select(UserLanguage.id).where(
@@ -69,9 +68,6 @@ async def _build_plan_info(
         progress_day=plan.progress_day,
         total_days=total_days,
         completion_pct=completion_pct,
-        tagged_replies=tagged_replies_enabled(
-            native_language, plan.cefr_level or "", target_language
-        ),
     )
 
 
@@ -124,9 +120,7 @@ async def list_languages(
 
     languages: list[UserLanguageOut] = []
     for lang in rows:
-        plan = await _build_plan_info(
-            db, current_user.id, current_user.native_language, lang.target_language
-        )
+        plan = await _build_plan_info(db, current_user.id, lang.target_language)
         progress = (
             await _build_progress_info(db, current_user.id, lang.target_language) if plan else None
         )
