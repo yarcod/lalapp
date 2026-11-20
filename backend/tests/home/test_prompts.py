@@ -35,7 +35,7 @@ def test_child_suffix_for_child() -> None:
 
 
 def test_child_instruction_present_when_child() -> None:
-    from app.services.prompts.games import (
+    from app.home.game_prompts import (
         detective_prompt,
         sentence_order_prompt,
         vocabulary_pairs_prompt,
@@ -87,12 +87,13 @@ def test_child_instruction_present_when_child() -> None:
         assert "[screen]" not in build_lesson_generation_prompt(**lesson)
     assert text not in build_lesson_generation_prompt(**lesson)
     for builder in (detective_prompt, sentence_order_prompt, vocabulary_pairs_prompt):
-        assert text in builder("en-GB", "sv", "A1", "review", {}, is_child=True)
+        with use_learner(CHILD_SV):
+            assert text in builder("en-GB", "sv", "A1", "review", {})
         assert text not in builder("en-GB", "sv", "A1", "review", {})
 
 
 def test_prompt_requests_eight() -> None:
-    from app.services.prompts.games import (
+    from app.home.game_prompts import (
         detective_prompt,
         sentence_order_prompt,
         vocabulary_pairs_prompt,

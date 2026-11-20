@@ -41,8 +41,8 @@ async def test_lifespan_runs_upstream_then_home_migrations_then_stock_loop() -> 
 
     test_app = FastAPI(lifespan=upstream)
     with (
-        patch("app.services.game_stock.stock_enabled", return_value=True),
-        patch("app.services.game_stock.stock_loop", fake_loop),
+        patch("app.home.game_stock.stock_enabled", return_value=True),
+        patch("app.home.game_stock.stock_loop", fake_loop),
         patch("app.home.install.run_home_migrations", lambda: events.append("home-migrations")),
     ):
         install_home(test_app)

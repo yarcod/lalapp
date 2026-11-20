@@ -13,12 +13,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import engine
-from app.home.context import load_learner
+from app.home.context import load_learner, use_learner
+from app.home.games import GenerationRequest, generate_content
+from app.home.models import HomeGameStock
+from app.home.settings import home_settings
 from app.home.speech_session import _gateway
-from app.models.game import GameSession, GameStock
+from app.models.game import GameSession
 from app.models.study_plan import StudyPlan
 from app.models.user import User
-from app.services.games import GenerationRequest, generate_content, now_utc, source_context
+from app.services.games import now_utc, source_context
 from app.utils.db import db_session
 
 logger = logging.getLogger(__name__)
@@ -51,7 +54,9 @@ def source_hash(context: dict) -> str:
 
 
 class Bucket:
-    def __init__(self, plan: StudyPlan, user: User, mode: str, game_type: str, context: dict):
+    def __init__(
+        self, plan: StudyPlan, user: User, mode: str, game_type: str, context: dict
+    ) -> None:
         self.plan, self.user, self.mode, self.game_type = plan, user, mode, game_type
         self.context = context
         self.fresh = 0
@@ -68,15 +73,15 @@ async def plan_buckets(db: AsyncSession, plan: StudyPlan, user: User) -> list[Bu
                 context = await source_context(db, plan, mode, game_type)
             else:
                 context = lesson_contexts[mode]
-                stale = update(GameStock).where(
-                    GameStock.study_plan_id == plan.id,
-                    GameStock.mode == mode,
-                    GameStock.game_type == game_type,
-                    GameStock.is_stale.is_(False),
-                    GameStock.taken_at.is_(None),
+                stale = update(HomeGameStock).where(
+                    HomeGameStock.study_plan_id == plan.id,
+                    HomeGameStock.mode == mode,
+                    HomeGameStock.game_type == game_type,
+                    HomeGameStock.is_stale.is_(False),
+                    HomeGameStock.taken_at.is_(None),
                 )
                 if context["sources"]:
-                    stale = stale.where(GameStock.source_hash != source_hash(context))
+                    stale = stale.where(HomeGameStock.source_hash != source_hash(context))
                 await db.execute(stale.values(is_stale=True))
             if context["sources"]:
                 buckets.append(Bucket(plan, user, mode, game_type, context))
@@ -84,10 +89,12 @@ async def plan_buckets(db: AsyncSession, plan: StudyPlan, user: User) -> list[Bu
     for bucket in buckets:
         rows = (
             await db.execute(
-                select(GameStock.is_stale, GameStock.taken_at, GameStock.replaced).where(
-                    GameStock.study_plan_id == plan.id,
-                    GameStock.mode == bucket.mode,
-                    GameStock.game_type == bucket.game_type,
+                select(
+                    HomeGameStock.is_stale, HomeGameStock.taken_at, HomeGameStock.replaced
+                ).where(
+                    HomeGameStock.study_plan_id == plan.id,
+                    HomeGameStock.mode == bucket.mode,
+                    HomeGameStock.game_type == bucket.game_type,
                 )
             )
         ).all()
@@ -96,13 +103,13 @@ async def plan_buckets(db: AsyncSession, plan: StudyPlan, user: User) -> list[Bu
         if bucket.fresh >= STOCK_TARGET and bucket.unreplaced:
             # Surplus stale rows must not grant uncapped generations later.
             await db.execute(
-                update(GameStock)
+                update(HomeGameStock)
                 .where(
-                    GameStock.study_plan_id == plan.id,
-                    GameStock.mode == bucket.mode,
-                    GameStock.game_type == bucket.game_type,
-                    GameStock.is_stale.is_(True),
-                    GameStock.replaced.is_(False),
+                    HomeGameStock.study_plan_id == plan.id,
+                    HomeGameStock.mode == bucket.mode,
+                    HomeGameStock.game_type == bucket.game_type,
+                    HomeGameStock.is_stale.is_(True),
+                    HomeGameStock.replaced.is_(False),
                 )
                 .values(replaced=True)
             )
@@ -150,14 +157,16 @@ async def generate_item(db: AsyncSession, bucket: Bucket, *, replacement: bool) 
         native_language=user.native_language,
         level=plan.cefr_level,
         context=bucket.context,
-        is_child=(await load_learner(db, user)).is_child,
     )
+    # The prompts read the child setting of the plan owner, not of whoever started the pass.
+    learner = await load_learner(db, user)
     # Never hold a transaction open while waiting for the provider.
     await db.commit()
     try:
         deadline = asyncio.get_running_loop().time() + GENERATION_TIMEOUT_SECONDS
-        async with asyncio.timeout_at(deadline):
-            content = await generate_while_off(request, deadline)
+        with use_learner(learner):
+            async with asyncio.timeout_at(deadline):
+                content = await generate_while_off(request, deadline)
     except Exception:
         logger.exception("Game stock generation failed: plan %s %s", plan.id, bucket.mode)
         bucket_cooldowns[bucket_key(bucket)] = _now() + FAILED_BUCKET_COOLDOWN_SECONDS
@@ -165,14 +174,14 @@ async def generate_item(db: AsyncSession, bucket: Bucket, *, replacement: bool) 
     if content is None:
         return STOP
     db.add(
-        GameStock(
+        HomeGameStock(
             study_plan_id=plan.id,
             mode=bucket.mode,
             game_type=bucket.game_type,
             target_language=request.target_language,
             native_language=request.native_language,
             level=request.level,
-            is_child=request.is_child,
+            is_child=learner.is_child,
             content=[c.model_dump() for c in content.challenges],
             source_hash=source_hash(bucket.context) if bucket.mode != "free" else "",
             created_at=now_utc(),
@@ -181,15 +190,15 @@ async def generate_item(db: AsyncSession, bucket: Bucket, *, replacement: bool) 
     )
     if replacement:
         oldest = await db.scalar(
-            select(GameStock)
+            select(HomeGameStock)
             .where(
-                GameStock.study_plan_id == plan.id,
-                GameStock.mode == bucket.mode,
-                GameStock.game_type == bucket.game_type,
-                GameStock.is_stale.is_(True),
-                GameStock.replaced.is_(False),
+                HomeGameStock.study_plan_id == plan.id,
+                HomeGameStock.mode == bucket.mode,
+                HomeGameStock.game_type == bucket.game_type,
+                HomeGameStock.is_stale.is_(True),
+                HomeGameStock.replaced.is_(False),
             )
-            .order_by(GameStock.created_at, GameStock.id)
+            .order_by(HomeGameStock.created_at, HomeGameStock.id)
         )
         if oldest is not None:
             oldest.replaced = True
@@ -203,12 +212,12 @@ async def used_today(db: AsyncSession, plan: StudyPlan) -> int:
     start = now_utc().replace(hour=0, minute=0, second=0, microsecond=0)
     return await db.scalar(
         select(func.count())
-        .select_from(GameStock)
+        .select_from(HomeGameStock)
         .where(
-            GameStock.study_plan_id == plan.id,
-            GameStock.counts_toward_cap.is_(True),
-            GameStock.created_at >= start,
-            GameStock.created_at < start + timedelta(days=1),
+            HomeGameStock.study_plan_id == plan.id,
+            HomeGameStock.counts_toward_cap.is_(True),
+            HomeGameStock.created_at >= start,
+            HomeGameStock.created_at < start + timedelta(days=1),
         )
     )
 
@@ -267,7 +276,9 @@ async def refill_once(db: AsyncSession) -> int:
     planned = []
     for plan, user in rows:
         existing = await db.scalar(
-            select(func.count()).select_from(GameStock).where(GameStock.study_plan_id == plan.id)
+            select(func.count())
+            .select_from(HomeGameStock)
+            .where(HomeGameStock.study_plan_id == plan.id)
         )
         planned.append((existing > 0, plan, user))
     planned.sort(key=lambda item: item[0])  # plans with nothing generated yet go first
@@ -292,14 +303,14 @@ def recent_sentences_query(plan: StudyPlan):  # noqa: ANN201
     )
 
 
-async def claim_item(db: AsyncSession, item: GameStock) -> bool:
+async def claim_item(db: AsyncSession, item: HomeGameStock) -> bool:
     """Atomic take: only one caller can flip taken_at from NULL, on SQLite and Postgres alike."""
     result = await db.execute(
-        update(GameStock)
+        update(HomeGameStock)
         .where(
-            GameStock.id == item.id,
-            GameStock.taken_at.is_(None),
-            GameStock.is_stale.is_(False),
+            HomeGameStock.id == item.id,
+            HomeGameStock.taken_at.is_(None),
+            HomeGameStock.is_stale.is_(False),
         )
         .values(taken_at=now_utc())
     )
@@ -308,29 +319,31 @@ async def claim_item(db: AsyncSession, item: GameStock) -> bool:
 
 async def take_from_stock(
     db: AsyncSession, plan: StudyPlan, mode: str, game_type: str
-) -> GameStock | None:
+) -> HomeGameStock | None:
     """Oldest fresh item not repeating recent sentences; repeated items are marked stale.
 
     The caller commits, so the claim and the session built from it are one transaction."""
     recent: set[str] = set()
     for session in (await db.scalars(recent_sentences_query(plan))).all():
         recent.update(c["sentence"] for c in session.challenges)
-    candidates: Sequence[GameStock] = (
+    candidates: Sequence[HomeGameStock] = (
         await db.scalars(
-            select(GameStock)
+            select(HomeGameStock)
             .where(
-                GameStock.study_plan_id == plan.id,
-                GameStock.mode == mode,
-                GameStock.game_type == game_type,
-                GameStock.is_stale.is_(False),
-                GameStock.taken_at.is_(None),
+                HomeGameStock.study_plan_id == plan.id,
+                HomeGameStock.mode == mode,
+                HomeGameStock.game_type == game_type,
+                HomeGameStock.is_stale.is_(False),
+                HomeGameStock.taken_at.is_(None),
             )
-            .order_by(GameStock.created_at, GameStock.id)
+            .order_by(HomeGameStock.created_at, HomeGameStock.id)
         )
     ).all()
     for item in candidates:
         if any(c["sentence"] in recent for c in item.content):
-            await db.execute(update(GameStock).where(GameStock.id == item.id).values(is_stale=True))
+            await db.execute(
+                update(HomeGameStock).where(HomeGameStock.id == item.id).values(is_stale=True)
+            )
             continue
         if await claim_item(db, item):
             await db.refresh(item)
@@ -381,4 +394,4 @@ async def stock_loop() -> None:
 
 
 def stock_enabled() -> bool:
-    return settings.LLM_PROVIDER == "ollama"
+    return home_settings.HOME_GAME_STOCK and settings.LLM_PROVIDER == "ollama"

@@ -2,36 +2,26 @@
 
 import asyncio
 import logging
-import random
-import re
-import unicodedata
-from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from random import SystemRandom
-from uuid import uuid4
 
 from fastapi import HTTPException
-from pydantic import ValidationError
 from sqlalchemy import and_, func, or_, select, update
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.data.curriculum import COMPLETION_UNIT_IDS, get_curriculum_units
 from app.data.grammar import get_grammar_topics
 from app.data.vocabulary import get_vocabulary_by_level
-from app.home.context import current_learner
-from app.models.game import GameAdmission, GameRequest, GameSession, GameStock
+from app.home.games import start_from_stock, stock_mode
+from app.models.game import GameAdmission, GameRequest, GameSession
 from app.models.lesson import Exercise, Lesson
 from app.models.progress_reward import ProgressReward
 from app.models.study_plan import StudyPlan
 from app.models.user import User
 from app.schemas.games import (
-    DetectiveChallenge,
     DetectiveContent,
-    DetectiveDraft,
-    DetectiveDraftContent,
     DetectiveReview,
     GameAnswer,
     GameCreate,
@@ -39,11 +29,8 @@ from app.schemas.games import (
     SentenceOrderAnswer,
     SentenceOrderChallenge,
     SentenceOrderContent,
-    SentenceOrderDraftContent,
-    VocabularyPair,
     VocabularyPairAnswer,
     VocabularyPairsContent,
-    VocabularyPairsDraftContent,
 )
 from app.services.freemium_service import is_freemium_trial_active
 from app.services.llm_adapter import LLMResponseError, LLMTimeoutError, llm_adapter
@@ -280,11 +267,7 @@ async def create_game(
     plan: StudyPlan | None,
     body: GameCreate,
     game_type: GameType = "detective",
-    stock_taker: (
-        Callable[[AsyncSession, StudyPlan, str, str], Awaitable[GameStock | None]] | None
-    ) = None,
 ) -> tuple[GameSession | None, bool]:
-    """With a stock_taker, games come only from stock and None means the stock is empty."""
     await lock_user(db, user.id)
     now = now_utc()
     await expire_generations(db, user.id, now)
@@ -344,59 +327,8 @@ async def create_game(
     quota = await game_quota(db, user.id, now)
     if limited and quota["remaining"] == 0:
         raise HTTPException(402, {"reason": "freemium_exhausted", "feature": "games", **quota})
-    if stock_taker is not None:
-        item = await stock_taker(db, plan, body.mode, game_type)
-        if item is None:
-            await db.commit()
-            return None, False
-        session = GameSession(
-            id=str(body.request_id),
-            user_id=user.id,
-            study_plan_id=plan.id,
-            mode=body.mode,
-            game_type=game_type,
-            target_language=item.target_language,
-            native_language=item.native_language,
-            level=item.level,
-            is_child=item.is_child,
-            status="ready",
-            context={"sources": [], "stock_id": item.id},
-            created_at=now,
-            deadline=now,
-            challenges=finalize_challenges(game_type, item.content),
-            answers=[{} for _ in item.content],
-            xp_earned=0,
-        )
-        db.add(session)
-        try:
-            await db.flush()
-        except IntegrityError:
-            # Another request won the single active slot: undo the claim and resume its game.
-            await db.rollback()
-            active = await db.scalar(
-                select(GameSession).where(
-                    GameSession.study_plan_id == body.study_plan_id,
-                    GameSession.game_type == game_type,
-                    GameSession.status.in_(["generating", "ready"]),
-                )
-            )
-            if active is None:
-                raise
-            return active, False
-        request.session_id = session.id
-        db.add(request)
-        if limited:
-            db.add(
-                GameAdmission(
-                    id=session.id,
-                    user_id=user.id,
-                    date=now.date(),
-                    status="consumed",
-                    deadline=now,
-                )
-            )
-        await db.commit()
-        return session, False
+    if stock_mode():
+        return await start_from_stock(db, user, plan, body, game_type, request, limited, now), False
     context = await source_context(db, plan, body.mode, game_type)
     if not context["sources"]:
         raise HTTPException(409, context["reason"])
@@ -410,7 +342,6 @@ async def create_game(
         target_language=plan.target_language,
         native_language=user.native_language,
         level=plan.cefr_level,
-        is_child=current_learner().is_child,
         status="generating",
         context=context,
         created_at=now,
@@ -461,149 +392,38 @@ def shuffled_order_challenge(challenge: SentenceOrderChallenge) -> SentenceOrder
     raise LLMResponseError("Sentence Order challenge cannot be shuffled into an unsolved order")
 
 
-GAMES_REQUESTED = 8
-GAMES_NEEDED = 5
-
-
-def build_challenge(draft: DetectiveDraft) -> DetectiveChallenge:
-    """Split the sentence around wrong_part and shuffle the options; raises ValueError if unusable."""
-    sentence, wrong = draft.sentence, draft.wrong_part
-    # Spaced scripts must match whole words; unspaced text (CJK) has no word boundaries to use.
-    bounded = any(ch.isspace() for ch in sentence)
-    pattern = re.escape(wrong)
-    if bounded:
-        pattern = rf"(?<!\w){pattern}(?!\w)"
-    starts = [m.start() for m in re.finditer(f"(?={pattern})", sentence)]
-    if len(starts) != 1:
-        raise ValueError("wrong_part must occur exactly once in the sentence")
-    if draft.correct_part == wrong:
-        raise ValueError("correct_part must differ from wrong_part")
-    start = starts[0]
-    before, after = sentence[:start], sentence[start + len(wrong) :]
-    fragments = [
-        *re.findall(r"\s*\S+\s*", before),
-        wrong,
-        *re.findall(r"\s*\S+\s*", after),
-    ]
-    if "".join(fragments) != sentence:
-        raise ValueError("Sentence cannot be split into fragments")
-    options = [draft.correct_part, *draft.wrong_options]
-    random.shuffle(options)
-    error_index = len(re.findall(r"\s*\S+\s*", before))
-    correct_index = options.index(draft.correct_part)
-    return DetectiveChallenge(
-        sentence=sentence,
-        fragments=fragments,
-        error_index=error_index,
-        options=options,
-        correct_index=correct_index,
-        corrected_sentence=sentence[:start] + draft.correct_part + after,
-        explanation=draft.explanation,
-        source_id=draft.source_id,
-    )
-
-
-def _build_detective(item: object) -> DetectiveChallenge:
-    draft = item if isinstance(item, DetectiveDraft) else DetectiveDraft.model_validate(item)
-    return build_challenge(draft)
-
-
-def _norm(value: str) -> str:
-    return unicodedata.normalize("NFKC", value).strip().casefold()
-
-
-def salvage_challenges(
-    drafts: list,
-    needed: int = GAMES_NEEDED,
-    *,
-    build: Callable[[object], object] = _build_detective,
-    keys: Callable[[object], tuple[str, ...]] = lambda c: (_norm(c.sentence),),
-    accept: Callable[[object], bool] = lambda c: True,
-) -> list:
-    """Keep the first `needed` valid, distinct items; invalid ones are dropped, not fatal."""
-    kept: list = []
-    seen: list[set[str]] = []
-    for item in drafts:
-        try:
-            challenge = build(item)
-        except ValueError, ValidationError, TypeError:
-            continue
-        if not accept(challenge):
-            continue
-        item_keys = keys(challenge)
-        if len(seen) < len(item_keys):
-            seen.extend(set() for _ in range(len(item_keys) - len(seen)))
-        if any(not key or key in seen[i] for i, key in enumerate(item_keys)):
-            continue
-        for i, key in enumerate(item_keys):
-            seen[i].add(key)
-        kept.append(challenge)
-        if len(kept) == needed:
-            return kept
-    raise LLMResponseError(f"Only {len(kept)} of {needed} required challenges were valid")
-
-
-@dataclass
-class GenerationRequest:
-    """The fields content generation reads; lets stock build games without a GameSession."""
-
-    game_type: str
-    mode: str
-    target_language: str
-    native_language: str
-    level: str
-    context: dict
-    is_child: bool = False
-
-
 async def generate_content(
-    session: GameSession | GenerationRequest, deadline: float
+    session: GameSession, deadline: float
 ) -> DetectiveContent | SentenceOrderContent | VocabularyPairsContent:
-    """Ask for more challenges than needed and keep the first valid ones."""
     ordering = session.game_type == "sentence-order"
     prompt_builder = sentence_order_prompt if ordering else detective_prompt
     review_builder = sentence_order_review_prompt if ordering else detective_review_prompt
     schema = SentenceOrderContent if ordering else DetectiveContent
-    draft_schema = SentenceOrderDraftContent if ordering else DetectiveDraftContent
-    build = SentenceOrderChallenge.model_validate if ordering else _build_detective
-    keys = lambda c: (_norm(c.sentence),)  # noqa: E731
     if session.game_type == "vocabulary-pairs":
         prompt_builder = vocabulary_pairs_prompt
         review_builder = vocabulary_pairs_review_prompt
         schema = VocabularyPairsContent
-        draft_schema = VocabularyPairsDraftContent
-        build = VocabularyPair.model_validate
-        keys = lambda c: (_norm(c.term), _norm(c.meaning))  # noqa: E731
     prompt = prompt_builder(
         session.target_language,
         session.native_language,
         session.level,
         session.mode,
         session.context,
-        is_child=session.is_child,
     )
     permitted = {s["source_id"] for s in session.context["sources"]}
-    recent = session.context.get("recent_sentences", [])
     rejection = ""
     for _ in range(2):
-        draft = await llm_adapter.structured_output(
-            [{"role": "system", "content": prompt + rejection}], draft_schema, deadline=deadline
+        content = await llm_adapter.structured_output(
+            [{"role": "system", "content": prompt + rejection}], schema, deadline=deadline
         )
-        try:
-            challenges = salvage_challenges(
-                draft.challenges,
-                GAMES_NEEDED,
-                build=build,
-                keys=keys,
-                accept=lambda c: c.source_id in permitted and c.sentence not in recent,
-            )
-        except LLMResponseError:
-            rejection = (
-                "\nPrevious candidate rejected: too few valid challenges. Follow the format, "
-                "use only supplied source IDs and do not repeat recent sentences."
-            )
+        if any(c.source_id not in permitted for c in content.challenges):
+            rejection = "\nPrevious candidate rejected: use only supplied source IDs."
             continue
-        content = schema(challenges=challenges)
+        if any(
+            c.sentence in session.context.get("recent_sentences", []) for c in content.challenges
+        ):
+            rejection = "\nPrevious candidate rejected: do not repeat recent sentences."
+            continue
         review = await llm_adapter.structured_output(
             [{"role": "system", "content": review_builder(prompt, content.model_dump())}],
             DetectiveReview,
@@ -617,119 +437,6 @@ async def generate_content(
             return content
         rejection = "\nPrevious candidate rejected; create a new one. Audit: " + review.reason
     raise LLMResponseError("Game content did not pass review")
-
-
-def finalize_challenges(game_type: str, challenges: list[dict]) -> list[dict]:
-    """Per-play shuffles applied to raw generated content, for stock, generation and replay."""
-    if game_type == "vocabulary-pairs":
-        items = [{k: v for k, v in c.items() if k != "choice_index"} for c in challenges]
-        SystemRandom().shuffle(items)
-        choices = SystemRandom().sample(range(len(items)), len(items))
-        return [{**c, "choice_index": choices[i]} for i, c in enumerate(items)]
-    return [dict(c) for c in challenges]
-
-
-def reshuffled(game_type: str, challenge: dict) -> dict:
-    """Reshuffle what the game shuffles within a challenge, so a replay is not the same puzzle."""
-    if game_type == "sentence-order":
-        return shuffled_order_challenge(
-            SentenceOrderChallenge.model_validate(challenge)
-        ).model_dump()
-    if game_type == "detective":
-        options = list(challenge["options"])
-        correct = options[challenge["correct_index"]]
-        SystemRandom().shuffle(options)
-        return {**challenge, "options": options, "correct_index": options.index(correct)}
-    return challenge
-
-
-def answer_score(session: GameSession) -> int:
-    """Challenges played without a mistake."""
-    score = 0
-    for challenge, answer in zip(session.challenges, session.answers, strict=False):
-        if session.game_type == "vocabulary-pairs":
-            score += bool(answer.get("matched")) and not answer.get("assisted", False)
-        elif session.game_type == "sentence-order":
-            score += bool(answer.get("correct"))
-        else:
-            score += (
-                answer.get("detection") == challenge["error_index"]
-                and answer.get("correction") == challenge["correct_index"]
-            )
-    return score
-
-
-async def stock_empty_output(db: AsyncSession, plan: StudyPlan, game_type: str) -> dict:
-    """The happy note: what a learner can replay, and whether this is their very first games."""
-    finished = (
-        await db.scalars(
-            select(GameSession)
-            .where(
-                GameSession.study_plan_id == plan.id,
-                GameSession.game_type == game_type,
-                GameSession.status == "completed",
-            )
-            .order_by(GameSession.completed_at.desc(), GameSession.created_at.desc())
-        )
-    ).all()
-    return {
-        "status": "empty",
-        "first_games_pending": not finished,
-        "replayable": [
-            {
-                "id": s.id,
-                "mode": s.mode,
-                "completed_at": s.completed_at.isoformat() if s.completed_at else None,
-                "score": answer_score(s),
-                "total": len(s.challenges),
-                "xp_earned": s.xp_earned,
-            }
-            for s in finished[:5]
-        ],
-    }
-
-
-async def replay_game(db: AsyncSession, user: User, session_id: str) -> GameSession:
-    """A new ready session from a finished game's content, with fresh answers."""
-    source = await owned_game(db, user.id, session_id)
-    await lock_user(db, user.id)
-    if source.status != "completed":
-        raise HTTPException(409, "game_not_completed")
-    active = await db.scalar(
-        select(GameSession).where(
-            GameSession.study_plan_id == source.study_plan_id,
-            GameSession.game_type == source.game_type,
-            GameSession.status.in_(["generating", "ready"]),
-        )
-    )
-    if active is not None:
-        await db.commit()
-        return active
-    now = now_utc()
-    challenges = finalize_challenges(
-        source.game_type, [reshuffled(source.game_type, c) for c in source.challenges]
-    )
-    session = GameSession(
-        id=str(uuid4()),
-        user_id=user.id,
-        study_plan_id=source.study_plan_id,
-        mode=source.mode,
-        game_type=source.game_type,
-        target_language=source.target_language,
-        native_language=source.native_language,
-        level=source.level,
-        is_child=source.is_child,
-        status="ready",
-        context={"sources": [], "replay_of": source.id},
-        created_at=now,
-        deadline=now,
-        challenges=challenges,
-        answers=[{} for _ in challenges],
-        xp_earned=0,
-    )
-    db.add(session)
-    await db.commit()
-    return session
 
 
 async def generate_game(session_id: str) -> None:
@@ -771,9 +478,13 @@ async def generate_game(session_id: str) -> None:
             if admission:
                 admission.status = "released"
         else:
-            session.challenges = finalize_challenges(
-                session.game_type, [c.model_dump() for c in content.challenges]
-            )
+            session.challenges = [c.model_dump() for c in content.challenges]
+            if session.game_type == "vocabulary-pairs":
+                SystemRandom().shuffle(session.challenges)
+                choices = SystemRandom().sample(range(5), 5)
+                session.challenges = [
+                    {**c, "choice_index": choices[i]} for i, c in enumerate(session.challenges)
+                ]
             session.answers = [{} for _ in content.challenges]
             session.status = "ready"
             if admission:

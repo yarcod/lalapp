@@ -5,7 +5,7 @@ from alembic.config import Config
 from fastapi import FastAPI
 
 from alembic import command
-from app.home import models, profile, speech_session  # noqa: F401  — registers home tables
+from app.home import games_router, models, profile, speech_session  # noqa: F401  — home tables
 from app.home.context import LearnerScopeMiddleware
 
 
@@ -15,11 +15,12 @@ def run_home_migrations() -> None:
 
 def install_home(app: FastAPI) -> None:
     """Attach the home routers and lifecycle work to the upstream app."""
-    from app.services import game_stock
+    from app.home import game_stock
 
     app.add_middleware(LearnerScopeMiddleware)
     app.include_router(speech_session.router)
     app.include_router(profile.router)
+    app.include_router(games_router.router)
 
     upstream_lifespan = app.router.lifespan_context
 

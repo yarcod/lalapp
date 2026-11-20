@@ -19,12 +19,11 @@ from app.schemas.games import (
     SentenceOrderAnswer,
     SentenceOrderChallenge,
     SentenceOrderContent,
-    SentenceOrderDraftContent,
 )
 from app.services import games
 from app.services.progress_rewards import award_progress_reward
 from tests.conftest import make_study_plan
-from tests.test_games import finish, ready_game, route_on_demand
+from tests.test_games import finish, ready_game
 
 
 def order_content(source="grammar:present-simple"):
@@ -42,42 +41,6 @@ def order_content(source="grammar:present-simple"):
             for i in range(5)
         ]
     )
-
-
-def order_draft(source="grammar:present-simple", count=8, broken=()):
-    items = [c.model_dump() for c in order_content(source).challenges]
-    items += [
-        {
-            **items[0],
-            "sentence": f"I often walk to town {i}.",
-            "fragments": ["often", "I", "walk", f"to town {i}."],
-        }
-        for i in range(count - 5)
-    ]
-    for i in broken:
-        items[i] = {**items[i], "accepted_orders": [[0, 0, 0, 0]]}
-    return SentenceOrderDraftContent(challenges=items[:count])
-
-
-async def test_order_salvage_drops_invalid_items(db_session, test_user_with_plan, monkeypatch):
-    user, _ = test_user_with_plan
-    plan = await db_session.scalar(select(StudyPlan))
-    session, _ = await games.create_game(
-        db_session,
-        user,
-        plan,
-        GameCreate(request_id=uuid4(), study_plan_id=plan.id, mode="free"),
-        "sentence-order",
-    )
-    source = session.context["sources"][0]["source_id"]
-    draft = order_draft(source, count=5)
-    draft.challenges.append(order_draft(source).challenges[5])
-    draft.challenges[2] = {**draft.challenges[2], "fragments": ["a"]}
-    mock = AsyncMock(side_effect=[draft, DetectiveReview(valid=True, reason="ok")])
-    monkeypatch.setattr(games.llm_adapter, "structured_output", mock)
-    content = await games.generate_content(session, 1e12)
-    assert len(content.challenges) == 5
-    assert all(c.sentence != "I often walk to school on day 2." for c in content.challenges)
 
 
 async def ready_order_game(db, user, plan):
@@ -331,7 +294,7 @@ async def test_types_have_separate_sessions_history_and_immutable_request_identi
     user, headers = test_user_with_plan
     plan = await db_session.scalar(select(StudyPlan))
     mocked = AsyncMock()
-    route_on_demand(monkeypatch, mocked)
+    monkeypatch.setattr("app.routers.games.generate_game", mocked)
     monkeypatch.setattr(settings, "STRIPE_ENABLED", True)
     body = {"request_id": str(uuid4()), "study_plan_id": plan.id, "mode": "free"}
     detective = await client.post("/api/games/detective", headers=headers, json=body)
@@ -384,7 +347,7 @@ async def test_order_cannot_bypass_quota_consumed_by_detective(
     plan = await db_session.scalar(select(StudyPlan))
     monkeypatch.setattr(settings, "STRIPE_ENABLED", True)
     monkeypatch.setattr(settings, "FREEMIUM_GAMES_DAILY", 1)
-    route_on_demand(monkeypatch, AsyncMock())
+    monkeypatch.setattr("app.routers.games.generate_game", AsyncMock())
     body = {"request_id": str(uuid4()), "study_plan_id": plan.id, "mode": "free"}
     assert (
         await client.post("/api/games/detective", headers=headers, json=body)
@@ -416,7 +379,7 @@ async def test_order_generation_reviews_before_consuming_quota(
         if outcome != "wrong_source"
         else "lesson:foreign"
     )
-    candidate = order_draft(source)
+    candidate = order_content(source)
     review = DetectiveReview(valid=outcome == "valid", reason="missing valid alternative")
     effects = [candidate, review, candidate, review]
     if outcome == "timeout":
@@ -433,7 +396,7 @@ async def test_order_generation_reviews_before_consuming_quota(
     monkeypatch.setattr(games, "db_session", factory)
     await games.generate_game(session.id)
     await db_session.refresh(session)
-    assert mock.call_args_list[0].args[1] is SentenceOrderDraftContent
+    assert mock.call_args_list[0].args[1] is SentenceOrderContent
     assert session.status == ("ready" if outcome == "valid" else "failed")
     assert (await db_session.get(GameAdmission, session.id)).status == (
         "consumed" if outcome == "valid" else "released"

@@ -19,12 +19,11 @@ from app.schemas.games import (
     GameCreate,
     VocabularyPairAnswer,
     VocabularyPairsContent,
-    VocabularyPairsDraftContent,
 )
 from app.services import games
 from app.services.progress_rewards import award_progress_reward
 from tests.conftest import make_study_plan
-from tests.test_games import ready_game, route_on_demand
+from tests.test_games import ready_game
 from tests.test_sentence_order import ready_order_game
 
 
@@ -47,14 +46,6 @@ def pairs_content(source="vocabulary:test"):
             ]
         ]
     )
-
-
-def pairs_draft(source="vocabulary:test"):
-    items = [c.model_dump() for c in pairs_content(source).challenges]
-    items.insert(1, {**items[0], "term": "bird"})  # duplicate meaning: dropped
-    items.append({"term": "x"})  # malformed: dropped
-    items.append({**items[0], "term": "fish", "meaning": "pez"})
-    return VocabularyPairsDraftContent(challenges=items)
 
 
 async def ready_pairs(db, user, plan):
@@ -260,7 +251,7 @@ async def test_pairs_generation_and_consumption(
         "vocabulary-pairs",
     )
     assert all(s["source_id"].startswith("vocabulary:") for s in session.context["sources"])
-    candidate = pairs_draft(
+    candidate = pairs_content(
         session.context["sources"][0]["source_id"] if outcome != "wrong_source" else "foreign"
     )
     review = DetectiveReview(valid=outcome == "valid", reason="ambiguous meanings")
@@ -279,7 +270,7 @@ async def test_pairs_generation_and_consumption(
     monkeypatch.setattr(games, "db_session", factory)
     await games.generate_game(session.id)
     await db_session.refresh(session)
-    assert mock.call_args_list[0].args[1] is VocabularyPairsDraftContent
+    assert mock.call_args_list[0].args[1] is VocabularyPairsContent
     assert session.status == ("ready" if outcome == "valid" else "failed")
     assert (await db_session.get(GameAdmission, session.id)).status == (
         "consumed" if outcome == "valid" else "released"
@@ -287,7 +278,7 @@ async def test_pairs_generation_and_consumption(
     if outcome == "valid":
         assert sorted(c["choice_index"] for c in session.challenges) == list(range(5))
         assert {(c["term"], c["meaning"]) for c in session.challenges} == {
-            (c.term, c.meaning) for c in pairs_content().challenges
+            (c.term, c.meaning) for c in candidate.challenges
         }
         public = games.game_output(session)
         assert all(set(c) == {"index", "term", "matched"} for c in public["challenges"])
@@ -304,7 +295,7 @@ async def test_third_game_separates_history_shares_quota_and_recovers_identity(
     user, headers = test_user_with_plan
     plan = await db_session.scalar(select(StudyPlan))
     monkeypatch.setattr(settings, "STRIPE_ENABLED", True)
-    route_on_demand(monkeypatch, AsyncMock())
+    monkeypatch.setattr("app.routers.games.generate_game", AsyncMock())
     requests = {}
     for kind in ("detective", "sentence-order", "vocabulary-pairs"):
         body = {"request_id": str(uuid4()), "study_plan_id": plan.id, "mode": "free"}

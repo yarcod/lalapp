@@ -8,13 +8,19 @@ import pytest
 from sqlalchemy import func, select
 
 from app.core.config import settings
-from app.home.models import HomeProfile
-from app.models.game import GameAdmission, GameRequest, GameSession, GameStock
+from app.home import game_stock
+from app.home import games as home_games
+from app.home.context import current_learner
+from app.home.models import HomeGameStock, HomeProfile
+from app.home.prompts import child_instruction
+from app.home.settings import home_settings
+from app.models.game import GameAdmission, GameRequest, GameSession
 from app.models.lesson import Lesson
 from app.models.study_plan import StudyPlan
-from app.schemas.games import GameAnswer
-from app.services import game_stock, games
+from app.schemas.games import DetectiveReview, GameAnswer
+from app.services import games
 from tests.conftest import make_study_plan
+from tests.home.test_games import draft_content
 from tests.test_games import content, finish, ready_game
 
 BUCKETS_FREE = 3  # detective, sentence-order, vocabulary-pairs
@@ -25,6 +31,12 @@ def clear_cooldowns():
     game_stock.bucket_cooldowns.clear()
     yield
     game_stock.bucket_cooldowns.clear()
+
+
+@pytest.fixture(autouse=True)
+def stock_mode_on(monkeypatch):
+    monkeypatch.setattr(home_settings, "HOME_GAME_STOCK", True)
+    monkeypatch.setattr(settings, "LLM_PROVIDER", "ollama")
 
 
 @pytest.fixture
@@ -42,14 +54,14 @@ def generate(monkeypatch):
 
 
 async def stock_count(db, **where):
-    query = select(func.count()).select_from(GameStock)
+    query = select(func.count()).select_from(HomeGameStock)
     for key, value in where.items():
-        query = query.where(getattr(GameStock, key) == value)
+        query = query.where(getattr(HomeGameStock, key) == value)
     return await db.scalar(query)
 
 
 async def age_rows(db, days=1):
-    for row in (await db.scalars(select(GameStock))).all():
+    for row in (await db.scalars(select(HomeGameStock))).all():
         row.created_at = row.created_at - timedelta(days=days)
     await db.commit()
 
@@ -66,7 +78,7 @@ async def test_refill_fills_to_target(
             break
     assert total == BUCKETS_FREE * game_stock.STOCK_TARGET
     assert await stock_count(db_session, is_stale=False) == total
-    row = (await db_session.scalars(select(GameStock))).first()
+    row = (await db_session.scalars(select(HomeGameStock))).first()
     assert len(row.content) == 5
     assert row.is_child is False
 
@@ -75,9 +87,50 @@ async def test_child_flag_stored_and_passed(db_session, test_user_with_plan, gat
     user, _ = test_user_with_plan
     db_session.add(HomeProfile(user_id=user.id, is_child=True))
     await db_session.commit()
+    seen = []
+
+    async def record(*_args, **_kwargs):
+        seen.append(current_learner().is_child)
+        return content()
+
+    generate.side_effect = record
     await game_stock.refill_once(db_session)
-    assert generate.call_args_list[0].args[0].is_child is True
-    assert (await db_session.scalars(select(GameStock))).first().is_child is True
+    assert seen and all(seen)
+    assert (await db_session.scalars(select(HomeGameStock))).first().is_child is True
+
+
+@pytest.mark.parametrize("is_child", [True, None])
+async def test_stock_job_uses_plan_owner_profile(
+    db_session, test_user_with_plan, gateway, monkeypatch, is_child
+):
+    user, _ = test_user_with_plan
+    if is_child is not None:
+        db_session.add(HomeProfile(user_id=user.id, is_child=is_child))
+        await db_session.commit()
+    # Free-mode sources are sampled at random, so cite one from the bucket's own context.
+    contexts = []
+    real_context = game_stock.source_context
+
+    async def recorded_context(*args, **kwargs):
+        contexts.append(await real_context(*args, **kwargs))
+        return contexts[-1]
+
+    monkeypatch.setattr(game_stock, "source_context", recorded_context)
+    review = DetectiveReview(valid=True, reason="ok")
+
+    def reply(_messages, schema, **_):
+        if schema is DetectiveReview:
+            return review
+        return draft_content(contexts[-1]["sources"][0]["source_id"])
+
+    llm = AsyncMock(side_effect=reply)
+    monkeypatch.setattr(home_games.llm_adapter, "structured_output", llm)
+    monkeypatch.setattr(game_stock, "GAME_TYPES", ("detective",))
+    assert await game_stock.refill_once(db_session) == 1
+    prompt = llm.call_args_list[0].args[0][0]["content"]
+    assert (child_instruction() in prompt) is bool(is_child)
+    # The worker leaves no learner behind once the job is done.
+    assert current_learner().is_child is False
 
 
 async def test_daily_cap_holds(db_session, test_user_with_plan, gateway, generate):
@@ -90,12 +143,12 @@ async def test_daily_cap_holds(db_session, test_user_with_plan, gateway, generat
 
 async def test_stale_replacement_not_capped(db_session, test_user_with_plan, gateway, generate):
     await game_stock.refill_once(db_session)
-    victim = (await db_session.scalars(select(GameStock))).first()
+    victim = (await db_session.scalars(select(HomeGameStock))).first()
     victim.is_stale = True
     await db_session.commit()
     assert await game_stock.refill_once(db_session) == 1
     replacement = (
-        await db_session.scalars(select(GameStock).order_by(GameStock.id.desc()))
+        await db_session.scalars(select(HomeGameStock).order_by(HomeGameStock.id.desc()))
     ).first()
     assert replacement.counts_toward_cap is False
     assert (victim.mode, victim.game_type) == (replacement.mode, replacement.game_type)
@@ -237,7 +290,7 @@ async def test_generation_cancelled_when_state_leaves_off(
 
 
 async def stock_item(db, plan, mode="free", game_type="detective", sentence_prefix="A"):
-    item = GameStock(
+    item = HomeGameStock(
         study_plan_id=plan.id,
         mode=mode,
         game_type=game_type,
@@ -308,8 +361,8 @@ async def test_take_loses_race_when_row_already_taken(db_session, test_user_with
     async def claim_after_rival(db, row):
         row_id = row.id
         await db.execute(
-            GameStock.__table__.update()
-            .where(GameStock.id == row_id)
+            HomeGameStock.__table__.update()
+            .where(HomeGameStock.id == row_id)
             .values(taken_at=games.now_utc())
         )
         return await real_claim(db, row)
@@ -365,7 +418,6 @@ async def test_serves_from_stock_without_llm(client, db_session, test_user_with_
     boom.assert_not_awaited()
     session = await db_session.get(GameSession, body["request_id"])
     assert session.status == "ready" and session.answers == [{}] * 5
-    assert session.is_child == item.is_child
     await db_session.refresh(item)
     assert item.taken_at is not None
     # An existing ready session is resumed before any further stock is touched.
@@ -374,17 +426,6 @@ async def test_serves_from_stock_without_llm(client, db_session, test_user_with_
     assert again.json()["id"] == body["request_id"]
     await db_session.refresh(second)
     assert second.taken_at is None
-
-
-async def test_stock_child_flag_carried(client, db_session, test_user_with_plan):
-    _, headers = test_user_with_plan
-    plan = await db_session.scalar(select(StudyPlan))
-    item = await stock_item(db_session, plan)
-    item.is_child = True
-    await db_session.commit()
-    body = start_body(plan)
-    await client.post("/api/games/detective", headers=headers, json=body)
-    assert (await db_session.get(GameSession, body["request_id"])).is_child is True
 
 
 async def test_empty_stock_returns_happy_status(client, db_session, test_user_with_plan):
@@ -501,7 +542,7 @@ async def test_replay_reshuffles_pairs(db_session, test_user_with_plan):
         )
     )
     await db_session.commit()
-    replay = await games.replay_game(db_session, user, "done-pairs")
+    replay = await home_games.replay_game(db_session, user, "done-pairs")
     assert sorted(c["term"] for c in replay.challenges) == [f"t{i}" for i in range(5)]
     assert sorted(c["choice_index"] for c in replay.challenges) == list(range(5))
     assert replay.game_type == "vocabulary-pairs" and replay.status == "ready"
@@ -542,7 +583,7 @@ async def test_second_tab_losing_the_slot_keeps_its_item(
         rival["id"] = winner.id
         return await real(db, p, mode, game_type)
 
-    monkeypatch.setattr("app.routers.games.take_from_stock", taker_after_rival)
+    monkeypatch.setattr("app.home.game_stock.take_from_stock", taker_after_rival)
     res = await client.post("/api/games/detective", headers=headers, json=start_body(plan))
     assert res.status_code == 202
     assert res.json()["id"] == rival["id"]
@@ -572,3 +613,18 @@ async def test_limited_user_at_quota_gets_402_and_stock_game_consumes_admission(
     assert blocked.status_code == 402
     await db_session.refresh(other)
     assert other.taken_at is None and item.id
+
+
+async def test_setting_off_keeps_upstream_on_demand_path(
+    db_session, test_user_with_plan, monkeypatch
+):
+    user, _ = test_user_with_plan
+    monkeypatch.setattr(home_settings, "HOME_GAME_STOCK", False)
+    assert settings.LLM_PROVIDER == "ollama"
+    assert home_games.stock_mode() is False
+    plan = await db_session.scalar(select(StudyPlan))
+    await stock_item(db_session, plan)
+    body = games.GameCreate(request_id=uuid4(), study_plan_id=plan.id, mode="free")
+    session, created = await games.create_game(db_session, user, plan, body)
+    assert created is True and session.status == "generating"
+    assert await stock_count(db_session, taken_at=None) == 1
