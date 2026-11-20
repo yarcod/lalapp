@@ -2361,7 +2361,7 @@ async def test_reset_before_audio_discards_everything_old() -> None:
 
 @pytest.mark.asyncio
 async def test_voice_reply_requests_configured_reasoning_effort(monkeypatch) -> None:
-    monkeypatch.setattr("app.core.config.settings.VOICE_REASONING_EFFORT", "low")
+    monkeypatch.setattr("app.home.settings.home_settings.VOICE_REASONING_EFFORT", "low")
     pipeline = _make_pipeline()
     pipeline.stt.transcribe = AsyncMock(return_value="Hi")
     pipeline.tts.synthesize = AsyncMock(return_value=b"audio")
@@ -2372,7 +2372,7 @@ async def test_voice_reply_requests_configured_reasoning_effort(monkeypatch) -> 
 
 @pytest.mark.asyncio
 async def test_voice_reply_sends_no_reasoning_effort_when_unset(monkeypatch) -> None:
-    monkeypatch.setattr("app.core.config.settings.VOICE_REASONING_EFFORT", "")
+    monkeypatch.setattr("app.home.settings.home_settings.VOICE_REASONING_EFFORT", "")
     pipeline = _make_pipeline()
     pipeline.stt.transcribe = AsyncMock(return_value="Hi")
     pipeline.tts.synthesize = AsyncMock(return_value=b"audio")

@@ -11,7 +11,7 @@ def _use_gateway(monkeypatch, handler):
         kwargs["transport"] = httpx.MockTransport(handler)
         return real(*args, **kwargs)
 
-    monkeypatch.setattr("app.routers.speech_session.httpx.AsyncClient", factory)
+    monkeypatch.setattr("app.home.speech_session.httpx.AsyncClient", factory)
     monkeypatch.setattr(settings, "STT_PROVIDER", "local")
     monkeypatch.setattr(settings, "STT_BASE_URL", "http://gateway:9000")
 

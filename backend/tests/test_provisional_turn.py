@@ -8,8 +8,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.routers import speech_session
-from app.routers.speech_session import SpeechSessionState, live_llm_is_small
+from app.home import speech_session
+from app.home.speech_session import SpeechSessionState, live_llm_is_small
 from app.services.conversation_pipeline import ConversationPipeline
 from app.services.llm_adapter import (
     LLMAdapter,
@@ -295,7 +295,7 @@ async def test_provisional_after_empty_transcription_flushes_listening_on_confir
 
 @pytest.mark.asyncio
 async def test_opener_uses_no_reasoning_and_reply_continues_it_at_low(monkeypatch) -> None:
-    monkeypatch.setattr("app.core.config.settings.VOICE_REASONING_EFFORT", "low")
+    monkeypatch.setattr("app.home.settings.home_settings.VOICE_REASONING_EFFORT", "low")
     pipeline = _pipeline()
     calls: list[tuple[list[dict], dict]] = []
     streams = iter([Stream("Oh, a cat!"), Stream(" What colour?")])
@@ -405,7 +405,7 @@ async def test_opener_without_audio_is_not_prefilled() -> None:
 
 @pytest.mark.asyncio
 async def test_e4b_tier_skips_opener(monkeypatch) -> None:
-    monkeypatch.setattr("app.core.config.settings.VOICE_REASONING_EFFORT", "low")
+    monkeypatch.setattr("app.home.settings.home_settings.VOICE_REASONING_EFFORT", "low")
     pipeline = _pipeline(generated_opener=False, small_llm=True)
     pipeline.llm.chat = AsyncMock(return_value=Stream("Hello there."))
     ws = FakeWS()

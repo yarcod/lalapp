@@ -9,7 +9,7 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from app.core.app_logger import get_logger
-from app.core.config import settings
+from app.home.settings import home_settings
 from app.models.user import User
 from app.services.language_helpers import (
     get_iso639,
@@ -429,7 +429,7 @@ class ConversationPipeline:
         return text.strip()
 
     def _effort_kwargs(self) -> dict:
-        effort = settings.VOICE_REASONING_EFFORT
+        effort = home_settings.VOICE_REASONING_EFFORT
         return {"reasoning_effort": effort} if effort and not self._small_llm else {}
 
     @staticmethod

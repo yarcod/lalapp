@@ -13,10 +13,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import engine
+from app.home.speech_session import _gateway
 from app.models.game import GameSession, GameStock
 from app.models.study_plan import StudyPlan
 from app.models.user import User
-from app.routers.speech_session import _gateway
 from app.services.games import GenerationRequest, generate_content, now_utc, source_context
 from app.utils.db import db_session
 

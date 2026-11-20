@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import os
-from contextlib import asynccontextmanager, suppress
+from contextlib import asynccontextmanager
 
 from alembic.config import Config
 from fastapi import FastAPI, Request
@@ -14,6 +14,7 @@ from alembic import command
 from app.core.analytics import AnalyticsMiddleware
 from app.core.config import settings
 from app.core.limiter import limiter
+from app.home.install import install_home
 
 logging.basicConfig(
     level=settings.LOG_LEVEL.upper(),
@@ -47,7 +48,6 @@ from app.routers import (
     progress,
     reading,
     reviews,
-    speech_session,
     stt,
     study_plan,
     tts,
@@ -55,7 +55,6 @@ from app.routers import (
 )
 from app.routers import config as config_router
 from app.routers import health as health_router
-from app.services import game_stock
 from app.services.stt_service import OpenAISTTService, WhisperSTTService
 from app.services.tts_service import KokoroTTSService, OpenAITTSService
 
@@ -106,17 +105,7 @@ async def lifespan(app: FastAPI):  # noqa: ANN201
     else:
         app.state.stt_service = WhisperSTTService(settings.STT_BASE_URL)
 
-    stock_task = None
-    if game_stock.stock_enabled():
-        stock_task = asyncio.create_task(game_stock.stock_loop())
-
-    try:
-        yield
-    finally:
-        if stock_task is not None:
-            stock_task.cancel()
-            with suppress(asyncio.CancelledError):
-                await stock_task
+    yield
 
 
 app = FastAPI(title="FreeLingo API", version="0.1.0", lifespan=lifespan)
@@ -164,7 +153,6 @@ app.include_router(reading.router)
 app.include_router(reviews.router)
 app.include_router(tts.router)
 app.include_router(stt.router)
-app.include_router(speech_session.router)
 app.include_router(conversation.router)
 app.include_router(config_router.router)
 app.include_router(contact.router)
@@ -178,6 +166,8 @@ app.include_router(phrasebook.router)
 app.include_router(languages.router)
 app.include_router(health_router.router)
 app.include_router(vocabulary.router)
+
+install_home(app)
 
 if settings.STRIPE_ENABLED:
     import stripe as _stripe

@@ -19,11 +19,11 @@ from app.core.deps import (
 )
 from app.core.limiter import limiter
 from app.core.security import decode_access_token
+from app.home.speech_session import live_llm_is_small
 from app.models.conversation import Conversation as ConversationModel
 from app.models.study_plan import StudyPlan
 from app.models.user import User
 from app.models.user_language import UserLanguage
-from app.routers.speech_session import live_llm_is_small
 from app.services.assessment_voice_trial import (
     AssessmentVoiceTrial,
     consume_assessment_voice_trial_token,
