@@ -51,6 +51,7 @@ memories, feedback reads/mutations, and review reads/deletes.
 ## Generated and evaluated learning operations
 
 - `GET /api/assessment/start`: `10/minute`.
+- `POST /api/assessment/started`: `10/minute`.
 - `POST /api/assessment/submit`: `10/minute`.
 - `POST /api/assessment/free-write`: `10/minute`.
 - `POST /api/assessment/complete`: `10/minute`.
@@ -62,6 +63,7 @@ memories, feedback reads/mutations, and review reads/deletes.
 - `POST /api/lessons/exercises/{exercise_id}/answer`: `20/minute`.
 - `POST /api/lessons/exercises/{exercise_id}/regenerate`: `5/hour`.
 - Lesson/exercise native explanation or hint generation: `10/minute`.
+- `POST /api/lessons/exercises/{exercise_id}/question-translation`: `10/minute`, including cache hits.
 - Grammar, Vocabulary, or Phrasebook native-help generation: `10/minute`.
 - `GET /api/phrasebook/audio/{category_id}/{phrase_index}`: `30/minute`.
 - `POST /api/flashcards/generate`: `20/minute`.
@@ -84,18 +86,48 @@ memories, feedback reads/mutations, and review reads/deletes.
 Generation polling is non-overlapping, normally every five seconds, with bounded transport recovery.
 Rate limiting is independent of the global per-user daily game admission quota.
 
+## Grammar Practice
+
+- `GET /api/grammar-practice/topics`, `GET /api/grammar-practice/topics/{id}`, and
+  `GET /api/grammar-practice/sessions/{uuid}`: `60/minute`.
+- `POST /api/grammar-practice/topics`: `10/minute`.
+- `POST /api/grammar-practice/topics/{id}/sessions`: `5/minute`.
+- `POST /api/grammar-practice/sessions/{uuid}/answers`: `60/minute`.
+- `POST /api/grammar-practice/sessions/{uuid}/abandon`: `10/minute`.
+
+These transport limits are independent of the global UTC daily grammar-generation admission quota,
+which is separate from Games. Saved reads and answers do not consume generation allowance.
+
+## Situations
+
+- `GET /api/situations`: `60/minute`.
+
+Catalog reads do not consume the weekly per-user Situations allowance. Starts use
+`/ws/conversation` and its existing protections below, with the additional feature quota defined in
+`subscriptions-freemium.instructions.md`.
+
 ## Listening and Reading
 
 Both domains use:
 
 - `GET /api/{domain}/next`: `60/minute`.
 - `POST /api/{domain}/generate`: `5/minute`.
+- `POST /api/{domain}/started`: `20/minute`.
 - `POST /api/{domain}/attempt`: `20/minute`.
+- `POST /api/{domain}/attempts/{attempt_id}/questions/{question_index}/explanation`: `10/minute`, including cache hits.
 - history and Listening audio retrieval: `60/minute`.
 
 Generation status uses immediate `/next` responses and non-overlapping client queries every ten
 seconds. The read budget allows this cadence with headroom for shared IPs. Clients back off on 429
 and honor `Retry-After` when present; generation itself remains limited to `5/minute`.
+
+## Analytics
+
+- `POST /api/analytics/ui`: `60/minute`.
+- `POST /api/analytics/public`: `30/minute`.
+
+Assessment and comprehension start-signal limits are listed with their respective domains above.
+Measurement semantics and delivery rules belong to `umami.instructions.md`.
 
 ## Memories, community, contact, and billing
 
@@ -111,6 +143,8 @@ and honor `Retry-After` when present; generation itself remains limited to `5/mi
 - `DELETE /api/reviews/me`: `10/hour`.
 - `POST /api/admin/dashboard-banner/translate`: `10/minute`.
 - `POST /api/billing/webhook`: `200/minute`.
+- `POST /api/billing/revenuecat/webhook`: `200/minute`.
+- `POST /api/billing/sync` and `POST /api/billing/revenuecat/sync/{user_id}`: `10/minute` each.
 
 ## WebSocket
 

@@ -1,4 +1,276 @@
 {
+  "situations": {
+    "title": "Pratica situações reais",
+    "description": "Escolhe um cenário e pratica por voz com Lingu, que fará o papel da pessoa com quem precisas de falar.",
+    "search": "Pesquisar situações",
+    "allCategories": "Todas as categorias",
+    "noResults": "Nenhuma situação corresponde à tua pesquisa.",
+    "loadError": "Não foi possível carregar as situações.",
+    "retry": "Tentar novamente",
+    "start": "Começar a prática",
+    "unavailable": "Esta situação não está disponível. Tenta novamente.",
+    "back": "Voltar às situações",
+    "contextChanged": "O teu contexto de estudo mudou. Atualiza a página e volta a iniciar a prática.",
+    "categories": {
+      "daily_life": "Vida quotidiana",
+      "travel": "Viagens",
+      "shopping_services": "Compras e serviços",
+      "social": "Vida social",
+      "work": "Trabalho"
+    },
+    "items": {
+      "bakery_purchase": {
+        "title": "Comprar numa padaria",
+        "description": "Lingu será o funcionário da padaria. Pede pão ou algo para o pequeno-almoço, indica a quantidade e pergunta o preço."
+      },
+      "clothes_shopping": {
+        "title": "Comprar roupa",
+        "description": "Fala com Lingu como funcionário da loja. Pede o teu tamanho e a cor que preferes, e pergunta se podes experimentar uma peça."
+      },
+      "cafe_order": {
+        "title": "Pedir num café",
+        "description": "Lingu será o empregado de mesa. Pede uma bebida e algo para comer."
+      },
+      "haircut_appointment": {
+        "title": "Ir ao cabeleireiro",
+        "description": "Lingu será o teu cabeleireiro. Pede um corte simples e explica como gostarias de ficar."
+      },
+      "supermarket_help": {
+        "title": "Pedir ajuda no supermercado",
+        "description": "Pergunta a Lingu, que será um funcionário do supermercado, onde encontrar os produtos de que precisas."
+      },
+      "buy_ticket": {
+        "title": "Comprar um bilhete",
+        "description": "Lingu estará na bilheteira. Indica o teu destino e pergunta pelos horários e pelo preço do bilhete."
+      },
+      "hotel_check_in": {
+        "title": "Chegar ao hotel",
+        "description": "Lingu será o rececionista. Confirma a tua reserva e pede informações básicas para a estadia."
+      },
+      "taxi_ride": {
+        "title": "Chamar um táxi",
+        "description": "Telefona a Lingu na central de táxis. Indica onde te devem ir buscar e o destino, e pergunta quanto tempo demora."
+      },
+      "collect_key": {
+        "title": "Recolher uma chave",
+        "description": "Recolhe a chave do teu apartamento de férias com Lingu como anfitrião. Pergunta como entrar no alojamento."
+      },
+      "local_recommendations": {
+        "title": "Perguntar o que visitar",
+        "description": "Lingu será uma pessoa da zona. Fala dos teus gostos e pede sugestões de locais a visitar."
+      },
+      "congratulate_friend": {
+        "title": "Dar os parabéns a alguém",
+        "description": "Lingu será um amigo. Dá-lhe os parabéns pelo aniversário ou por uma boa notícia e conversem um pouco."
+      },
+      "hobbies_chat": {
+        "title": "Falar de passatempos",
+        "description": "Conversa com Lingu como amigo sobre o que gostam de fazer e descubram interesses em comum."
+      },
+      "family_chat": {
+        "title": "Falar da tua família",
+        "description": "Conta um pouco sobre a tua família a Lingu, que será um conhecido, e pergunta pela dele."
+      },
+      "invite_friend": {
+        "title": "Convidar um amigo",
+        "description": "Convida Lingu como amigo para comer ou beber algo e combinem uma hora."
+      },
+      "choose_gift": {
+        "title": "Escolher um presente",
+        "description": "Escolhe um presente em conjunto com Lingu como amigo. Falem dos gostos de quem o vai receber e decidam o que comprar."
+      },
+      "late_arrival": {
+        "title": "Avisar que vais chegar atrasado",
+        "description": "Avisa Lingu, que será um colega de trabalho, do teu atraso e indica a hora aproximada de chegada."
+      },
+      "work_update": {
+        "title": "Contar em que estás a trabalhar",
+        "description": "Conta a Lingu como colega de trabalho que tarefa habitual estás a fazer e como está a correr."
+      },
+      "arrange_meeting": {
+        "title": "Organizar uma reunião",
+        "description": "Lingu será um colega de trabalho. Combinem um dia e uma hora que vos deem jeito para uma reunião."
+      },
+      "colleague_help": {
+        "title": "Pedir ajuda a um colega",
+        "description": "Pede ajuda a Lingu como colega de trabalho. Explica de que precisas e pede orientação."
+      },
+      "break_chat": {
+        "title": "Conversar durante uma pausa",
+        "description": "Conversa sobre assuntos leves com Lingu como colega de trabalho durante uma pausa."
+      },
+      "recount_day": {
+        "title": "Contar como correu o teu dia",
+        "description": "Conta a Lingu como amigo o que fizeste hoje e algo que te aconteceu."
+      },
+      "weather_chat": {
+        "title": "Falar do tempo",
+        "description": "Conversa com Lingu como vizinho sobre o tempo que faz e os vossos planos."
+      },
+      "daily_routine": {
+        "title": "Falar da tua rotina",
+        "description": "Lingu será um conhecido. Descreve o teu dia habitual e pergunta pela rotina dele."
+      },
+      "household_chores": {
+        "title": "Organizar as tarefas de casa",
+        "description": "Lingu será uma pessoa com quem partilhas casa. Dividam as tarefas domésticas e combinem quando fazê-las."
+      },
+      "plan_dinner": {
+        "title": "Preparar um jantar",
+        "description": "Decide o que cozinhar com Lingu como colega de casa. Falem dos ingredientes que têm e dos que faltam."
+      },
+      "medical_appointment": {
+        "title": "Marcar uma consulta",
+        "description": "Telefona para uma clínica. Lingu estará na receção: explica o motivo da consulta e combina uma data."
+      },
+      "neighbour_problem": {
+        "title": "Falar com um vizinho",
+        "description": "Lingu será o teu vizinho. Explica um incómodo que sentes em casa e procurem uma solução com respeito mútuo."
+      },
+      "flat_viewing": {
+        "title": "Visitar um apartamento",
+        "description": "Visita um apartamento com Lingu como agente imobiliário. Pergunta pela renda, pelas despesas e pelas condições."
+      },
+      "school_meeting": {
+        "title": "Uma reunião na escola",
+        "description": "Lingu será o professor do teu filho. Conversem sobre a organização escolar e combinem formas de apoiar a aprendizagem."
+      },
+      "household_repair": {
+        "title": "Marcar uma reparação",
+        "description": "Descreve uma avaria em casa a Lingu, que será o técnico. Pergunta pelo custo e combina uma visita."
+      },
+      "change_reservation": {
+        "title": "Alterar uma reserva",
+        "description": "Fala com Lingu no serviço de reservas. Explica o que precisas de alterar e confirma as novas condições."
+      },
+      "hotel_problem": {
+        "title": "Um problema no hotel",
+        "description": "Lingu estará na receção. Explica um problema com o teu quarto e pede uma solução adequada."
+      },
+      "ask_directions": {
+        "title": "Pedir indicações",
+        "description": "Pergunta a Lingu, que será uma pessoa da zona, como chegar ao teu destino e confirma o percurso."
+      },
+      "missed_connection": {
+        "title": "Perder uma ligação",
+        "description": "Perdeste uma ligação. Fala com Lingu no balcão de transportes para encontrar outra forma de chegar ao destino."
+      },
+      "lost_luggage": {
+        "title": "Bagagem perdida",
+        "description": "A tua mala não chegou. Descreve-a a Lingu no balcão de bagagens e pergunta como a podes recuperar."
+      },
+      "return_purchase": {
+        "title": "Devolver uma compra",
+        "description": "Explica a Lingu, que será funcionário da loja, por que queres devolver um produto e pergunta pelo reembolso."
+      },
+      "restaurant_order": {
+        "title": "Pedir num restaurante",
+        "description": "Lingu será o empregado de mesa. Pergunta pelos pratos, explica as tuas preferências e faz o pedido."
+      },
+      "phone_contract": {
+        "title": "Escolher um tarifário móvel",
+        "description": "Fala com Lingu como assistente de uma operadora. Compara tarifários e esclarece custos e condições antes de decidir."
+      },
+      "bank_appointment": {
+        "title": "Uma reunião no banco",
+        "description": "Lingu será um funcionário do banco. Explica o que precisas de tratar e pergunta pelos documentos e pelos próximos passos."
+      },
+      "delivery_problem": {
+        "title": "Um problema com uma entrega",
+        "description": "Contacta Lingu no apoio ao cliente. Explica o problema com a tua encomenda e combinem uma solução."
+      },
+      "meet_someone": {
+        "title": "Conhecer alguém",
+        "description": "Lingu será alguém que acabaste de conhecer num encontro. Apresenta-te e descubram interesses em comum."
+      },
+      "make_plans": {
+        "title": "Combinar uma saída",
+        "description": "Organiza uma saída com Lingu como amigo. Sugere atividades e combinem onde e quando se encontrar."
+      },
+      "decline_invitation": {
+        "title": "Recusar um convite",
+        "description": "Lingu será um amigo que te convida para sair. Recusa com simpatia e sugere outra ocasião."
+      },
+      "resolve_misunderstanding": {
+        "title": "Esclarecer um mal-entendido",
+        "description": "Esclarece com Lingu, que será um amigo, uma mensagem mal interpretada e retomem uma conversa tranquila."
+      },
+      "host_visitors": {
+        "title": "Receber visitas",
+        "description": "Lingu será uma visita em tua casa. Dá-lhe as boas-vindas, oferece uma bebida e explica os planos."
+      },
+      "introduce_yourself": {
+        "title": "Apresentar-te à equipa",
+        "description": "Lingu será um novo colega de trabalho. Apresenta-te, explica a tua função e faz perguntas sobre a equipa."
+      },
+      "explain_task": {
+        "title": "Explicar uma tarefa",
+        "description": "Explica uma tarefa a Lingu como colega de trabalho. Descreve os passos e confirma que ficou tudo claro."
+      },
+      "clarify_instructions": {
+        "title": "Esclarecer instruções",
+        "description": "Lingu será o teu responsável. Faz perguntas sobre instruções pouco claras e confirma o que deves fazer."
+      },
+      "negotiate_deadline": {
+        "title": "Negociar um prazo",
+        "description": "Fala com Lingu como responsável de projeto. Explica uma dificuldade e combinem um prazo realista."
+      },
+      "share_proposal": {
+        "title": "Apresentar uma proposta",
+        "description": "Apresenta uma ideia de melhoria a Lingu como colega de equipa. Explica as vantagens e responde às perguntas."
+      }
+    }
+  },
+  "grammarPractice": {
+    "retryCreation": "Repetir o pedido original",
+    "voiceAction": "Praticar este tema de gramática por voz",
+    "voiceDescription": "Inicia uma conversa por voz com Lingu sobre este tema e os teus exercícios concluídos. É necessário acesso ao microfone e aplicam-se os limites de utilização de voz.",
+    "title": "Prática de gramática",
+    "description": "Guarda temas dos Recursos e pratica em séries de cinco: três perguntas de escolha múltipla e duas de preencher espaços. O progresso é guardado; não são atribuídos XP.",
+    "add": "Praticar",
+    "back": "Voltar à prática de gramática",
+    "voiceUnavailable": "Esta prática de gramática não está disponível.",
+    "noPlan": "Precisas de um plano ativo neste idioma para adicionar temas ou gerar exercícios. As sessões guardadas continuam disponíveis.",
+    "assessment": "Criar um plano de estudo",
+    "contextChanged": "O teu contexto de estudo mudou. Atualiza e tenta novamente de forma explícita.",
+    "explore": "Explorar gramática",
+    "empty": "A tua biblioteca de prática está vazia. Escolhe um tema nos recursos de Gramática.",
+    "answered": "{count} respondidas",
+    "accuracy": "{percent}% de acerto",
+    "lastPracticed": "Última prática",
+    "never": "Ainda não",
+    "theory": "Ver teoria",
+    "continue": "Continuar sessão",
+    "recover": "Recuperar sessão",
+    "generate": "Gerar cinco exercícios",
+    "history": "Histórico de sessões",
+    "noHistory": "Ainda não há sessões.",
+    "score": "{correct}/{answered} corretas",
+    "generating": "A preparar exercícios…",
+    "ready": "Pronta para continuar",
+    "completed": "Prática concluída",
+    "failed": "A geração falhou",
+    "abandoned": "Sessão abandonada",
+    "recoveryError": "Não foi possível confirmar o estado guardado. Tenta novamente para o recuperar sem reenviar a resposta.",
+    "another": "Outra série",
+    "correct": "Correto",
+    "incorrect": "Não exatamente",
+    "yourAnswer": "A tua resposta",
+    "solution": "Resposta correta",
+    "abandon": "Abandonar sessão",
+    "abandonDescription": "Fechar esta sessão? As respostas guardadas ficam no histórico. A quota de geração não é devolvida.",
+    "choose": "Escolhe uma resposta",
+    "fillBlank": "Preenche o espaço",
+    "check": "Verificar resposta"
+  },
+  "questionExplanation": {
+    "show": "Porquê esta resposta",
+    "hide": "Ocultar explicação",
+    "loading": "A preparar a explicação...",
+    "error": "A explicação não está disponível. Tenta novamente.",
+    "evidence": "Excerto do texto original",
+    "language": "Explicação em {language}"
+  },
   "landing": {
     "freeTrialNote": "Acesso Premium inicial ao se cadastrar, sem cartão. Depois, continue grátis com limites se não assinar.",
     "modes": {
@@ -42,7 +314,7 @@
       },
       "languages": {
         "question": "Quais idiomas posso aprender?",
-        "answer": "Inglês britânico e americano, espanhol, italiano, português, alemão, francês, japonês, coreano e chinês continental. Você pode aprender vários ao mesmo tempo, com planos e progresso separados para cada idioma."
+        "answer": "{languages}. Você pode aprender vários ao mesmo tempo, com planos e progresso separados para cada idioma."
       },
       "start": {
         "question": "Como começo a aprender?",
@@ -92,12 +364,22 @@
     "footerProduct": "Produto",
     "footerLegal": "Legal",
     "languageGreetings": {
+      "ru-RU": "Привет!",
+      "sv-SE": "Hej!",
+      "da-DK": "Hej!",
+      "cs-CZ": "Ahoj!",
+      "hr-HR": "Bok!",
+      "fi-FI": "Hei!",
+      "ro-RO": "Bună!",
       "en-US": "Hello!",
       "en-GB": "Hello!",
       "de-DE": "Hallo!",
+      "pl-PL": "Cześć!",
       "es-ES": "¡Hola!",
       "fr-FR": "Bonjour !",
       "it-IT": "Ciao!",
+      "pt-BR": "Oi!",
+      "nl-NL": "Hallo!",
       "pt-PT": "Olá!",
       "ja-JP": "こんにちは！",
       "ko-KR": "안녕하세요!",
@@ -181,7 +463,7 @@
     "failed": "Falha na geração",
     "abandoned": "Partida abandonada",
     "generatingDescription": "O Lingu está a preparar e a rever cinco desafios. Podes sair desta página e voltar depois.",
-    "failedDescription": "Não foi possível preparar uma partida válida. Não foi consumida quota de jogos. Volta ao menu para tentar novamente.",
+    "failedDescription": "Não foi possível preparar a partida. Não conta para o teu limite de jogos. Volta ao menu para tentar novamente.",
     "contextChanged": "O teu contexto de aprendizagem mudou ou este modo está indisponível. Atualiza antes de começar.",
     "challenge": "Desafio {current} de {total}",
     "detect": "Seleciona o fragmento que contém o erro.",
@@ -242,23 +524,28 @@
     "goToPlan": "Ir para o meu plano"
   },
   "nav": {
+    "situations": "Situações do dia a dia",
+    "practiceGrammar": "Prática de gramática",
+    "learning": "Meu aprendizado",
+    "practice": "Praticar",
+    "help": "Ajuda",
     "games": "Jogos",
     "home": "Início",
     "myPlan": "Meu plano",
     "progress": "Progresso",
     "flashcards": "Cartões",
-    "tutor": "Chat com tutor",
-    "assessment": "Avaliação",
+    "tutor": "Chat com Lingu",
+    "assessment": "Avaliação de nível",
     "resources": "Recursos",
     "grammar": "Gramática",
     "vocabulary": "Vocabulário",
     "phrasebook": "Frases",
     "settings": "Configurações",
-    "faq": "FAQ",
+    "faq": "Perguntas frequentes",
     "admin": "Admin",
-    "conversation": "Conversa",
-    "listening": "Listening",
-    "reading": "Reading",
+    "conversation": "Conversa por voz",
+    "listening": "Compreensão oral",
+    "reading": "Leitura",
     "contact": "Contato",
     "feedback": "Feedback",
     "reviews": "Avaliações",
@@ -349,6 +636,13 @@
       "backToLogin": "Voltar ao login"
     }
   },
+  "accountDeletion": {
+    "cancellationRequired": "Antes de eliminar esta conta, o titular deve cancelar a renovação na gestão da subscrição. Eliminar a conta não cancela a subscrição.",
+    "checkoutPending": "Existe uma compra pendente ou ainda não é possível confirmar o seu estado. Resolva esta situação antes de eliminar a conta. Nenhuma compra foi cancelada automaticamente.",
+    "verificationUnavailable": "Não foi possível verificar o estado de faturação. A conta não foi eliminada. Tente novamente mais tarde.",
+    "failed": "Não foi possível eliminar a conta. Tente novamente.",
+    "manageSubscription": "Gerir subscrição"
+  },
   "settings": {
     "title": "Configurações",
     "sectionAccount": "Conta",
@@ -411,9 +705,12 @@
     "deleteAccountMessage": "Esta ação excluirá permanentemente sua conta e todos os seus dados. Esta ação não pode ser desfeita.",
     "deleteAccountConfirm": "Excluir conta",
     "sectionUsageLimits": "Limites de uso",
-    "sectionVoice": "Voz",
-    "voiceHint": "Escolha a voz de Lingu e clique em reproduzir para a ouvir.",
-    "voicePlay": "Reproduzir",
+    "sectionVoice": "A voz do Lingu",
+    "voiceFemale": "Voz feminina",
+    "voiceMale": "Voz masculina",
+    "voiceHint": "Escolha como quer ouvir o Lingu.",
+    "voiceCharacter": "Calorosa e próxima",
+    "voicePlay": "Ouvir",
     "voiceStop": "Parar",
     "quotaSessions": "Sessões / semana",
     "quotaMinutesDay": "Minutos / dia",
@@ -456,7 +753,7 @@
     "cardSessionSecurity": "Sessão e segurança",
     "cardTheme": "Tema",
     "cardConversationTiming": "Tempos de conversa",
-    "cardTutorVoice": "Voz do tutor",
+    "cardTutorVoice": "A voz do Lingu",
     "cardCurrentUsage": "Utilização atual",
     "cardProductReview": "Avaliação do produto",
     "cardLegalDocuments": "Documentos legais",
@@ -490,9 +787,9 @@
       "s4Title": "4. Conteúdo e interações com IA",
       "s4Body": "As conversas com o tutor de IA são armazenadas no banco de dados para continuidade do aprendizado. No serviço hospedado, o chat e os recursos de voz são processados via API da OpenAI, e seu conteúdo está sujeito às políticas de uso da OpenAI. A IA pode produzir respostas imprecisas — aplique sempre seu próprio julgamento. FreeLingo não é responsável pelo conteúdo gerado pelos modelos de linguagem subjacentes. O conteúdo gerado pelo tutor de IA (exercícios, correções, explicações e outros materiais) pertence a você para uso pessoal. FreeLingo não reivindica propriedade sobre suas conversas nem sobre o conteúdo gerado a partir delas.",
       "s5Title": "5. Modalidades do serviço",
-      "s5Body": "As implantações auto-hospedadas são gratuitas e o operador mantém controle total sobre seus dados e infraestrutura. O serviço hospedado operado pela equipe FreeLingo oferece um plano gratuito com limites de uso e assinaturas pagas para acesso ilimitado, disponíveis em ciclo de cobrança mensal ou anual. O plano gratuito inclui um período experimental de 7 dias com acesso completo (sem necessidade de método de pagamento) e, posteriormente, quotas diárias limitadas para lições e chat com IA, mais quotas semanais para exercícios de compreensão oral, leitura e conversas por voz. As assinaturas pagas removem todos os limites de uso desses recursos. No serviço hospedado, seus dados são armazenados em servidores operados pela equipe FreeLingo. Os limites de uso atuais da sua conta estão disponíveis no seu painel.",
+      "s5Body": "As implantações auto-hospedadas são gratuitas e o operador mantém controle total sobre seus dados e infraestrutura. O serviço hospedado operado pela equipe FreeLingo oferece um plano gratuito com limites de uso e assinaturas pagas para acesso Premium, disponíveis em ciclo de cobrança mensal ou anual. O plano gratuito tem quotas diárias limitadas para lições e chat com IA, mais quotas semanais para exercícios de compreensão oral, leitura e conversas por voz. Quando disponibilizado, o período experimental inicial dá acesso Premium sem método de pagamento durante o período indicado na sua conta. As assinaturas pagas e o período experimental removem as quotas do plano gratuito, mas mantêm-se os limites gerais da conta, incluindo os de utilização de IA e conversas por voz. No serviço hospedado, seus dados são armazenados em servidores operados pela equipe FreeLingo. Os limites de uso atuais da sua conta estão disponíveis no seu painel.",
       "s6Title": "6. Assinatura e faturamento",
-      "s6Body": "O plano gratuito oferece acesso limitado às funções de IA com um período experimental completo de 7 dias para novos utilizadores. As assinaturas pagas são mensais ou anuais e renovam automaticamente salvo cancelamento prévio. Pode cancelar nas configurações, com efeito no fim do período atual. O operador também pode cancelar renovações ou assinaturas se o serviço for alterado ou encerrado. Se o serviço terminar antes de um período já pago, aplica-se o reembolso exigido pela legislação de consumo.",
+      "s6Body": "O plano gratuito oferece acesso limitado às funções de IA e, quando disponibilizado, um período experimental inicial de acesso Premium para novos utilizadores sem método de pagamento, durante o período indicado na sua conta. O Premium remove as quotas do plano gratuito; mantêm-se os limites gerais da conta, incluindo durante o período experimental. As assinaturas pagas são mensais ou anuais e renovam automaticamente salvo cancelamento prévio. Pode cancelar nas configurações, com efeito no fim do período atual. O operador também pode cancelar renovações ou assinaturas se o serviço for alterado ou encerrado. Se o serviço terminar antes de um período já pago, aplica-se o reembolso exigido pela legislação de consumo.",
       "s7Title": "7. Disponibilidade",
       "s7Body": "O serviço hospedado é fornecido sem garantias de continuidade ou disponibilidade. O operador pode alterá-lo, suspendê-lo ou encerrá-lo a qualquer momento por razões técnicas, económicas ou outras. Sempre que razoavelmente possível, encerramentos planeados serão anunciados na aplicação ou por e-mail. Após a data anunciada, contas e dados operacionais podem ser eliminados sem recuperação. O FreeLingo não oferece serviço de cópia de segurança nem ferramenta automática de exportação.",
       "s8Title": "8. Limitação de responsabilidade",
@@ -599,16 +896,16 @@
     "performanceNeedsPractice": "Precisa praticar",
     "performanceInProgress": "Em progresso",
     "performanceStrong": "Forte",
-    "premiumBannerTitle": "Desbloqueie conversa, listening e reading",
+    "premiumBannerTitle": "Pratique mais conversação, compreensão oral e leitura",
     "premiumBannerDesc": "Comece com teste grátis e pratique com Lingu por texto, voz e exercícios adaptados ao seu nível.",
-    "premiumBannerDescTrialUsed": "Ative Premium para desbloquear chat com Lingu, conversa por voz, reading e listening.",
+    "premiumBannerDescTrialUsed": "Ative o Premium para praticar mais no chat com Lingu, em conversas por voz, leitura e compreensão oral.",
     "premiumBannerCta": "Teste grátis",
     "premiumBannerCtaTrialUsed": "Ver planos",
     "premiumBannerPastDueTitle": "Pagamento pendente",
     "premiumBannerPastDueDesc": "Atualize o seu método de pagamento para recuperar o acesso Premium a chat, conversa por voz, reading e listening.",
     "premiumBannerPastDueCta": "Recuperar Premium",
     "freemiumTrialTitle": "{days, plural, one {# dia de teste gratuito} other {# dias de teste gratuito}}",
-    "freemiumTrialDesc": "Desfrute de acesso ilimitado a chat, voz, listening e reading. Experimente tudo o Premium gratuitamente.",
+    "freemiumTrialDesc": "Experimente gratuitamente o acesso Premium ao chat, à voz, à compreensão oral e à leitura. Mantêm-se os limites gerais da sua conta.",
     "announcementDismiss": "Fechar anúncio",
     "announcementDismissError": "Não foi possível fechar o anúncio. Tente novamente."
   },
@@ -757,6 +1054,7 @@
     "generatingError": "Falha ao gerar aula",
     "loading": "Carregando plano...",
     "learningRoadmap": "Roteiro de aprendizado",
+    "progressSummary": "{completed} de {total} lições concluídas",
     "level": "Nível",
     "duration": "Duração",
     "durationDetail": "{weeks} semanas · {days} dias/semana",
@@ -815,7 +1113,7 @@
     "feedback": "Feedback",
     "corrections": "Correções",
     "completeLesson": "Concluir aula",
-    "completing": "Concluindo...",
+    "completing": "Salvando seu progresso e preparando a próxima lição...",
     "relatedGrammar": "Gramática relacionada",
     "explanation": "Explicação",
     "exercises": "Exercícios",
@@ -828,7 +1126,14 @@
     "showNativeExplanation": "Ver em",
     "hint": "Pista",
     "showNativeHint": "Ver pista em",
+    "showQuestionTranslation": "Ver tradução da pergunta em {language}",
+    "hideQuestionTranslation": "Ocultar tradução da pergunta",
+    "translatingQuestion": "A traduzir a pergunta...",
+    "questionTranslationError": "Não foi possível traduzir a pergunta. Tenta novamente.",
+    "retryQuestionTranslation": "Tentar traduzir a pergunta novamente",
     "regenerateExercise": "Regenerar exercício",
+    "listeningIncomplete": "Este exercício de compreensão oral está incompleto. Regenera-o antes de responder.",
+    "listeningUnavailable": "O áudio não está disponível para este exercício guardado. A tua resposta e pontuação são preservadas.",
     "regeneratingExercise": "A regenerar...",
     "regenerateError": "Não foi possível regenerar o exercício. Tenta novamente.",
     "regenerateNotNeeded": "Este exercício não precisa de ser regenerado.",
@@ -1277,6 +1582,12 @@
   "faq": {
     "title": "FAQ",
     "subtitle": "Perguntas frequentes",
+    "sectionGettingStarted": "Primeiros passos e idiomas",
+    "sectionPractice": "Recursos e prática",
+    "sectionLingu": "Conversas com Lingu",
+    "sectionSubscription": "Planos e limites de utilização",
+    "sectionAccount": "Conta e ajuda",
+    "sectionAdmin": "Administração",
     "q_start": "Por onde começo?",
     "a_start": "Selecione o idioma que quer aprender e abra a <strong>Avaliação</strong> para estimar o seu nível. Se começar do zero, pode escolher A1 sem fazer o teste. Confirme o nível e a duração para criar o seu <strong>Plano de Estudo</strong> para esse idioma.",
     "q_workflow": "Qual é o fluxo de trabalho completo?",
@@ -1287,7 +1598,7 @@
     "workflowStep5": "Use os Cartões para treinar vocabulário em paralelo",
     "workflowStep6": "Pratique a conversação livre com Lingu",
     "q_language": "Que idioma vou aprender?",
-    "a_language": "O FreeLingo suporta atualmente vários idiomas (alemão, chinês continental, coreano, espanhol, francês, inglês americano, inglês britânico, italiano, japonês, português) e continuaremos a adicionar mais ao longo do tempo. Quando um novo idioma estiver disponível, encontrá-lo-á em Definições → Os meus idiomas — adicione-o e comece a aprender de imediato.",
+    "a_language": "O FreeLingo suporta atualmente vários idiomas ({languages}) e continuaremos a adicionar mais ao longo do tempo. Quando um novo idioma estiver disponível, encontrá-lo-á em Definições → Os meus idiomas — adicione-o e comece a aprender de imediato.",
     "q_assessment": "O que é a Avaliação?",
     "a_assessment": "Um teste adaptativo com até 15 perguntas de um banco específico do idioma de estudo. Abrange gramática, vocabulário e compreensão de leitura de A1 a C2. O resultado estima o seu nível QECR e identifica pontos fortes e aspetos a melhorar; pode ajustar o nível sugerido antes de criar o plano.",
     "q_studyPlan": "O que é o Plano de Estudo e como o gero?",
@@ -1301,11 +1612,11 @@
     "q_tutor": "Como posso praticar com Lingu?",
     "a_tutor": "Lingu adapta as respostas ao idioma de estudo ativo e ao contexto do seu plano. Faça perguntas de gramática, peça explicações, pratique a escrita nesse idioma ou converse. As conversas são guardadas por idioma e podem ser retomadas no histórico.",
     "q_voice": "Como funciona a conversa por voz?",
-    "a_voice": "O modo <strong>Conversa por voz</strong> permite falar com Lingu em tempo real. Pressione Iniciar para começar — a aplicação deteta a sua voz automaticamente usando deteção de atividade de voz (VAD) e o tutor responde com síntese de voz. Pode interromper o tutor a qualquer momento (barge-in). A sessão termina quando atinge o limite de tempo ou pressiona Parar. Certifique-se de que o browser tem permissão para aceder ao microfone.",
+    "a_voice": "Em <strong>Conversa por voz</strong>, prima Iniciar sessão e permita o acesso ao microfone. A aplicação deteta quando fala e Lingu responde com áudio. Espere que Lingu termine antes de voltar a falar: falar ao mesmo tempo que o tutor não interrompe a resposta. Em <settingsLink>Configurações</settingsLink>, pode ajustar a pausa antes de enviar a sua intervenção, a duração da sessão e o tempo de inatividade. A sessão termina quando prime Parar ou atinge um dos limites aplicáveis.",
     "q_listening": "Como funcionam os exercícios de listening?",
-    "a_listening": "Em <strong>Listening</strong>, Lingu prepara exercícios de compreensão auditiva adaptados ao seu nível CEFR. Ouça o áudio e responda a 5 perguntas de compreensão. Após enviar, obtém a sua pontuação (0–5), XP, respostas corretas e a transcrição completa. Pode gerar novos exercícios a pedido.",
+    "a_listening": "Em <strong>Compreensão oral</strong>, Lingu prepara exercícios de escuta adaptados ao seu nível QECR. Ouça o áudio e responda a 5 perguntas de compreensão. Após enviar, pode consultar a sua pontuação (0–5), os XP obtidos, as respostas corretas e a transcrição completa. Selecione <strong>Porquê esta resposta</strong> para pedir uma explicação no seu idioma nativo, acompanhada de um excerto da transcrição que a justifica. Pode pedir novos exercícios dentro dos limites de utilização da sua conta.",
     "q_reading": "Como funcionam os exercícios de reading?",
-    "a_reading": "A secção de <strong>Reading</strong> gera textos no seu nível CEFR — avisos, e-mails, artigos, publicações de blog e mais. Leia o texto e responda a 5 perguntas de escolha múltipla. Após enviar, obtém a sua pontuação (0–5) e XP. Podem ser gerados novos exercícios a pedido.",
+    "a_reading": "Em <strong>Leitura</strong>, Lingu prepara textos adequados ao seu nível QECR, como avisos, e-mails e artigos. Leia o texto e responda a 5 perguntas de escolha múltipla. Após enviar, pode consultar a sua pontuação (0–5), os XP obtidos e as respostas corretas. Selecione <strong>Porquê esta resposta</strong> para pedir uma explicação no seu idioma nativo, acompanhada de um excerto do texto que a justifica. Pode pedir novos exercícios dentro dos limites de utilização da sua conta.",
     "q_providers": "Que fornecedores de IA o FreeLingo suporta?",
     "a_providers_intro": "Configurável em <code>.env</code> via <code>LLM_PROVIDER</code>:",
     "provider_ollama": "Local, gratuito. Requer Ollama em execução no host. Modelo recomendado: gemma4:e4b. Pode ser lento sem GPU.",
@@ -1313,11 +1624,25 @@
     "provider_anthropic": "Anthropic Claude. Requer ANTHROPIC_API_KEY.",
     "provider_deepseek": "API DeepSeek. Requer DEEPSEEK_API_KEY.",
     "q_invite": "Posso convidar outras pessoas?",
-    "a_invite": "Sim. Em <adminLink>Admin → Utilizadores</adminLink> o administrador pode criar utilizadores diretamente ou gerar links de convite de uso único que expiram em 48 horas. O registo público está desativado por padrão (<code>ALLOW_REGISTRATION=false</code>).",
+    "a_invite": "Sim. Em <adminLink>Admin → Utilizadores</adminLink>, os administradores podem criar utilizadores diretamente ou gerar ligações de convite de utilização única que expiram em 48 horas. O registo público depende da configuração <code>ALLOW_REGISTRATION</code> do servidor.",
     "q_password": "Como altero a minha senha ou idioma nativo?",
     "a_password": "Vá a <settingsLink>Definições</settingsLink>. Pode atualizar o seu nome de exibição, idioma nativo e senha a partir daí.",
     "q_uiLanguage": "Como altero o idioma da plataforma?",
-    "a_uiLanguage": "Vá a <settingsLink>Definições</settingsLink> e encontre o menu <strong>Idioma da plataforma</strong> na secção de Perfil. Selecione o seu idioma preferido e toda a interface muda imediatamente.",
+    "a_uiLanguage": "Vá a <settingsLink>Configurações</settingsLink> e procure o menu <strong>Idioma da interface</strong> no seu perfil. Selecione o idioma pretendido e prima <strong>Salvar alterações</strong>. Depois de guardar, a página é recarregada no idioma selecionado. Isto não altera o idioma que está a aprender.",
+    "q_multiLanguage": "Posso aprender vários idiomas sem perder o meu progresso?",
+    "a_multiLanguage": "Sim. Adicione um idioma em <languagesLink>Configurações → Meus idiomas</languagesLink> e use o seletor de idioma para alternar entre eles. Cada idioma mantém o seu próprio plano, progresso, cartões e histórico de conversas. Mudar de idioma não apaga o progresso guardado. As configurações da conta, a subscrição, as quotas de utilização e as memórias de Lingu são partilhadas entre idiomas.",
+    "q_grammarPractice": "Como pratico um tema específico de gramática?",
+    "a_grammarPractice": "Abra um tema em <grammarLink>Recursos → Gramática</grammarLink> e selecione <strong>Praticar</strong> para o adicionar à sua biblioteca pessoal de prática de gramática. Com um plano ativo, pode gerar conjuntos de cinco exercícios: três perguntas de escolha múltipla e duas de preenchimento de espaços. As suas respostas e resultados ficam guardados para poder acompanhar a sua prática. Esta atividade não atribui XP.",
+    "q_games": "Que jogos estão disponíveis e que modo devo escolher?",
+    "a_games": "Em <gamesLink>Jogos</gamesLink>, pode identificar e corrigir erros em Detetive de erros, ordenar fragmentos em Ordena a frase ou associar palavras e significados em Pares de vocabulário. Escolha o modo de revisão para voltar a lições concluídas, o modo de preparação para reforçar conteúdos conhecidos relacionados com a próxima lição ou a prática livre para trabalhar ao nível do seu plano. Os modos sem conteúdo suficiente ficam desativados com uma explicação.",
+    "q_plans": "Qual é a diferença entre o plano gratuito, o Premium e o período de teste?",
+    "a_plans": "O plano gratuito permite aprender com quotas de utilização. O Premium elimina essas quotas do plano gratuito, mas os limites gerais da conta continuam a aplicar-se. Se a sua conta incluir um período de teste inicial sem cartão, pode continuar no plano gratuito quando terminar, sem cobrança automática. Qualquer período de teste oferecido ao subscrever é independente e pode exigir cartão. Consulte o seu estado e as condições atuais da subscrição em <billingLink>Configurações → Plano e subscrição</billingLink>.",
+    "q_quotas": "Porque atingi um limite e quando é renovado?",
+    "a_quotas": "As quotas de utilização pertencem à sua conta e são partilhadas entre os idiomas que aprende. As quotas gratuitas diárias são renovadas às 00:00 UTC; as semanais são renovadas à segunda-feira às 00:00 UTC. Consulte o saldo disponível em cada atividade e os limites gerais da sua conta em <billingLink>Configurações</billingLink>. As funcionalidades exclusivas do Premium não são desbloqueadas por esperar pela renovação de uma quota, e os limites gerais da conta também se aplicam ao Premium e aos períodos de teste.",
+    "q_cancelSubscription": "Como cancelo a renovação da minha subscrição?",
+    "a_cancelSubscription": "Vá a <billingLink>Configurações → Plano e subscrição</billingLink>, selecione <strong>Gerir subscrição</strong> e conclua o cancelamento no portal que se abre. Se cancelar a renovação no final do período atual, mantém o acesso até esse período terminar. Eliminar a conta não cancela as cobranças: deve cancelar primeiro a renovação.",
+    "q_memories": "O que guarda Lingu sobre mim e como posso apagar essa informação?",
+    "a_memories": "Lingu pode guardar detalhes pessoais úteis das conversas de texto e voz para personalizar respostas futuras. Estas memórias são partilhadas entre todos os idiomas que aprende. Em <memoriesLink>Configurações → Memória</memoriesLink>, pode consultá-las, adicionar as suas, eliminar memórias individuais ou apagá-las todas.",
     "q_feedback": "Como posso sugerir uma nova funcionalidade ou reportar um bug?",
     "a_feedback": "Use a secção de <feedbackLink>Feedback</feedbackLink> na barra lateral. Pode criar sugestões de novas funcionalidades ou reportar bugs. Vote nas ideias de outros utilizadores, deixe comentários e acompanhe o estado de cada pedido. Todos os envios são públicos e são revistos pelo administrador."
   },
@@ -1361,14 +1686,14 @@
     "statusSpeaking": "A falar...",
     "statusThinking": "A preparar a resposta...",
     "statusError": "Erro",
-    "errorServicesDisabled": "Os serviços de voz não estão ativados neste servidor.",
+    "errorServicesDisabled": "As conversas por voz não estão disponíveis. Contacte o apoio se precisar de ajuda.",
     "errorConnection": "Erro de ligação. Por favor, tente novamente.",
     "errorTranscription": "Não foi possível transcrever o que disse. Tente falar novamente.",
     "errorResponse": "O Lingu não conseguiu responder. Tente novamente.",
     "errorSpeech": "Não foi possível gerar áudio para a resposta do Lingu. Tente novamente.",
     "errorUnauthorized": "Sessão expirada. Por favor, atualize.",
-    "errorMic": "Acesso ao microfone negado.",
-    "errorVadInit": "Falha ao inicializar o reconhecimento de voz. Verifique se o seu navegador suporta WebAssembly.",
+    "errorMic": "Não conseguimos aceder ao microfone. Verifique as permissões no navegador e tente novamente.",
+    "errorVadInit": "Não foi possível iniciar a conversa por voz. Recarregue a página ou experimente um navegador atualizado.",
     "warningTimeout": "A sessão termina em {seconds}s",
     "sessionEnded": "Sessão terminada",
     "tapToStart": "Fale quando estiver pronto",
@@ -1379,14 +1704,14 @@
     "quotaUnlimited": "Ilimitado",
     "quotaExceededSessions": "Você usou todas as suas sessões desta semana.",
     "quotaExceededTime": "Você usou todo o seu tempo de prática diário.",
-    "quotaExceededTokens": "Você usou todos os seus tokens de IA mensais.",
+    "quotaExceededTokens": "Atingiu o seu limite mensal de utilização de IA. Poderá continuar quando este for renovado.",
     "freemiumVoiceRemaining": "Voz grátis: {remaining}/{limit} min esta semana",
     "quotaTokens": "Tokens este mês",
     "memoryUpdated": "Memória atualizada",
     "trialBanner": "Conversa gratuita após a avaliação · {minutes} min",
     "trialCtaLabel": "Continue a falar",
     "trialCtaTitle": "Continue a praticar com o Lingu",
-    "trialCtaDesc": "Desbloqueie conversas por voz completas, chat com o tutor e exercícios de compreensão oral e leitura com o Premium.",
+    "trialCtaDesc": "Pratique mais com conversas por voz, chat com o tutor e exercícios de compreensão oral e leitura com o Premium.",
     "startersHint": "Ou comece com um tema",
     "starters": [
       "Arte e criatividade",
@@ -1430,6 +1755,8 @@
     "ariaStop": "Parar gravação"
   },
   "audioPlayer": {
+    "ariaPause": "Pausar áudio",
+    "ariaSeek": "Posição do áudio",
     "listen": "Ouvir",
     "stop": "Parar",
     "ariaListen": "Ouvir pronúncia",
@@ -1474,13 +1801,39 @@
     "supportedLanguages": "Idiomas disponíveis"
   },
   "targetLanguages": {
+    "ro-RO": "Romeno (Roménia)",
+    "ro": "Romeno",
+    "ro-RO-description": "Romeno falado na Roménia.",
+    "fi-FI": "Finlandês",
+    "fi": "Finlandês",
+    "fi-FI-description": "Finlandês falado na Finlândia.",
+    "hr-HR": "Croata",
+    "hr": "Croata",
+    "hr-HR-description": "Croata falado na Croácia.",
+    "cs-CZ": "Tcheco",
+    "cs": "Tcheco",
+    "cs-CZ-description": "Tcheco falado na Tchéquia.",
+    "da-DK": "Dinamarquês",
+    "da": "Dinamarquês",
+    "da-DK-description": "Dinamarquês falado na Dinamarca.",
+    "sv-SE": "Sueco",
+    "sv": "Sueco",
+    "sv-SE-description": "Sueco falado na Suécia.",
+    "ru-RU": "Russo",
+    "ru": "Russo",
+    "ru-RU-description": "Russo falado na Rússia, com o alfabeto cirílico.",
+    "nl-NL": "Neerlandês (Países Baixos)",
+    "nl": "Neerlandês",
+    "nl-NL-description": "Neerlandês falado nos Países Baixos.",
     "en-US": "Inglês americano",
     "en-GB": "Inglês britânico",
     "es-ES": "Espanhol",
     "it-IT": "Italiano",
-    "pt-PT": "Português",
+    "pt-BR": "Português do Brasil",
+    "pt-PT": "Português de Portugal",
     "fr-FR": "Francês",
     "de-DE": "Alemão",
+    "pl-PL": "Polaco",
     "ja-JP": "Japonês",
     "ko-KR": "Coreano",
     "zh-CN": "Chinês continental",
@@ -1490,16 +1843,19 @@
     "pt": "português",
     "fr": "francês",
     "de": "alemão",
+    "pl": "Polaco",
     "ja": "japonês",
     "ko": "coreano",
     "zh": "chinês",
     "es-ES-description": "Espanhol falado na Espanha.",
     "it-IT-description": "Italiano falado na Itália.",
+    "pt-BR-description": "Português falado no Brasil.",
     "pt-PT-description": "Português falado em Portugal.",
     "en-US-description": "Inglês falado nos Estados Unidos.",
     "en-GB-description": "Inglês falado no Reino Unido.",
     "fr-FR-description": "Francês falado na França.",
     "de-DE-description": "Alemão falado na Alemanha.",
+    "pl-PL-description": "Polaco como se fala na Polónia.",
     "ja-JP-description": "Japonês falado no Japão.",
     "ko-KR-description": "Coreano falado na Coreia do Sul.",
     "zh-CN-description": "Chinês mandarim da China continental, com caracteres simplificados."
@@ -1527,18 +1883,18 @@
     "trialHeadlineTrialUsed": "Premium",
     "trialTitle": "Comece com {days} dias grátis",
     "trialTitleTrialUsed": "Ativar FreeLingo Premium",
-    "trialDesc": "Aceda ao Lingu, prática de voz, listening e reading antes do primeiro pagamento.",
-    "trialDescTrialUsed": "Escolha um plano para desbloquear Lingu, prática de voz, listening e reading.",
+    "trialDesc": "Experimente o acesso Premium para praticar com Lingu, por voz e com exercícios de compreensão oral e leitura antes do primeiro pagamento.",
+    "trialDescTrialUsed": "Escolha um plano para praticar mais com Lingu, por voz e com exercícios de compreensão oral e leitura.",
     "trialCtaMonthly": "Teste grátis, depois {price} €/mês",
     "trialCtaMonthlyTrialUsed": "Mensal flexível · {price} €/mês",
     "trialCtaYearly": "Teste grátis, depois {price} €/ano · 2 meses grátis",
     "trialCtaYearlyTrialUsed": "Melhor oferta · {price} €/ano · 2 meses grátis",
     "trialSkip": "Continuar com as funções gratuitas",
-    "trialNoCharge": "Sem cobrança hoje. Cartão necessário, cancele quando quiser.",
-    "trialNoChargeTrialUsed": "Reveja o valor antes de subscrever. Cancele quando quiser.",
+    "trialNoCharge": "Ao subscrever, começa um período experimental independente de {days} dias, sem somar os dias restantes do período experimental inicial. É necessário um cartão; a primeira cobrança será no fim, salvo cancelamento prévio.",
+    "trialNoChargeTrialUsed": "A subscrição paga começa ao subscrever. Reveja o valor antes de subscrever. Cancele quando quiser.",
     "trialError": "Não foi possível iniciar o pagamento. Tente novamente.",
     "freemiumTrialTitle": "O teu teste gratuito começou",
-    "freemiumTrialDesc": "Desfruta de acesso ilimitado a todas as funcionalidades durante 7 dias. Sem cartão. Faz upgrade para Premium quando quiseres a partir do painel.",
+    "freemiumTrialDesc": "Durante o período experimental, desfruta de acesso Premium sem cartão. Mantêm-se os limites gerais da tua conta. Subscreve o Premium quando quiseres a partir do painel.",
     "freemiumChatLabel": "Chat com Lingu",
     "freemiumVoiceLabel": "Conversas por voz",
     "freemiumListeningLabel": "Exercícios de audição",
@@ -1592,14 +1948,18 @@
     }
   },
   "billing": {
+    "paywallSituationsTitle": "Continua a praticar situações reais",
+    "paywallSituationsDesc": "Esgotaste as práticas gratuitas de situações desta semana ou esta funcionalidade requer Premium. Com Premium podes praticar mais; mantêm-se os limites gerais de voz.",
+    "paywallGrammarPracticeTitle": "Continua a praticar gramática",
+    "paywallGrammarPracticeDesc": "Esgotaste as séries gratuitas de hoje. Com Premium podes gerar mais; as sessões guardadas continuam disponíveis.",
     "planFreeTrialDesc": "Experimente o acesso Premium ao se cadastrar, sem cartão nem assinatura. Depois, continue grátis com limites de uso.",
     "paywallGamesTitle": "Continua a praticar com jogos",
     "paywallGamesDesc": "Esgotaste as partidas gratuitas ou os jogos requerem Premium. Podes retomar as partidas existentes.",
     "paywallLabel": "Premium necessário",
     "paywallTitle": "Desbloquear FreeLingo Premium",
-    "paywallDesc": "Inicie o teste gratuito de {days} dias e desbloqueie toda a prática Premium antes do primeiro pagamento.",
-    "paywallDescTrialUsed": "Desbloqueie toda a prática Premium e reveja o valor antes de confirmar.",
-    "paywallChatTitle": "Pratique com Lingu sem limites",
+    "paywallDesc": "Inicie o período experimental gratuito de {days} dias e pratique mais com o Premium antes do primeiro pagamento.",
+    "paywallDescTrialUsed": "Pratique mais com o Premium e reveja o valor antes de confirmar.",
+    "paywallChatTitle": "Mais prática com Lingu",
     "paywallChatDesc": "Faça perguntas, receba correções e converse por escrito com Lingu.",
     "paywallLessonsTitle": "Completa lições ilimitadas",
     "paywallLessonsDesc": "Gramática, vocabulário, leitura e escrita — termina quantas lições quiseres todos os dias.",
@@ -1626,7 +1986,7 @@
     "month": "mês",
     "year": "ano",
     "planFeature": {
-      "feature1": "Acesso ilimitado — sem limites diários ou semanais",
+      "feature1": "Sem quotas do plano gratuito; mantêm-se os limites gerais da conta",
       "feature2": "2 meses grátis"
     },
     "planFreeName": "Grátis",
@@ -1635,6 +1995,7 @@
     "ctaRegister": "Começar teste grátis",
     "ctaRegisterTrialUsed": "Escolher plano",
     "freeFeature": {
+      "situations": "Situações por voz",
       "f1": "Teste de nível & avaliação",
       "f2": "Plano de estudo personalizado",
       "lessons": "Conclusão de lições",
@@ -1648,9 +2009,9 @@
       "l4": "Exercícios de leitura",
       "l5": "Teste completo de 7 dias"
     },
-    "successLabel": "Pagamento confirmado",
+    "successLabel": "Subscrição confirmada",
     "successTitle": "Bem-vindo ao FreeLingo Premium!",
-    "successDesc": "A sua subscrição está agora ativa. Aproveite o acesso ilimitado a todas as funcionalidades.",
+    "successDesc": "A sua subscrição está agora ativa. Desfrute de acesso Premium dentro dos limites gerais da sua conta.",
     "successCheckingLabel": "A confirmar subscrição",
     "successCheckingTitle": "A verificar a sua subscrição",
     "successCheckingDesc": "Normalmente demora alguns segundos.",
@@ -1662,12 +2023,12 @@
     "successErrorDesc": "Vá para o painel e atualize daqui a pouco, ou verifique as definições de faturação.",
     "successRedirect": "Redirecionando para o painel em {seconds}s...",
     "successCta": "Ir para o painel",
-    "canceledLabel": "Pagamento cancelado",
-    "canceledTitle": "Nenhuma cobrança foi efetuada",
-    "canceledDesc": "Nada foi cobrado. O seu progresso está seguro e pode escolher um plano mais tarde nas definições.",
+    "canceledLabel": "Processo de subscrição interrompido",
+    "canceledTitle": "Saiu do processo de subscrição",
+    "canceledDesc": "O seu progresso está guardado. Pode consultar a sua subscrição ou escolher um plano nas definições.",
     "canceledCtaDashboard": "Ir para o painel",
     "canceledCtaSettings": "Ver planos",
-    "canceledNoCharge": "Nada foi cobrado nesta sessão · escolha um plano quando quiser",
+    "canceledNoCharge": "Consulte a sua subscrição nas definições",
     "section": "Subscrição",
     "status": "Estado",
     "statusActive": "Ativa",
@@ -1687,7 +2048,7 @@
     "pastDueTitle": "Pagamento pendente",
     "pastDueDesc": "Atualize o seu método de pagamento para recuperar o acesso Premium.",
     "subscribe": "Subscrever",
-    "portalError": "Não foi possível abrir o portal de faturação. Tente novamente.",
+    "portalError": "Não foi possível abrir a gestão da sua subscrição. Tente novamente.",
     "openSourceTitle": "Código aberto",
     "openSourceDesc": "Autoaloje gratuitamente no seu servidor",
     "openSourceCta": "Ver no GitHub",
@@ -1699,7 +2060,47 @@
     "planFreeCta": "Começar",
     "limitedLabel": "Limitado"
   },
+  "premiumOffer": {
+    "navLabel": "Premium",
+    "viewPremium": "Descobrir o Premium",
+    "planSection": "Plano e subscrição",
+    "viewPlans": "Ver planos",
+    "stayFree": "Continuar com o plano gratuito",
+    "expiredTitle": "O teu período de teste Premium terminou",
+    "expiredDescription": "O teu progresso está guardado. Podes continuar a aprender gratuitamente com limites de utilização ou escolher o Premium para praticares mais com o Lingu, lições, jogos, leitura e compreensão oral. Os limites gerais da tua conta continuam a aplicar-se.",
+    "resultTitle": "Continua a progredir com o que aprendeste",
+    "exhaustedTitle": "Continua a praticar com o Premium",
+    "continuePremium": "Continuar com o Premium",
+    "dailyReset": "A tua quota gratuita renova-se todos os dias às 00:00 UTC.",
+    "weeklyReset": "A tua quota gratuita renova-se às segundas-feiras às 00:00 UTC.",
+    "trialResultNote": "O teu período de teste gratuito ainda está ativo. Consulta os planos para quando terminar.",
+    "result": {
+      "situations": "Continua a praticar situações reais por voz com Lingu com Premium.",
+      "voice": "Aproveita esta conversa para continuares a praticar a expressão oral e a receber feedback do Lingu com o Premium.",
+      "lessons": "Com o Premium, continua a concluir lições e a pôr em prática o que aprendeste com o Lingu.",
+      "listening": "Continua a treinar o ouvido com mais exercícios de compreensão oral adequados ao teu nível com o Premium.",
+      "reading": "Continua a melhorar a tua compreensão com mais exercícios de leitura adequados ao teu nível com o Premium.",
+      "games": "Continua a praticar com mais jogos de aprendizagem com o Premium.",
+      "flashcards": "Utiliza as palavras que reviste em conversas com o Lingu. O Premium permite-te praticar mais por chat e por voz."
+    },
+    "benefitsTitle": "O que inclui o Premium",
+    "benefitsDescription": "Continua a praticar sem as quotas do plano gratuito.",
+    "benefitsVoice": "Conversas de voz com o Lingu",
+    "benefitsChat": "Chat escrito com correções e explicações",
+    "benefitsComprehension": "Prática de compreensão escrita e oral",
+    "benefitsLessonsGames": "Conclusão de lições e jogos de aprendizagem",
+    "benefitsLanguages": "Todos os idiomas de aprendizagem disponíveis numa só subscrição",
+    "generalLimits": "Os limites gerais de utilização e de conversa continuam a aplicar-se.",
+    "noCardTrialStatus": "Teste Premium · sem cartão",
+    "noCardTrialDescription": "O teu período de teste Premium dura até {date}, sem cartão nem cobrança automática. Depois, aplicam-se os limites do plano gratuito, a menos que subscrevas.",
+    "monthlyCommitment": "Paga mês a mês, com um compromisso inicial menor.",
+    "yearlyCommitment": "Um único pagamento para o ano inteiro.",
+    "cardTrialTerms": "Ao subscreveres, começa um período de teste independente de {days} dias; não se soma aos dias restantes do teu teste atual. É necessário cartão. Depois, é cobrado o preço do plano escolhido, a menos que canceles antes do fim do período de teste da subscrição.",
+    "paidTerms": "É necessário cartão. A tua subscrição paga começa no momento da compra. Renova-se com a periodicidade escolhida, a menos que canceles."
+  },
   "freemium": {
+    "situationsLabel": "Situações desta semana",
+    "grammarPracticeLabel": "Séries de gramática de hoje",
     "gamesLabel": "Partidas de hoje",
     "chatLabel": "Chat",
     "lessonsLabel": "Lições",
@@ -1708,7 +2109,7 @@
     "voiceLabel": "Voz (min)",
     "freeLimit": "Obter Premium",
     "trialDaysLeft": "{days, plural, one {# dia de teste gratuito} other {# dias de teste gratuito}}",
-    "trialUnlimited": "Acesso ilimitado",
+    "trialUnlimited": "Acesso Premium",
     "requiresSubscription": "Só Premium"
   },
   "lessonPractice": {
@@ -1760,13 +2161,29 @@
   },
   "whatsNew": {
     "title": "Novidades",
-    "version": "v1.10.50",
+    "version": "v1.14.10",
     "cta": "Entendido",
     "entry1": {
-      "label": "Conversas por voz mais fluidas",
-      "desc": "Melhorámos as conversas com o Lingu para uma reprodução de voz mais fluida e indicações mais claras sobre a vez de falar."
+      "label": "Pratica conversas do dia a dia",
+      "desc": "Prepara-te para situações reais com 50 cenários de vida quotidiana, viagens, compras, vida social e trabalho. Pratica por voz com o Lingu, que interpretará o teu interlocutor e adaptará a conversa ao teu nível."
     },
     "entry2": {
+      "label": "O teu plano, passo a passo",
+      "desc": "Meu plano mostra agora a tua aprendizagem como um percurso: consulta o teu progresso, identifica a unidade atual e descobre as próximas etapas. Abre cada unidade para veres as lições, continuares a aprender ou reveres o que já concluíste."
+    },
+    "entry3": {
+      "label": "Pratica gramática ao teu ritmo",
+      "desc": "Adiciona temas dos recursos de Gramática à tua biblioteca pessoal e pratica com séries de cinco exercícios, com correções e explicações. Consulta os teus resultados e, quando terminares, continua a praticar por voz com o Lingu sobre o tema e as tuas respostas."
+    },
+    "entry4": {
+      "label": "Novos idiomas: croata, checo, dinamarquês, finlandês e romeno",
+      "desc": "Adicionámos o croata, o checo, o dinamarquês, o finlandês e o romeno como idiomas de aprendizagem, com conteúdos de A1 a C2. Escolhe-os ao começar ou adiciona-os em Definições → Meus idiomas."
+    },
+    "entry5": {
+      "label": "O Lingu ajuda-te quando precisas",
+      "desc": "Se não perceberes algo durante uma conversa de voz, pede ajuda ao Lingu. Pode explicar-te brevemente na tua língua materna e depois retomar a prática no idioma que estás a aprender."
+    },
+    "entry6": {
       "label": "Uma experiência mais fluida",
       "desc": "Também corrigimos pequenos erros e afinámos alguns detalhes para tornar a tua aprendizagem diária com o FreeLingo ainda mais agradável."
     }
@@ -1785,7 +2202,7 @@
     "errorGeneric": "Falha ao enviar. Por favor, tente novamente."
   },
   "listening": {
-    "title": "Audição",
+    "title": "Compreensão oral",
     "topic": "Tópico",
     "listenLabel": "Ouvir",
     "questionsLabel": "Perguntas",

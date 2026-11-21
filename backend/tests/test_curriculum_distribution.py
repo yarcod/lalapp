@@ -36,6 +36,16 @@ LANGUAGES = (
     "es-ES",
     "fr-FR",
     "it-IT",
+    "pl-PL",
+    "nl-NL",
+    "ru-RU",
+    "sv-SE",
+    "da-DK",
+    "cs-CZ",
+    "hr-HR",
+    "fi-FI",
+    "ro-RO",
+    "pt-BR",
     "pt-PT",
     "ja-JP",
     "ko-KR",
@@ -159,6 +169,20 @@ def test_matrix_invariants(language: str, level: str, weeks: int, days: int) -> 
 # ── T2: the documented modality-coverage policy ───────────────────────────────
 
 
+@pytest.mark.parametrize("level", CEFR_LEVELS)
+def test_polish_schedule_uses_polish_titles_and_objectives(level: str) -> None:
+    _, slots = _slots("pl-PL", level, 8, 5)
+
+    for slot in slots[:-1]:
+        assert slot["title"].startswith(f"{slot['unit_title']} - Lekcja ")
+    assert slots[-1]["unit_title"] == f"Test poziomu {level}"
+    assert slots[-1]["title"] == f"Test poziomu {level}"
+    assert slots[-1]["objectives"] == [
+        "Powtórz wszystkie zagadnienia gramatyczne z tego poziomu",
+        "Ukończ test, aby odblokować kolejny poziom",
+    ]
+
+
 def test_modality_coverage_es_b1_4x5() -> None:
     """maintainer example: 20 slots cannot carry every type in every unit, but
     every declared type is represented somewhere in the plan."""
@@ -167,7 +191,14 @@ def test_modality_coverage_es_b1_4x5() -> None:
     assert [counts[u.id] for u in units] == [3, 3, 3, 2, 2, 2, 2, 2]
 
     unit_owned_types = {s["lesson_type"] for s in slots if s["unit_id"] != COMPLETION_UNIT_ID}
-    assert {"grammar", "vocabulary", "reading", "writing", "review"} <= unit_owned_types
+    assert {
+        "grammar",
+        "vocabulary",
+        "listening",
+        "reading",
+        "writing",
+        "review",
+    } <= unit_owned_types
 
     # The completion test still owns the final coordinate and is not a substitute
     # for a unit review lesson — it resolves to no unit and carries no unit context.
@@ -196,15 +227,18 @@ def test_modality_coverage_zh_cn_b2_12x4() -> None:
     }
 
 
-def test_unit_whose_quota_covers_its_cycle_schedules_every_type() -> None:
-    """12×4 gives every German A2 unit at least a full 5-type cycle."""
-    units, slots = _slots("de-DE", "A2", 12, 4)
+@pytest.mark.parametrize("language", ["de-DE", "es-ES", "fr-FR", "it-IT", "pt-BR", "pt-PT"])
+@pytest.mark.parametrize("level", CEFR_LEVELS)
+def test_unit_whose_quota_covers_its_cycle_schedules_every_type(language, level) -> None:
+    """A full cycle includes listening for every unit of the reviewed curricula."""
+    units, slots = _slots(language, level, 13, 4)
     counts = _unit_counts(slots)
-    assert [counts[u.id] for u in units] == [6, 6, 6, 6, 6, 6, 6, 5]
+    assert [counts[u.id] for u in units] == [7, 7, 7, 6, 6, 6, 6, 6]
 
     for unit in units:
         types = _types_for(slots, unit.id)
         cycle = unit.lesson_types or ["grammar"]
+        assert "listening" in cycle
         assert len(types) >= len(cycle)
         assert set(cycle) <= set(types), f"{unit.id} did not schedule part of its own cycle"
         assert _is_rotation(types, cycle)
@@ -538,6 +572,8 @@ async def test_today_passes_complete_unit_context_to_generate_lesson(
                     {
                         "type": "multiple_choice",
                         "question": "q",
+                        "question_translation": "pregunta",
+                        "question_translation_language": "wrong-model-metadata",
                         "options": ["a", "b"],
                         "correct": "a",
                         "explanation": "e",
@@ -559,6 +595,15 @@ async def test_today_passes_complete_unit_context_to_generate_lesson(
     unit = next(u for u in units if u.id == captured["unit_id"])
     assert captured["grammar_points"] == unit.grammar_points
     assert captured["vocabulary_set_ids"] == unit.vocabulary_set_ids
+
+    lesson_id = resp.json()["lessons"][0]["id"]
+    detail = await client.get(f"/api/lessons/{lesson_id}", headers=headers)
+    assert detail.status_code == 200
+    exercise = detail.json()["exercises"][0]
+    assert exercise["question_translation"] == "pregunta"
+    assert exercise["question_translation_language"] == user.native_language
+    cached = detail.json()["lesson"]["content"]["exercises"][0]
+    assert cached["question_translation_source"] == "q"
 
 
 # ── T7: slot titles stay a safe join key ──────────────────────────────────────

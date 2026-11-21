@@ -109,9 +109,10 @@ function resetForNewSession(): void {
   })
 }
 
-// Loads the profile the first time any consumer needs it, and again when the
-// learner's languages change so tagged_languages follows plan changes.
-export function useEnsureHomeProfile(): void {
+// Loads the profile the first time an enabled consumer needs it, and again when
+// the learner's languages change so tagged_languages follows plan changes. The
+// app layout runs it for every signed-in page (see useHomeSession).
+export function useEnsureHomeProfile(enabled = true): void {
   const loaded = useHomeProfileStore((s) => s.loaded)
   const version = useAuthStore((s) => s.sessionVersion)
   const languages = useLanguageStore((s) => s.userLanguages)
@@ -120,6 +121,7 @@ export function useEnsureHomeProfile(): void {
       if (trackedVersion !== undefined) resetForNewSession()
       trackedVersion = version
     }
+    if (!enabled) return
     if (trackedLanguages !== languages) {
       const changed = trackedLanguages !== UNTRACKED
       trackedLanguages = languages
@@ -131,14 +133,14 @@ export function useEnsureHomeProfile(): void {
     if (loaded || autoLoadStarted) return
     autoLoadStarted = true
     void useHomeProfileStore.getState().load()
-  }, [loaded, version, languages])
+  }, [enabled, loaded, version, languages])
 }
 
 // Tagged replies mix languages line by line, which one read-aloud voice cannot
 // speak. The active language's code and the profile's tagged_languages are both
-// target language codes such as "en-GB", so they compare directly.
+// target language codes such as "en-GB", so they compare directly. It only reads
+// the store: the layout's useHomeSession loads the profile.
 export function useTaggedReplies(languageCode: string | null): boolean {
-  useEnsureHomeProfile()
   return useHomeProfileStore(
     (s) => languageCode !== null && s.taggedLanguages.includes(languageCode)
   )

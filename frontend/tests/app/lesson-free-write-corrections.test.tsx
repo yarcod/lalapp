@@ -18,32 +18,11 @@ vi.mock('next/link', () => ({
   ),
 }))
 vi.mock('next-intl', () => ({
-  useTranslations: () => Object.assign((key: string) => key, { rich: (key: string) => key }),
+  useTranslations: () =>
+    Object.assign((key: string) => key, { rich: (key: string) => key }),
   useLocale: () => 'en',
 }))
 vi.mock('@/lib/api', () => ({ apiFetch: mocks.apiFetch }))
-vi.mock('@/store/auth', () => ({
-  useAuthStore: (selector: (state: object) => unknown) =>
-    selector({ user: { username: 'learner', native_language: 'en' } }),
-  isSubscribed: () => true,
-  isFreemiumTrialActive: () => false,
-}))
-vi.mock('@/store/language', () => ({
-  useLanguageStore: (selector: (state: object) => unknown) =>
-    selector({ activeLanguage: { code: 'de-DE' } }),
-}))
-vi.mock('@/store/config', () => ({
-  useConfigStore: (selector: (state: object) => unknown) =>
-    selector({ stripeEnabled: false }),
-}))
-vi.mock('@/store/freemium', () => ({
-  useFreemiumStore: (selector: (state: object) => unknown) =>
-    selector({ status: null, fetchStatus: vi.fn() }),
-}))
-vi.mock('@/store/progress', () => ({
-  useProgressStore: (selector: (state: object) => unknown) =>
-    selector({ completeLesson: vi.fn() }),
-}))
 vi.mock('@/data/grammar', () => ({
   getGrammarTopics: () => Promise.resolve([]),
 }))
@@ -71,7 +50,9 @@ vi.mock('@/components/ui/WordTooltip', () => ({
     dismissTooltip: vi.fn(),
   }),
 }))
-vi.mock('@/components/ui/page-loading', () => ({ PageLoading: () => null }))
+vi.mock('@/components/ui/page-loading', () => ({
+  PageLoading: ({ label }: { label: string }) => <p role="status">{label}</p>,
+}))
 vi.mock('@/components/reviews/ReviewPrompt', () => ({
   ReviewPrompt: () => null,
   getReviewPromptDismissal: () => ({ count: 0, lastDismissedAt: null }),
@@ -99,6 +80,12 @@ vi.mock('@/components/TargetLanguageText', () => ({
 }))
 
 import LessonPage from '@/app/(app)/lesson/[id]/page'
+import { getLanguageByCode } from '@/lib/target-languages'
+import { useAuthStore } from '@/store/auth'
+import { useConfigStore } from '@/store/config'
+import { useFreemiumStore } from '@/store/freemium'
+import { useLanguageStore } from '@/store/language'
+import { useProgressStore } from '@/store/progress'
 
 const ANSWER = 'Ich habe viele abenteuer gehabt. Ich bin mit auto gefahren.'
 
@@ -215,12 +202,36 @@ function scoreBadge(label: string): HTMLElement {
 describe('LessonPage free-write corrections', () => {
   beforeEach(() => {
     mocks.apiFetch.mockReset()
+    useAuthStore.setState(useAuthStore.getInitialState(), true)
+    useConfigStore.setState(useConfigStore.getInitialState(), true)
+    useFreemiumStore.setState(useFreemiumStore.getInitialState(), true)
+    useLanguageStore.setState(
+      {
+        ...useLanguageStore.getInitialState(),
+        activeLanguage: getLanguageByCode('de-DE') ?? null,
+      },
+      true
+    )
+    useProgressStore.setState(useProgressStore.getInitialState(), true)
+    useAuthStore.getState().startSession('test-session')
+    useAuthStore.getState().setUser({
+      id: 1,
+      username: 'learner',
+      displayName: 'Learner',
+      native_language: 'en',
+      role: 'user',
+      subscription_status: 'active',
+      conversation_max_duration: 300,
+      conversation_inactivity_timeout: 30,
+    })
   })
 
   it('offers voice practice when reviewing a completed lesson', async () => {
     mockApi(lessonDetail({ isCompleted: true }))
     await renderLesson()
-    expect(await screen.findByRole('button', { name: 'action' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('button', { name: 'action' })
+    ).toBeInTheDocument()
   })
 
   it('does not offer lesson practice before completion', async () => {
@@ -235,14 +246,58 @@ describe('LessonPage free-write corrections', () => {
     mocks.apiFetch.mockImplementation((url: string) => {
       if (url === '/api/lessons/1') return Promise.resolve(jsonResponse(detail))
       if (url === '/api/lessons/1/complete') {
-        return Promise.resolve(jsonResponse({ ...detail.lesson, is_completed: true }))
+        return Promise.resolve(
+          jsonResponse({ ...detail.lesson, is_completed: true })
+        )
       }
       return Promise.resolve(new Response(null, { status: 404 }))
     })
     await renderLesson()
-    fireEvent.click(await screen.findByRole('button', { name: 'completeLesson' }))
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'completeLesson' })
+    )
     await screen.findByText('lessonDone')
+    expect(useProgressStore.getState().completedToday).toEqual([1])
     expect(screen.getByRole('button', { name: 'action' })).toBeInTheDocument()
+  })
+
+  it('shows an informative loading state until the next lesson is prepared', async () => {
+    const detail = lessonDetail({ exercise: { user_answer: ANSWER, score: 1 } })
+    let todayCalls = 0
+    let resolveToday!: (value: Response) => void
+    mocks.apiFetch.mockImplementation((url: string) => {
+      if (url === '/api/lessons/1') return Promise.resolve(jsonResponse(detail))
+      if (url === '/api/lessons/1/complete') {
+        return Promise.resolve(
+          jsonResponse({ ...detail.lesson, is_completed: true })
+        )
+      }
+      if (url === '/api/study-plan/today') {
+        todayCalls += 1
+        if (todayCalls > 1) {
+          return new Promise<Response>((resolve) => {
+            resolveToday = resolve
+          })
+        }
+      }
+      return Promise.resolve(new Response(null, { status: 404 }))
+    })
+    await renderLesson()
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'completeLesson' })
+    )
+
+    expect(await screen.findByRole('status')).toHaveTextContent('completing')
+    expect(screen.queryByText('lessonDone')).toBeNull()
+    expect(todayCalls).toBe(2)
+
+    await act(async () => {
+      resolveToday(
+        jsonResponse({ progress_day: 1, total_days: 2, lessons: [] })
+      )
+    })
+    expect(await screen.findByText('lessonDone')).toBeInTheDocument()
+    expect(screen.queryByRole('status')).toBeNull()
   })
 
   it('renders inline annotations, the corrections list and the amber state after evaluation', async () => {

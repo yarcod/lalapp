@@ -10,9 +10,11 @@ applyTo: "backend/app/core/**, backend/app/routers/{auth,assessment,chat,config,
 FreeLingo coordinates account creation, onboarding, CEFR placement, study-plan entry, learning
 activity, progress, flashcards, and tutoring through one authenticated application.
 
-This specification defines the cross-domain user journey and platform invariants. Detailed model,
-endpoint, plan, speech, billing, resource, memory, and multi-language behavior belongs to the linked
-domain specifications rather than being repeated here.
+This specification owns the cross-domain user journey, authentication/session contract, application
+shell, placement interaction, text tutor, and flashcard behavior. Detailed persistence, HTTP payloads,
+plan scheduling, speech, billing, resource/progress rules, memory, and language-context recovery belong
+to their linked specifications. Frontend component structure and shared presentation belong to
+`architecture-frontend.instructions.md`.
 
 ## User journey
 
@@ -36,6 +38,8 @@ When false, public signup actions lead to Login or are hidden, and `/register` w
 `invite` query parameter shows the localized closed-registration message and a Login action. Any
 supplied invite opens the existing form; only the backend validates and consumes the token. Legal
 page links preserve the supplied invite so reading the terms or privacy policy does not lose it.
+Registration, Login, and registration-origin legal navigation also preserve an explicitly selected
+`monthly` or `yearly` plan. Other plan values are discarded; destinations are fixed internal routes.
 When true, the existing public signup journey and pricing plan selection remain available.
 Authenticated dashboard and checkout actions do not depend on this flag.
 
@@ -55,11 +59,13 @@ The password-reset form displays these requirements in the interface language an
 character length before submitting, counting Unicode code points consistently with the backend.
 Backend validation enforces password strength; validation errors use localized interface messages.
 
-The access token is an HS256 JWT containing user ID, role, and expiration. Its default lifetime is 15
-minutes and the frontend stores it in Zustand memory only.
+The access token is an HS256 JWT containing user ID, role, and expiration. Its lifetime in minutes
+comes from `ACCESS_TOKEN_EXPIRE_MINUTES` in backend `Settings`
+(`backend/app/core/config.py`, with environment overrides). The frontend stores it in Zustand memory only.
 
 The refresh token is an opaque `secrets.token_urlsafe(64)` value stored in an `httpOnly` cookie and
-under `refresh:{token}` in Redis for the configured 30-day default. Refresh rotation deletes the old
+under `refresh:{token}` in Redis. Cookie lifetime and Redis TTL derive from
+`REFRESH_TOKEN_EXPIRE_DAYS` in the same settings, measured in days. Refresh rotation deletes the old
 Redis token before issuing a replacement. Logout deletes the current token and clears the cookie.
 
 `apiFetch` adds the bearer token. When a request that had an access token returns 401 within the same
@@ -93,14 +99,12 @@ session identity before applying a pending renewal's success/failure, so an obso
 replace the profile, clear the newer session, or redirect it. Completing an old refresh does not clear
 the pending-request reference of a newer session.
 
-The freemium cache observes this session version synchronously: logout and `startSession` clear both
-the exposed quota snapshot and its cache validity. The next consumer requests the current session's
-balance; pending or failed reads cannot retain the previous account's balance or paywall. Ordinary
-token rotation and active-language changes preserve the user's global quota cache. Delayed quota
-responses and chat consumption cannot update a replacement session.
+Account-scoped consumers must not publish state from an earlier authentication session. The freemium
+cache and quota reconciliation contract is defined in `subscriptions-freemium.instructions.md`.
 
-Avatar recovery, landing subscription checks, onboarding checkout, pricing checkout, and billing-return
-restoration use the same refresh HTTP coordination. `restoreAccessToken` fills a missing access token
+Avatar recovery, landing subscription checks, onboarding language/profile/checkout operations,
+pricing checkout, and billing-return restoration use the same refresh HTTP coordination.
+`restoreAccessToken` fills a missing access token
 only if its session is unchanged and its caller has not been cancelled; it preserves any token already
 published by another consumer. Ordinary restoration failures are handled by the caller; account
 conflicts always follow the shared session-invalidation rule.
@@ -126,44 +130,51 @@ loads the user, and requires the account to remain active.
 
 Email verification and password reset use independent Redis-backed tokens with their own expirations.
 
+Account deletion requires explicit confirmation and a successful backend response before local logout
+or navigation. Billing conflicts and provider-verification failures leave the session and confirmation
+available for recovery. Self-deletion is forbidden for administrators. The shared self/admin billing
+precondition is owned by `subscriptions-freemium.instructions.md` (Account deletion and billing);
+`api-endpoints.instructions.md` owns its error codes.
+
 ## Account onboarding
 
 Onboarding is distinct from CEFR assessment.
 
 - The language selector is filtered by operator-enabled languages returned by the backend.
+- On a fresh page, onboarding restores the access token before reading authenticated languages.
+  Failed restoration or language lookup exposes Retry; progression requires a successful lookup and a
+  selected enabled language. Retry runs the same restoration and lookup sequence.
 - Personal learning goals are optional.
 - `PATCH /api/auth/me` persists `target_language` and `learning_goals`, creating or activating the
   corresponding `UserLanguage`.
 - `learning_goals=null` means onboarding remains pending; an empty list is a completed choice.
 - Depending on runtime billing settings, onboarding may include freemium confirmation or Stripe
-  plan selection.
+  plan selection. An explicitly selected paid plan retains the plan-selection step even while the
+  initial freemium trial is active. Checkout requires a separate button click, and learners may
+  still continue to Dashboard without subscribing.
 - Completion navigates to Dashboard, not directly to assessment.
 
+Before saving the profile, onboarding restores a missing token and requires successfully loaded
+runtime configuration. A failed configuration read leaves the profile unsaved and offers Retry.
+The post-save destination uses the current loaded configuration rather than captured defaults.
+Unmounted or replaced-session operations cannot publish readiness, profile changes, or navigation.
+If checkout restoration requires returning to Login, the chosen monthly/yearly interval is preserved.
+
 The authenticated shell redirects users with null learning goals back to onboarding.
+After Login, a selected plan leads to onboarding for an unfinished account or the subscription section
+of Settings for an onboarded account. The destination is chosen only after a successful, valid profile
+read; a failed profile lookup shows a localized retryable error without inferring unfinished onboarding.
 
 ## Placement and plan boundary
 
 Assessment is language-specific and separate from account onboarding.
 
-Before checking the existing plan or loading the question bank, Assessment reconciles missing or
-invalidated language context. Failures show an error with GET-only retry rather than treating the
-context as a beginner without a plan. Checks are cancellable and bounded to 20 seconds. The flow keeps
-its resolved language for completion and voice-trial requests. A provisional switch suspends interaction
-and defers pending responses while retaining questions, answers, results, and plan choices. A definite
-rejection resumes that flow; a changed language or external invalidation cancels obsolete work. A confirmed
-completion refreshes the summary without restarting assessment or repeating its POST. Its flow identity
-survives its own summary invalidation, but not replacement or unmount: returning to the same language
-does not authorize a previous completion to navigate or publish a voice-trial offer.
-Language invalidations carry a monotonically increasing version, including when the summary is already
-invalid. A completed flow records only its own invalidation version; a later external invalidation
-suspends its offer/continuation and recovers context through GET even when the cached language is unchanged.
-Voice-trial navigation requires a reconciled context. If completion's own summary refresh fails, its
-voice offer is retained behind a recoverable error; retry refreshes the summary without repeating completion.
-The completion POST remains observed after unmount or flow replacement. HTTP success invalidates and
-refreshes the global language summary for the originating authentication session before decoding the
-response body; neither visual cancellation nor a delayed/unreadable body can skip that recovery.
-Only the surviving flow may publish the offer or navigate. An unreadable successful completion body
-recovers the existing plan through GET instead of enabling another completion POST.
+Assessment resolves the language context before loading a plan or question bank and retains that
+context for completion and voice-trial requests. `multi-language.instructions.md` owns the shared
+switching, invalidation, and recovery lifecycle. Completion recovery must not repeat plan creation.
+Voice-trial navigation requires reconciled context; a failed summary refresh retains the offer behind
+a recoverable error. An unreadable successful completion body recovers the existing plan through GET
+instead of enabling another completion POST.
 
 - A complete beginner can choose A1 without the adaptive quiz.
 - The current adaptive frontend uses at most 15 static-bank questions, begins at A2, and moves after
@@ -200,7 +211,15 @@ navigation.
 
 Client state is split across auth, config, freemium, language, loading, progress, and theme stores.
 The loading store uses a request counter and completion state; API calls through `apiFetch` participate
-automatically.
+automatically. Page and section presentation, timing, and coordination with the top activity bar are
+owned by `architecture-frontend.instructions.md` (Page loading). Network activity alone never grants
+access or determines whether a page's data is ready.
+
+The language selector distinguishes an initial lookup, a failed lookup with Retry, and a successful
+lookup without an active language. Language-management loading stays within its content section.
+The current-usage panel in Settings also distinguishes pending, failed, and successful quota reads;
+a failure exits the placeholder and offers Retry. Obsolete responses cannot publish data or finish
+a newer load.
 
 The shared config store caches a successful `/api/config` response. Network, HTTP, and JSON parsing
 failures preserve the current values without marking the configuration as loaded, allowing the next
@@ -233,19 +252,9 @@ display priority through their dedicated behavior.
 
 ### Progress detail
 
-The Progress page expands the dashboard summary for the current language and study plan. It shares
-the XP/streak overview, shows daily XP and an activity calendar for the last 28 UTC days, and provides
-a collapsible reward guide linking to learning activities. Days with recorded practice count even
-when they earned no XP. History is filtered to the displayed calendar window; it is not a complete
-reward ledger. Language changes reset the page and obsolete asynchronous results are ignored.
-Local switches and invalidated context suspend progress content; missing or invalidated language
-context must be reconciled before loading resources. Failed reconciliation offers retry rather than
-mixing cached language labels/content with server-active progress. This does not provide an atomic
-snapshot across concurrent server-side language changes from other tabs.
-A null current plan shows the assessment entry point; request failures, including unsuccessful
-curriculum HTTP responses, offer retry. Lesson-exercise
-accuracy is unset until exercises exist. Competency, vocabulary and recent-performance sections
-use readable interface typography, target-language text rendering and accessible progress values.
+The Progress page expands the dashboard summary for the current language and study plan.
+`learning-resources.instructions.md` owns progress, activity, rewards, competencies, and vocabulary
+coverage. `architecture-frontend.instructions.md` owns the shared overview and history components.
 
 ### Dashboard tour
 
@@ -281,8 +290,10 @@ level and language are authoritative.
 
 Tutor context includes profile, goals, plan/progress information, native and target languages, and
 global memories. It does not currently inject a current-unit topic list or recent-mistake list.
-Lingu responds primarily in the target language and may use concise native-language correction when
-helpful.
+Lingu prioritizes conversational continuity and selective corrections, responding primarily in the
+target language with brief profile-native learning support when needed. Everyday conversation and
+fictional language-practice scenarios are within its tutoring scope. The canonical conversation,
+correction, and language-support policies are defined in `prompts.instructions.md` (Tutor prompts).
 The written tutor permits optional Markdown bold, italics, bullet/numbered lists and paragraphs,
 following the chat-specific policy in `prompts.instructions.md`. Plain text remains valid. The same
 policy applies to tool-free fallback responses; voice and generated learning resources retain their
@@ -311,6 +322,12 @@ feature limit is nonzero.
 The first message can create its conversation. Prompt history uses at most the latest 30 messages.
 Voice conversations share the conversation list and are distinguished by source.
 
+Conversation-list and message-history reads have explicit local loading and recoverable error states.
+A failed history read does not represent an empty conversation. Only the current request may publish
+messages or release its loading state; selecting another conversation, starting a new chat, changing
+language/session, or unmounting invalidates previous reads. A delayed initial list cannot replace a
+newer user selection. Streaming response presentation remains separate from history loading.
+
 The chat Next.js route preserves SSE streaming. Backend events are JSON frames for conversation ID,
 visible token, memory confirmation, response reset, completion, and errors. `response_reset` requires
 discarding earlier partial assistant text. There is no `[DONE]` text marker.
@@ -323,14 +340,8 @@ Progress, competencies, flashcards, lessons, and attempts belong to a study plan
 summary uses that language's active plan; resource-owned updates use the plan persisted on the
 resource rather than mutable client selection.
 
-Current XP sources include 20 for lesson completion, 5 for a correct lesson exercise, 1 for an
-incorrect lesson exercise, and 2 for a flashcard review. Comprehension XP is defined by its domain
-specs.
-
-Skill and competency updates use a 70/30 exponential moving average. Competency mastery begins at
-0.80. Streak derives from consecutive UTC-dated activity rows within the plan and expires when the
-latest entry predates yesterday. Rewards for conversations, spaced comprehension replays, units, and
-level completion follow `learning-resources.instructions.md`; all awards remain plan-owned.
+`learning-resources.instructions.md` owns XP amounts, reward eligibility, skill/competency updates,
+and UTC streak rules. All awards remain plan-owned.
 
 SM-2 accepts quality 0-5. Quality below 3 resets repetition and interval; successful repetitions use
 1 day, 6 days, then prior interval times ease factor, with minimum ease 1.3. The standard UI offers
@@ -339,6 +350,10 @@ and saves only after learner confirmation. Learners can correct a recognition er
 
 Due cards are ordered by `next_review`. Generation derives target language from the plan and native
 translation context from the user profile. Reviewing always credits the card's stored plan.
+
+Vocabulary-set imports generate missing translations only for new cards. Existing cards and their
+translations remain unchanged; import failures do not save a partial batch. The canonical import and
+context rules live in `learning-resources.instructions.md` (Vocabulary hub).
 
 ### Flashcard review sessions
 
@@ -429,6 +444,12 @@ does not change this session identity.
 The application distinguishes UI locale, native language, learned target language, active
 `UserLanguage`, and resource-owning `StudyPlan.target_language`.
 
+UI locale and native language are independent account preferences whose supported inventories
+currently coincide. UI controls, public pages, and tour narration use the rendered interface locale;
+pedagogical support, generated memories, deterministic learning feedback, voice-session titles, and
+account emails use the native language where their domain contracts specify it. Administrator email
+notifications use the first administrator's native language with English fallback.
+
 The interface locales are `en`, `es`, `fr`, `pt`, `de`, `it`, `pl`, `nl`, `ro`, `ru`, `tr`, `sv`, `da`, `fi`, and `hr`. Locale
 resolution uses `NEXT_LOCALE`, then `Accept-Language`, then English. Only header entries with a parsed
 quality greater than 0 and no greater than 1 are considered. The initial browser script preserves a
@@ -438,7 +459,20 @@ Settings synchronizes `NEXT_LOCALE` and `LOCALE_DETECTED` with the selected inte
 when that selection differs from the currently rendered locale, even if the profile already stores
 the selected value. A failed save leaves locale cookies and the displayed language unchanged.
 
+The frontend registration form initially selects native `es`, independently of the rendered UI, and
+does not send a UI preference. Login and session restoration load the stored `ui_locale` without automatically
+applying it to cookies or the rendered interface; logout retains locale cookies. Settings can therefore
+show a saved preference different from the currently rendered locale. The interface selector has no
+option to reset the preference to automatic browser detection.
+
+Changing native language does not globally retranslate saved content. Language-aware help caches and
+question translations follow their domain matching rules; existing learning content and historical
+records can retain their original language.
+
 Target-language metadata and typography are specified separately from UI localization.
+The canonical implementation and completion checklist for adding interface/native languages is
+[Add Interface or Native Language](add-ui-native-language.instructions.md). It covers the coordinated
+registrations, catalogs, native consumers, announcements, speech, compatibility, and verification.
 
 ## Runtime configuration
 

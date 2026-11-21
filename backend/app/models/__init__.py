@@ -1,3 +1,5 @@
+from app.models.billing_checkout import BillingCheckout
+from app.models.billing_webhook import RevenueCatWebhookReceipt, StripeWebhookReceipt
 from app.models.chat_history import ChatHistory
 from app.models.competency import UserCompetency
 from app.models.conversation import Conversation
@@ -5,6 +7,11 @@ from app.models.dashboard_banner import DashboardBanner
 from app.models.feedback import FeedbackComment, FeedbackEntry, FeedbackReadState, FeedbackVote
 from app.models.flashcard import Flashcard, FlashcardReviewReceipt
 from app.models.game import GameAdmission, GameRequest, GameSession
+from app.models.grammar_practice import (
+    GrammarPracticeRequest,
+    GrammarPracticeSession,
+    GrammarPracticeTopic,
+)
 from app.models.lesson import Exercise, Lesson
 from app.models.listening import ListeningAttempt, ListeningExercise
 from app.models.llm_usage import LLMUsage
@@ -19,6 +26,9 @@ from app.models.user import User
 from app.models.user_language import UserLanguage
 
 __all__ = [
+    "BillingCheckout",
+    "StripeWebhookReceipt",
+    "RevenueCatWebhookReceipt",
     "ChatHistory",
     "UserCompetency",
     "Conversation",
@@ -32,6 +42,9 @@ __all__ = [
     "GameAdmission",
     "GameRequest",
     "GameSession",
+    "GrammarPracticeRequest",
+    "GrammarPracticeSession",
+    "GrammarPracticeTopic",
     "Exercise",
     "Lesson",
     "ListeningAttempt",

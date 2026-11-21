@@ -706,11 +706,15 @@ class HomeConversationPipeline(ConversationPipeline):
             logger.debug("[pipeline] Failed to remove discarded turn rows — ignored")
 
 
-async def build_pipeline(**kwargs: Any) -> ConversationPipeline:
+async def build_pipeline(base: type[ConversationPipeline], **kwargs: Any) -> ConversationPipeline:
     """Build the voice pipeline for one connection.
 
-    The opener and reasoning effort depend on the live LLM tier, decided once per connection.
+    The router passes upstream's class as ``base``. When it is not upstream's class (an upstream
+    test replaced it with a double), it is called unchanged. The opener and reasoning effort depend
+    on the live LLM tier, decided once per connection.
     """
+    if base is not ConversationPipeline:
+        return base(**kwargs)
     small_llm = await live_llm_is_small()
     return HomeConversationPipeline(
         **kwargs,

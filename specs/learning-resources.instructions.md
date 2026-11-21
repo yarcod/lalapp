@@ -1,5 +1,5 @@
 ---
-description: "Current-state specification for Grammar, Vocabulary, Phrasebook, progress and competencies, placement-bank resources, and level-completion tests."
+description: "Language-independent contracts and authoring rules for learning resources, curriculum, progress and competencies, placement banks, and level-completion tests."
 applyTo: "backend/app/data/**, backend/app/models/{resource_native_help,progress,competency}.py, backend/app/routers/{grammar,vocabulary,phrasebook,progress,assessment,curriculum}.py, backend/app/services/{resource_native_help,progress_service,assessment}.py, frontend/src/app/(app)/{grammar,vocabulary,phrasebook,progress,assessment,plan}/**, frontend/src/data/curriculum.ts"
 ---
 
@@ -11,13 +11,137 @@ Grammar, Vocabulary, Phrasebook, curriculum, and assessment-bank content is defi
 dataclasses grouped by target language and CEFR level. The frontend retrieves these resources through
 authenticated APIs; it does not contain the canonical datasets.
 
-All ten supported target languages provide A1-C2 curriculum, grammar, vocabulary, phrasebook, and
-placement-bank data. Dispatchers select exact English variants and ISO-prefix packages for other
-languages. Unknown dispatcher input currently falls back to `en-GB` rather than returning an error.
+These contracts apply to every supported target language and any language added in the future.
+Each language must provide A1-C2 curriculum, grammar, vocabulary, phrasebook, and placement-bank data.
+The supported-code catalog and regional dispatch rules belong to `target-language.instructions.md`;
+package registration and completeness requirements belong to `add-target-language.instructions.md`.
+Unknown dispatcher input currently falls back to `en-GB` rather than returning an error; that fallback
+must not substitute for a supported language's own resources.
 
 Static resource APIs accept an explicit language query and do not require it to match the user's
 active language or owned plans. Frontend resource pages normally send the active language, with
 `en-GB` fallback.
+
+This specification owns resource data and authoring, shared native help, progress/reward calculations,
+and assessment content/evaluation boundaries. `study-plan.instructions.md` owns scheduling and plan
+eligibility; `platform.instructions.md` owns the placement interaction; `multi-language.instructions.md`
+owns client language recovery. Authoring rules describe content-review requirements, not guarantees
+that runtime validation establishes linguistic quality.
+
+### Content authoring rules
+
+Reference explanations, vocabulary definitions and examples, phrase contexts, and placement questions
+use the target language. Native-language explanations belong to the shared help system below.
+Definitions explain meaning rather than repeat the headword. Content progresses from everyday
+communication to extended discourse, register control, and specialist usage across A1-C2.
+
+- Distinguish grammatical errors from valid contextual, regional, and register alternatives.
+- Preserve participants, meaning, scope, and degree of certainty in reformulations.
+- Give placement questions enough context for one accepted answer. Advanced items assess
+  interpretation and inference as well as recognition of forms.
+- Keep identifiers stable and resolve grammar, vocabulary, and unit references within the target
+  language. Append phrases when extending existing categories because audio requests use indices.
+- Use actual newlines in rendered explanations and keep pronunciation aids aligned with saved text.
+- Structural tests check references and data shape; they do not establish linguistic accuracy or
+  empirical CEFR calibration.
+
+### Per-level coverage bounds
+
+Every target-language package must meet these minimums independently at each CEFR level. The upper
+values are editorial review thresholds: exceeding one requires reviewing scope and progression, not
+automatically deleting useful content. These are internal product coverage criteria, not CEFR word
+lists or evidence of pedagogical equivalence between languages. They use the observed per-level
+minimums and maximums of the twelve established packages other than Dutch, including each regional
+package separately; adding a language does not automatically recalculate or lower the bounds.
+
+Count distinct curriculum units, distinct grammar topics assigned to the level, vocabulary entries
+across its sets, phrase entries across its categories, and placement questions assigned to the level.
+Vocabulary counts include multiword expressions; they are not counts of unique lemmas across A1-C2.
+Repeated curriculum references do not count as additional topics or vocabulary entries. Categories,
+sets, examples, translations, generated lessons and level-completion questions do not add to these
+five counts. Do not duplicate entries merely to meet a minimum.
+
+Ranges below follow the order **units / grammar topics / vocabulary entries / phrases / placement
+questions**:
+
+- A1: **8–8 / 14–30 / 190–383 / 47–88 / 20–35**.
+- A2: **8–8 / 19–27 / 180–222 / 39–85 / 20–30**.
+- B1: **8–8 / 19–31 / 102–239 / 36–77 / 20–30**.
+- B2: **8–8 / 20–28 / 95–190 / 30–76 / 16–30**.
+- C1: **8–8 / 21–26 / 75–203 / 30–68 / 14–30**.
+- C2: **8–8 / 16–25 / 75–216 / 30–67 / 14–30**.
+
+Audit all five counts per level when adding or materially expanding a package. Integrity tests enforce
+the minimums; upper-threshold review remains editorial. Totals across levels cannot compensate for a
+deficit at one level. Quantity supplements the authoring, progression and assessment requirements
+below; it does not replace them or prescribe an identical syllabus for every language.
+
+### Curriculum structure and progression
+
+Each curriculum unit declares a stable ID, CEFR level, unit number, title, grammar and vocabulary
+references, lesson types, competency checklist, default duration, and optional prerequisite unit.
+The language package is the source of truth for topic placement, unit order, and resource counts.
+Languages share the data contract and quality requirements, not an identical grammatical syllabus.
+
+- Introduce prerequisites before requiring them in explanations, examples, or assessed production.
+  Fundamental skills must appear in the guided curriculum, not only in the reference catalog.
+- A final consolidation unit revisits grammar already introduced in earlier units; it must not be
+  the first guided occurrence of a topic required by its review activities.
+- Align a topic's reference level, first guided use, and placement questions. Later units can revisit
+  earlier material for consolidation and broader contrasts.
+- Describe competencies as observable learner abilities. Connect grammar and vocabulary to practical
+  comprehension and production, with review of previously introduced material.
+- Progress from everyday communication to independent interaction and then precise, extended discourse.
+  Advanced content must develop interpretation, register, and control of meaning rather than merely
+  introduce rare forms or longer terminology.
+- Distinguish recognition from required production, particularly for literary, historical, or narrowly
+  formal constructions. CEFR labels do not imply equivalence with a language-specific certification.
+- Balance advanced textual analysis with practical interaction and production: negotiate conditions,
+  repair misunderstandings, respond to humour, narrate experiences, mediate conflicting wishes, and
+  adapt register to the interlocutor. Carry those tasks through competencies, reference examples and
+  phrase contexts; naming a linguistic device is not a substitute for using or understanding it.
+
+Units declare their lesson types and order in data. Actual allocation follows plan capacity and
+rotation rules; a declaration does not guarantee a complete cycle in every unit. Persisted schedules
+are retained. See `study-plan.instructions.md` for scheduling and lazy-generation rules.
+
+### Regional varieties and writing systems
+
+Resource lookup and references must preserve the selected target-language variety. A shared language
+prefix does not make regional packages interchangeable, and editing one package must not mutate
+another package's runtime content. Topic placement may differ between varieties.
+
+- Use spelling, vocabulary, grammar, examples, and cultural contexts appropriate to the selected
+  variety. Explain regional alternatives and register boundaries where they affect use.
+- Treat script, spacing, fonts, and pronunciation aids as language capabilities supplied by metadata,
+  not assumptions derived from one language. Learned-language frontend text uses `TargetLanguageText`.
+- IPA and romanization are optional resource fields. When supplied, they must match the saved text and
+  target variety, preserve relevant sound contrasts, and follow a consistent transcription convention.
+  Do not copy another variety's pronunciation or use romanization as a replacement for target script.
+
+See `target-language.instructions.md` for metadata and rendering conventions and
+`add-target-language.instructions.md` for package integration requirements.
+
+### Assessment content quality
+
+Placement questions must have four distinct options and exactly one accepted option matching the
+stored answer. Any grammar reference must resolve within the same target language. Questions should
+cover the curriculum's levels and assessed skills, with enough context to disambiguate meaning and
+register. Valid regional or conversational alternatives must not become distractors presented as
+universally incorrect.
+
+- Avoid giving away the answer through an explicit interpretation in the prompt or a near-verbatim
+  match with one option. Supply the situation needed to infer the intended meaning instead.
+- Use plausible distractors of comparable register and detail. Advanced alternatives should differ
+  in a relevant condition, participant, implication, commitment, or degree of certainty, rather than
+  rely predominantly on absurd claims or easily dismissed absolutes. Review answer-length clues too.
+- Include contextual choices of replies, idioms and reformulations alongside textual interpretation.
+  State the communicative goal clearly when several replies would otherwise be acceptable. Multiple
+  choice measures recognition of an appropriate response, not demonstrated spontaneous production.
+
+When authoring a bank, distribute correct-answer positions across each level/skill group to avoid
+predictable keys. The frontend displays the saved option order. Content review must assess linguistic
+accuracy and progression separately from structural integrity checks.
 
 ## Shared native-language help
 
@@ -55,10 +179,27 @@ The index groups by CEFR level and searches title, summary, and category. Catego
 returned data. Detail currently loads the full collection and locates the slug locally rather than
 calling the single-topic endpoint.
 
+Grammar and Phrasebook catalogue clients reject unsuccessful HTTP responses rather than returning
+empty collections. Their pages and the Vocabulary index distinguish pending, failed, and successful
+empty reads, and offer retry after failure. Catalogue loads resolve the current language context and
+discard obsolete responses and completion callbacks on context changes or unmount. Read-only
+catalogue requests use a bounded client wait independently of native-help generation.
+
 Detail renders explanation, structure, rules, examples, mistakes, and related links. Example
 translations returned by the API are not displayed. A1/A2 native help opens and generates on load;
 B1-C2 generates when opened. Grammar pages do not provide TTS, flashcard creation, or automatic
 current-slug chat context. Lesson `grammar_refs` provide the implemented cross-link.
+
+The detail's Practice action adds the topic to the language-owned Grammar Practice library, requiring
+the captured language and active plan. Generated five-question sessions, historical statistics,
+independent admission quota, and completed-session voice continuation are owned by
+`grammar-practice.instructions.md`; reference browsing and native help remain separate.
+
+Native help automatically starts at most once per open resource context until it succeeds or fails.
+Failure leaves a manual retry action instead of starting another automatic request. Help belongs to
+its topic, target/native languages, and authentication session; replacing that context cancels and
+invalidates pending help, including late errors and loading completion. A rejected provisional
+language switch preserves the existing help or manual retry state when its context is unchanged.
 
 ## Vocabulary hub
 
@@ -85,7 +226,14 @@ captured values and rejects a mismatch with the server's active plan before inse
 refreshes the language context and set for inspection; it never automatically resubmits the import.
 Late set responses and add results are discarded after context changes. Browsing without a plan is
 allowed, but adding requires one. Bulk creation deduplicates normalized words within the resolved
-plan. The page sends an empty translation and the bulk endpoint does not generate one.
+plan. The page sends an empty translation; the bulk endpoint translates only new cards that lack one,
+using each word's definition/example and the profile's native language. Existing cards are never
+backfilled or overwritten, including when they are untranslated. Supplied nonblank translations are
+preserved. The complete translation batch must validate before any insertion; failure returns a
+recoverable 503 without a partial import. After generation, user-then-language-then-plan locks protect
+a fresh native-language and study-context check plus bulk insertion; cards created meanwhile are skipped
+without changes. Lock contention returns recoverable 503 instead of waiting. Request and provider-size
+limits, timeout and error codes are specified in `api-endpoints.instructions.md` (Flashcards).
 
 Vocabulary native help begins collapsed and is generated on request. Progress treats an item as
 covered only when its plan-owned flashcard has `repetitions > 0`.
@@ -98,19 +246,25 @@ an obsolete error or clear the new request's loading state. Current-context fail
 
 Each category contains ID, CEFR level, situation, icon, and phrases. Phrases contain target-language
 text, context, register (`formal`, `neutral`, or `informal`), optional unit reference, and optional
-romanization. CJK resources provide romanization data, though the current page does not display it.
+romanization. The current page does not display romanization when supplied.
 
 - `GET /api/phrasebook`: authenticated, `60/minute`; returns all categories.
 - `GET /api/phrasebook/level/{level}`: authenticated, `60/minute`; invalid level returns `400`.
 - `GET /api/phrasebook/{category_id}`: authenticated, `60/minute`; unknown category returns `404`.
 - `POST /api/phrasebook/{category_id}/native-help`: authenticated, `10/minute`; uses shared cache.
 - `GET /api/phrasebook/audio/{category_id}/{phrase_index}`: authenticated, `30/minute`; returns
-  cached MP3, `404` for invalid category/index, or `503` without TTS.
+  cached WAV (`audio/wav`) for Gemini or MP3 (`audio/mpeg`) for local/OpenAI, `404` for invalid
+  category/index, or `503` without TTS. The `language` parameter defaults to `en-GB` and must be
+  an exact supported target-language code; invalid values return `400` before catalog lookup,
+  filesystem access, or synthesis.
 
-Phrase audio is stored below `{AUDIO_STORAGE_PATH}/phrasebook/{iso}/`. Instruction-capable OpenAI
-models use a synthesis hash covering text, language, model, voice, speed, format, and instructions;
-other providers/models retain a hash of language, category, index, and text. Generation writes a
-temporary file and replaces atomically. Responses use `Cache-Control: no-store`, and browser playback
+Phrase audio is stored below `{AUDIO_STORAGE_PATH}/phrasebook/{iso}/`. All OpenAI models and Gemini
+use the synthesis identities defined in `speech-services.instructions.md`, including the resolved
+actual voice and pronunciation instructions when supported. OpenAI files use `.mp3`; Gemini files
+use `.wav`. Local TTS retains `.mp3` files with a hash of language, category, index, and text.
+The endpoint uses the backend's configured default voice, not the browser preference.
+Generation writes a temporary file and replaces atomically.
+Responses use `Cache-Control: no-store`, and browser playback
 bypasses its HTTP cache while retaining the backend disk cache. The endpoint passes the full target
 language to TTS for pronunciation guidance when supported by the configured model.
 
@@ -119,8 +273,10 @@ display phrases directly rather than through expansion controls. Each phrase has
 copy buttons; clicking text itself does not copy.
 
 A1/A2 help panels begin open but generation still requires button action. B1-C2 begins closed. Help
-state can survive an active-language change when category IDs are reused. Phrasebook does not create
-flashcards.
+belongs to its category, target/native languages, and authentication session. Context replacement
+cancels pending help and discards its state even when category IDs are reused. A provisional language
+switch that fails without changing context preserves existing help and errors. Phrasebook does not
+create flashcards.
 
 ## Progress and competencies
 
@@ -140,6 +296,9 @@ and recent skill performance remain separate from participation rewards.
 Activity days use UTC. Submitted Reading/Listening attempts count even with zero correct answers
 or zero replay XP; conversations count after a distinct learner contribution receives a persisted
 nonempty tutor response. Greetings, unanswered contributions, and planless conversations do not count.
+Each first Grammar Practice answer also records activity in its saved plan, transactionally with
+the answer, without XP, lesson/exercise counters, skills, or competencies. Abandonment preserves
+that activity; identical retries do not add it.
 The current streak is the latest stored streak only if its date is today or yesterday; otherwise it is
 zero. New daily rows carry forward the previous row's skill snapshot before applying scored updates.
 Daily rows also retain ordered scores per skill in `skill_updates`. Under the same plan lock and
@@ -202,6 +361,10 @@ Exercise skill uses lesson type as its key. Updates apply `0.7 * previous + 0.3 
 starts at the latest score. Lesson completion applies the lesson's mean answered-exercise score, or
 0.5 when none is available, to every competency in the unit. Mastery is `score >= 0.80`.
 
+Mastery is distinct from finishing scheduled lessons. My Plan unit cards show the fraction of scheduled
+lessons completed and use plan position and lesson completion for navigation, independently of mastery.
+The current-unit, completion, and access rules are owned by `study-plan.instructions.md`.
+
 - `GET /api/progress/summary`: authenticated, `60/minute`; summarizes the active plan, returns zeros
   without one, and exposes skill JSON from the latest daily row. Includes `today_xp` and seven
   chronological `activity_week` entries (`date`, `active`, `xp`), ending on the current UTC day.
@@ -232,10 +395,9 @@ grammar slug.
 - `POST /api/assessment/evaluate`: authenticated, `60/minute`; evaluates submitted answer records.
 - `POST /api/assessment/complete`: authenticated, `10/minute`; creates the selected-language plan.
 
-After successful completion, the frontend invalidates and refreshes the shared language/plan summary
-before navigating to Plan or showing the voice-trial offer. If this bounded refresh fails, completion
-still proceeds, and the summary remains marked for refresh. Listening and Reading recover that
-context before using it; a summary failure must not cause the plan-creation request to be repeated.
+After successful completion, the frontend invalidates and refreshes the shared language/plan summary.
+A failed refresh does not undo plan creation or justify repeating its POST. Recovery and voice-offer
+presentation follow `multi-language.instructions.md` and `platform.instructions.md`.
 
 The client calculates each `correct` boolean. Evaluation trusts submitted question metadata and does
 not retrieve the bank to verify selected options. The deterministic algorithm is described in
@@ -281,11 +443,13 @@ repeat a plan.
 Grammar, Vocabulary, and Phrasebook appear in the Resources group on desktop and mobile. Progress
 and Assessment remain learning pages. Middleware checks refresh-cookie presence and every resource
 endpoint independently requires backend authentication.
+Grammar Practice appears in the Practice group and is also reachable from grammar reference detail.
 
 ## Related specifications
 
 - `platform.instructions.md` — onboarding and placement journey.
 - `study-plan.instructions.md` — curriculum distribution and lesson lifecycle.
+- `grammar-practice.instructions.md` — personal grammar library, saved practice, and voice continuation.
 - `target-language.instructions.md` and `add-target-language.instructions.md` — language data rules.
 - `speech-services.instructions.md` — phrase audio.
 - `database-models.instructions.md` and `api-endpoints.instructions.md` — complete contracts.

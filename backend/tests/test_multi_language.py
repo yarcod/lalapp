@@ -27,7 +27,7 @@ from app.services.memory_service import get_user_memories
 # ═════════════════════════════════════════════════════════════════════════════
 
 
-async def _make_user(db, *, username="mluser", email="ml@example.com"):
+async def _make_user(db, *, username="mluser", email="ml@example.com", language="en-US"):
     user = User(
         username=username,
         email=email,
@@ -35,12 +35,12 @@ async def _make_user(db, *, username="mluser", email="ml@example.com"):
         hashed_password=hash_password("testpass"),
         role="user",
         native_language="es",
-        target_language="en-US",
+        target_language=language,
         is_active=True,
     )
     db.add(user)
     await db.flush()
-    db.add(UserLanguage(user_id=user.id, target_language="en-US", is_active=True))
+    db.add(UserLanguage(user_id=user.id, target_language=language, is_active=True))
     await db.commit()
     await db.refresh(user)
     token = create_access_token(user.id, user.role)
@@ -395,7 +395,156 @@ class TestLanguageAPI:
         assert "all_supported_languages" in data
         assert "ja-JP" in data["all_supported_languages"]
         assert "ko-KR" in data["all_supported_languages"]
+        assert "pl-PL" in data["all_supported_languages"]
+        assert "pt-BR" in data["all_supported_languages"]
+        assert "nl-NL" in data["all_supported_languages"]
+        assert "ru-RU" in data["all_supported_languages"]
+        assert "sv-SE" in data["all_supported_languages"]
+        assert "da-DK" in data["all_supported_languages"]
+        assert "cs-CZ" in data["all_supported_languages"]
+        assert "hr-HR" in data["all_supported_languages"]
+        assert "fi-FI" in data["all_supported_languages"]
+        assert "ro-RO" in data["all_supported_languages"]
         assert "zh-CN" in data["all_supported_languages"]
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("enabled", [False, True])
+    async def test_croatian_availability_follows_operator_configuration(
+        self, client, db_session, monkeypatch, enabled
+    ):
+        from app.core.config import settings
+
+        _user, headers = await _make_user(db_session, language="en-GB")
+        available = ["en-GB", "hr-HR"] if enabled else ["en-GB"]
+        monkeypatch.setattr(settings, "AVAILABLE_TARGET_LANGUAGES", available + ["hr", "hr-hr"])
+
+        response = await client.get("/api/languages", headers=headers)
+
+        assert response.status_code == 200
+        assert response.json()["all_supported_languages"] == available
+        added = await client.post(
+            "/api/languages", headers=headers, json={"target_language": "hr-HR"}
+        )
+        assert added.status_code == (201 if enabled else 422)
+        active = await client.get("/api/languages/active", headers=headers)
+        assert active.json()["target_language"] == ("hr-HR" if enabled else "en-GB")
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("language", ["hr", "hr-hr", "hr-HR"])
+    async def test_croatian_switch_rejects_noncanonical_or_disabled_codes(
+        self, client, db_session, monkeypatch, language
+    ):
+        from app.core.config import settings
+
+        user, headers = await _make_user(db_session, language="en-GB")
+        await _add_language(db_session, user.id, "hr-HR")
+        monkeypatch.setattr(settings, "AVAILABLE_TARGET_LANGUAGES", ["en-GB"])
+
+        response = await client.put(
+            "/api/languages/active", headers=headers, json={"target_language": language}
+        )
+
+        assert response.status_code == 422
+        active = await client.get("/api/languages/active", headers=headers)
+        assert active.json()["target_language"] == "en-GB"
+        await db_session.refresh(user)
+        assert user.target_language == "en-GB"
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("enabled", [False, True])
+    async def test_finnish_availability_follows_operator_configuration(
+        self, client, db_session, monkeypatch, enabled
+    ):
+        from app.core.config import settings
+
+        _user, headers = await _make_user(db_session, language="en-GB")
+        available = ["en-GB", "fi-FI"] if enabled else ["en-GB"]
+        monkeypatch.setattr(settings, "AVAILABLE_TARGET_LANGUAGES", available + ["fi", "fi-fi"])
+
+        response = await client.get("/api/languages", headers=headers)
+
+        assert response.status_code == 200
+        assert response.json()["all_supported_languages"] == available
+        added = await client.post(
+            "/api/languages", headers=headers, json={"target_language": "fi-FI"}
+        )
+        assert added.status_code == (201 if enabled else 422)
+        active = await client.get("/api/languages/active", headers=headers)
+        assert active.status_code == 200
+        assert active.json()["target_language"] == ("fi-FI" if enabled else "en-GB")
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("enabled", [False, True])
+    @pytest.mark.parametrize("language", ["fi", "fi-fi", "fi-FI"])
+    async def test_finnish_switch_requires_canonical_enabled_code(
+        self, client, db_session, monkeypatch, enabled, language
+    ):
+        from app.core.config import settings
+
+        user, headers = await _make_user(db_session, language="en-GB")
+        await _add_language(db_session, user.id, "fi-FI")
+        available = ["en-GB", "fi-FI"] if enabled else ["en-GB"]
+        monkeypatch.setattr(settings, "AVAILABLE_TARGET_LANGUAGES", available)
+        accepted = enabled and language == "fi-FI"
+
+        response = await client.put(
+            "/api/languages/active", headers=headers, json={"target_language": language}
+        )
+
+        assert response.status_code == (200 if accepted else 422)
+        active = await client.get("/api/languages/active", headers=headers)
+        assert active.status_code == 200
+        assert active.json()["target_language"] == ("fi-FI" if accepted else "en-GB")
+        await db_session.refresh(user)
+        assert user.target_language == ("fi-FI" if accepted else "en-GB")
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("enabled", [False, True])
+    async def test_romanian_availability_follows_operator_configuration(
+        self, client, db_session, monkeypatch, enabled
+    ):
+        from app.core.config import settings
+
+        _user, headers = await _make_user(db_session, language="en-GB")
+        available = ["en-GB", "ro-RO"] if enabled else ["en-GB"]
+        monkeypatch.setattr(settings, "AVAILABLE_TARGET_LANGUAGES", available + ["ro", "ro-ro"])
+
+        response = await client.get("/api/languages", headers=headers)
+
+        assert response.status_code == 200
+        assert response.json()["all_supported_languages"] == available
+        added = await client.post(
+            "/api/languages", headers=headers, json={"target_language": "ro-RO"}
+        )
+        assert added.status_code == (201 if enabled else 422)
+        active = await client.get("/api/languages/active", headers=headers)
+        assert active.status_code == 200
+        assert active.json()["target_language"] == ("ro-RO" if enabled else "en-GB")
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("enabled", [False, True])
+    @pytest.mark.parametrize("language", ["ro", "ro-ro", "ro-RO"])
+    async def test_romanian_switch_requires_canonical_enabled_code(
+        self, client, db_session, monkeypatch, enabled, language
+    ):
+        from app.core.config import settings
+
+        user, headers = await _make_user(db_session, language="en-GB")
+        await _add_language(db_session, user.id, "ro-RO")
+        available = ["en-GB", "ro-RO"] if enabled else ["en-GB"]
+        monkeypatch.setattr(settings, "AVAILABLE_TARGET_LANGUAGES", available)
+        accepted = enabled and language == "ro-RO"
+
+        response = await client.put(
+            "/api/languages/active", headers=headers, json={"target_language": language}
+        )
+
+        assert response.status_code == (200 if accepted else 422)
+        active = await client.get("/api/languages/active", headers=headers)
+        assert active.status_code == 200
+        assert active.json()["target_language"] == ("ro-RO" if accepted else "en-GB")
+        await db_session.refresh(user)
+        assert user.target_language == ("ro-RO" if accepted else "en-GB")
 
     @pytest.mark.asyncio
     async def test_remove_language_cascades(self, client, db_session):
@@ -456,14 +605,32 @@ class TestLanguageAPI:
         assert res.status_code == 400
 
     @pytest.mark.asyncio
-    async def test_supported_languages_validation(self, client, db_session):
-        """POST /api/languages with unsupported language returns 422."""
+    @pytest.mark.parametrize(
+        "language",
+        [
+            "xx-XX",
+            "ru",
+            "ru-ru",
+            "da",
+            "da-dk",
+            "cs",
+            "cs-cz",
+            "hr",
+            "hr-hr",
+            "fi",
+            "fi-fi",
+            "ro",
+            "ro-ro",
+        ],
+    )
+    async def test_supported_languages_validation(self, client, db_session, language):
+        """POST /api/languages requires a supported canonical target code."""
         user, headers = await _make_user(db_session)
 
         res = await client.post(
             "/api/languages",
             headers=headers,
-            json={"target_language": "xx-XX"},
+            json={"target_language": language},
         )
         assert res.status_code == 422
 
@@ -478,6 +645,234 @@ class TestLanguageAPI:
 
         assert res.status_code == 201
         assert res.json()["target_language"] == "ja-JP"
+
+    @pytest.mark.asyncio
+    async def test_polish_language_can_be_added(self, client, db_session):
+        """pl-PL is accepted by the backend language allow-list."""
+        user, headers = await _make_user(db_session)
+
+        res = await client.post(
+            "/api/languages", headers=headers, json={"target_language": "pl-PL"}
+        )
+
+        assert res.status_code == 201
+        assert res.json()["target_language"] == "pl-PL"
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "language", ["nl-NL", "ru-RU", "sv-SE", "da-DK", "cs-CZ", "hr-HR", "fi-FI", "ro-RO"]
+    )
+    async def test_add_plan_switch_and_remove_preserve_other_language(
+        self, client, db_session, language
+    ):
+        from app.data.curriculum import get_curriculum
+
+        user, headers = await _make_user(db_session, language="en-GB")
+        english = await _make_plan(db_session, user.id, language="en-GB")
+        added = await client.post(
+            "/api/languages", headers=headers, json={"target_language": language}
+        )
+        assert added.status_code == 201
+        assert added.json()["target_language"] == language
+        generated = await client.post(
+            "/api/study-plan/generate",
+            headers=headers,
+            json={
+                "cefr_level": "A1",
+                "target_language": language,
+                "goals": ["grammar"],
+                "duration_weeks": 4,
+                "days_per_week": 4,
+            },
+        )
+        assert generated.status_code == 200
+        assert generated.json()["target_language"] == language
+        target_plan = await db_session.scalar(
+            select(StudyPlan).where(
+                StudyPlan.user_id == user.id,
+                StudyPlan.target_language == language,
+                StudyPlan.is_active.is_(True),
+            )
+        )
+        assert target_plan is not None
+        assert target_plan.user_language_id != english.user_language_id
+        assert get_curriculum(target_plan.target_language) is not get_curriculum("en-GB")
+        first_unit = get_curriculum(language)["A1"][0]
+        first_day = target_plan.generated_plan["weekly_plan"][0]["days"][0]
+        assert first_day["unit_id"] == first_unit.id
+        assert first_day["title"].startswith(first_unit.title)
+        target_plan_id, english_plan_id = target_plan.id, english.id
+        db_session.add_all(
+            [
+                Progress(
+                    user_id=user.id,
+                    study_plan_id=plan.id,
+                    date=date.today(),
+                    xp_earned=xp,
+                    streak_day=1,
+                    lessons_completed=1,
+                )
+                for plan, xp in ((english, 100), (target_plan, 25))
+            ]
+        )
+        await db_session.commit()
+        switched = await client.put(
+            "/api/languages/active", headers=headers, json={"target_language": "en-GB"}
+        )
+        assert switched.status_code == 200
+        current = await client.get("/api/study-plan/current", headers=headers)
+        assert current.status_code == 200
+        assert current.json()["id"] == english_plan_id
+        assert current.json()["target_language"] == "en-GB"
+        switched_back = await client.put(
+            "/api/languages/active", headers=headers, json={"target_language": language}
+        )
+        assert switched_back.status_code == 200
+        current = await client.get("/api/study-plan/current", headers=headers)
+        assert current.status_code == 200
+        assert current.json()["id"] == target_plan_id
+        assert current.json()["target_language"] == language
+        listed = await client.get("/api/languages", headers=headers)
+        assert listed.status_code == 200
+        languages = {entry["target_language"]: entry for entry in listed.json()["languages"]}
+        assert languages[language]["is_active"] is True
+        assert languages[language]["plan"]["id"] == target_plan_id
+        assert languages[language]["progress"]["total_xp"] == 25
+        assert languages["en-GB"]["plan"]["id"] == english_plan_id
+        assert languages["en-GB"]["progress"]["total_xp"] == 100
+        switched = await client.put(
+            "/api/languages/active", headers=headers, json={"target_language": "en-GB"}
+        )
+        assert switched.status_code == 200
+        removed = await client.delete(f"/api/languages/{language}", headers=headers)
+        assert removed.status_code == 204
+        listed = await client.get("/api/languages", headers=headers)
+        assert listed.status_code == 200
+        assert [entry["target_language"] for entry in listed.json()["languages"]] == ["en-GB"]
+        assert listed.json()["languages"][0]["plan"]["id"] == english_plan_id
+        assert listed.json()["languages"][0]["progress"]["total_xp"] == 100
+        remaining_plans = await db_session.scalar(
+            select(func.count()).select_from(StudyPlan).where(StudyPlan.id == target_plan_id)
+        )
+        remaining_progress = await db_session.scalar(
+            select(func.count())
+            .select_from(Progress)
+            .where(Progress.study_plan_id == target_plan_id)
+        )
+        assert remaining_plans == remaining_progress == 0
+        await db_session.refresh(english)
+        assert english.is_active is True
+
+    @pytest.mark.asyncio
+    async def test_portuguese_variants_have_independent_lifecycles(self, client, db_session):
+        user, headers = await _make_user(db_session)
+        plans = {}
+        for code in ("pt-BR", "pt-PT"):
+            added = await client.post(
+                "/api/languages", headers=headers, json={"target_language": code}
+            )
+            assert added.status_code == 201
+            assert added.json()["target_language"] == code
+            plans[code] = await _make_plan(db_session, user.id, language=code)
+
+        assert plans["pt-BR"].user_language_id != plans["pt-PT"].user_language_id
+        assert plans["pt-BR"].is_active and plans["pt-PT"].is_active
+        switched = await client.put(
+            "/api/languages/active", headers=headers, json={"target_language": "pt-BR"}
+        )
+        assert switched.status_code == 200
+        assert switched.json()["target_language"] == "pt-BR"
+
+        removed = await client.delete("/api/languages/pt-PT", headers=headers)
+        assert removed.status_code == 204
+        listed = await client.get("/api/languages", headers=headers)
+        languages = {entry["target_language"]: entry for entry in listed.json()["languages"]}
+        assert "pt-PT" not in languages
+        assert languages["pt-BR"]["is_active"] is True
+        assert languages["pt-BR"]["plan"]["id"] == plans["pt-BR"].id
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        ("source", "target"),
+        [("pt-PT", "pt-BR"), ("pt-BR", "pt-PT"), ("en-US", "en-GB"), ("en-GB", "en-US")],
+    )
+    @pytest.mark.parametrize("target_exists", [False, True])
+    async def test_profile_variant_change_preserves_language_ownership(
+        self, client, db_session, source, target, target_exists
+    ):
+        user, headers = await _make_user(db_session, language=source)
+        source_plan = await _make_plan(db_session, user.id, language=source)
+        source_membership_id = source_plan.user_language_id
+        progress = Progress(
+            user_id=user.id,
+            study_plan_id=source_plan.id,
+            date=date.today(),
+            xp_earned=100,
+            streak_day=1,
+            lessons_completed=1,
+        )
+        db_session.add(progress)
+        await db_session.commit()
+        target_plan = None
+        if target_exists:
+            await _add_language(db_session, user.id, target)
+            target_plan = await _make_plan(db_session, user.id, language=target)
+
+        response = await client.patch(
+            "/api/auth/me", headers=headers, json={"target_language": target}
+        )
+        assert response.status_code == 200
+        assert response.json()["target_language"] == target
+
+        memberships = {
+            entry.target_language: entry
+            for entry in (
+                await db_session.scalars(
+                    select(UserLanguage).where(UserLanguage.user_id == user.id)
+                )
+            ).all()
+        }
+        assert set(memberships) == {source, target}
+        assert memberships[source].id == source_membership_id
+        assert memberships[target].id != source_membership_id
+        assert memberships[source].is_active is False
+        assert memberships[target].is_active is True
+        if target_plan:
+            assert memberships[target].id == target_plan.user_language_id
+
+        current = await client.get("/api/study-plan/current", headers=headers)
+        assert current.status_code == 200
+        if target_plan:
+            assert current.json()["id"] == target_plan.id
+            assert current.json()["target_language"] == target
+        else:
+            assert current.json() is None
+
+        listed = await client.get("/api/languages", headers=headers)
+        assert listed.status_code == 200
+        languages = {entry["target_language"]: entry for entry in listed.json()["languages"]}
+        assert languages[source]["plan"]["id"] == source_plan.id
+        assert languages[source]["progress"]["total_xp"] == 100
+        if target_exists:
+            assert languages[target]["progress"]["total_xp"] == 0
+        else:
+            assert languages[target]["progress"] is None
+
+        restored = await client.patch(
+            "/api/auth/me", headers=headers, json={"target_language": source}
+        )
+        assert restored.status_code == 200
+        current = await client.get("/api/study-plan/current", headers=headers)
+        assert current.status_code == 200
+        assert current.json()["id"] == source_plan.id
+        assert current.json()["target_language"] == source
+        await db_session.refresh(source_plan)
+        await db_session.refresh(progress)
+        assert source_plan.user_language_id == source_membership_id
+        assert source_plan.target_language == source
+        assert source_plan.is_active is True
+        assert progress.study_plan_id == source_plan.id
+        assert progress.xp_earned == 100
 
     @pytest.mark.asyncio
     async def test_korean_language_can_be_added(self, client, db_session):
@@ -811,6 +1206,17 @@ class TestCurriculumPerLanguage:
         assert len(c["A1"]) == 8
         assert c["A1"][0].title == "한글과 기본 인사"
         assert c["C2"][-1].title == "C2 종합 복습"
+
+    @pytest.mark.asyncio
+    async def test_curriculum_polish(self, client):
+        """get_curriculum('pl-PL') returns Polish curriculum."""
+        from app.data.curriculum import get_curriculum
+
+        c = get_curriculum("pl-PL")
+        assert list(c.keys()) == ["A1", "A2", "B1", "B2", "C1", "C2"]
+        assert len(c["A1"]) == 8
+        assert c["A1"][0].title == "Powitania i przedstawianie się"
+        assert c["C2"][-1].title == "Powtórka C2"
 
     @pytest.mark.asyncio
     async def test_curriculum_chinese(self, client):

@@ -64,6 +64,54 @@ _TOPICS_BY_LEVEL: dict[str, list[str]] = {
 }
 
 _CULTURAL_TOPICS: dict[str, list[str]] = {
+    "ro": [
+        "daily life, public transport, libraries and local services in Romania",
+        "Romanian literature, cinema, theatre, music and contemporary regional cultural life",
+        "everyday life and linguistic diversity in Bucharest, Transylvania, Banat and Moldova in Romania",
+        "the Carpathians, the Danube Delta and Romanian conservation and sustainable tourism debates",
+    ],
+    "fi": [
+        "daily life, public transport, libraries and local services in Finland",
+        "Finnish literature, music, cinema, design and contemporary regional cultural life",
+        "Finnish lakes, forests and jokaisenoikeudet with responsibilities and local restrictions",
+        "linguistic diversity, Swedish and Sámi perspectives, and environmental debates in Finland",
+    ],
+    "hr": [
+        "daily life, public transport, libraries and local services in Croatia",
+        "Croatian literature, theatre, cinema, music and contemporary cultural life",
+        "regional life in Slavonia, Istria, Dalmatia, Zagreb and Croatian island communities",
+        "Croatian national parks, Adriatic coastal environments and sustainable tourism debates",
+    ],
+    "cs": [
+        "daily life, public transport, libraries and local services in Czechia",
+        "Czech literature, theatre, cinema, music, architecture and contemporary cultural life",
+        "regional traditions and everyday life in Bohemia, Moravia and Czech Silesia",
+        "Czech hiking culture, marked trails, landscape conservation and sustainability debates",
+    ],
+    "da": [
+        "daily life, cycling, public transport, libraries and local services in Denmark",
+        "Danish literature, cinema, music, architecture and design",
+        "associations, folk high schools, seasonal traditions and regional life in Denmark",
+        "Danish coastal environments, island communities and contemporary sustainability debates",
+    ],
+    "sv": [
+        "daily life, public transport, libraries, housing and local services in Sweden",
+        "Swedish literature, music, cinema, design and regional cultural life",
+        "Swedish outdoor life, allemansrätten with responsibilities and local restrictions",
+        "associations, seasonal traditions, linguistic diversity and Sámi perspectives in Sweden",
+    ],
+    "ru": [
+        "daily life, public transport, local services and leisure in Russian cities and regions",
+        "Russian literature, theatre, cinema, music and contemporary cultural life",
+        "regional food, seasonal traditions and cultural diversity in Russia",
+        "Russian-language communication, science, museums and differing historical perspectives",
+    ],
+    "nl": [
+        "daily life, cycling, public transport and local services in the Netherlands",
+        "Dutch water management, polders and contemporary environmental debates",
+        "Dutch literature, art, museums and regional cultural life in the Netherlands",
+        "cultural diversity, historical perspectives and changing traditions in the Netherlands",
+    ],
     "de": [
         "German festivals and holiday traditions",
         "German classical music and famous composers",
@@ -88,11 +136,23 @@ _CULTURAL_TOPICS: dict[str, list[str]] = {
         "daily life and customs in Italian cities",
         "Italian history, landmarks, and UNESCO sites",
     ],
+    "pt-BR": [
+        "Brazilian regional food, festivals, and everyday traditions",
+        "Brazilian literature, music, cinema, and cultural diversity",
+        "daily life, education, work, and public transport in Brazilian cities",
+        "Brazilian history, Indigenous and Afro-Brazilian heritage, and biodiversity",
+    ],
     "pt": [
         "Portuguese music, fado, and cultural traditions",
         "Portuguese cuisine, wines, and food customs",
         "daily life and customs in Portuguese cities",
         "Portuguese history, the Age of Discoveries, and heritage",
+    ],
+    "pl": [
+        "Polish traditions, festivals, and seasonal customs",
+        "Polish cuisine, regional food culture, and hospitality",
+        "daily life and customs in Polish cities",
+        "Polish history, literature, and cultural heritage",
     ],
     "ja": [
         "daily life, etiquette, and seasonal customs in Japan",

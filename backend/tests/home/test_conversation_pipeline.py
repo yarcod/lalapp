@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import asyncio
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from app.home import conversation as home_conversation
 from app.home.conversation import HomeConversationPipeline, build_pipeline
+from app.services.conversation_pipeline import ConversationPipeline
 from app.services.llm_adapter import LLMStreamReset
 from tests.test_conversation_pipeline_service import FakeWS, _make_chunk
 
@@ -37,6 +38,7 @@ async def test_build_pipeline_returns_home_pipeline(monkeypatch) -> None:
     monkeypatch.setattr(home_conversation, "live_llm_is_small", AsyncMock(return_value=True))
 
     pipeline = await build_pipeline(
+        ConversationPipeline,
         llm=AsyncMock(),
         tts=AsyncMock(),
         stt=AsyncMock(),
@@ -47,6 +49,19 @@ async def test_build_pipeline_returns_home_pipeline(monkeypatch) -> None:
     assert isinstance(pipeline, HomeConversationPipeline)
     assert pipeline._small_llm is True
     assert pipeline._generated_opener is False
+
+
+@pytest.mark.asyncio
+async def test_build_pipeline_calls_a_replaced_base_unchanged(monkeypatch) -> None:
+    tier = AsyncMock(return_value=True)
+    monkeypatch.setattr(home_conversation, "live_llm_is_small", tier)
+    factory = MagicMock(return_value="double")
+
+    pipeline = await build_pipeline(factory, llm="llm", cefr_level="B1")
+
+    assert pipeline == "double"
+    factory.assert_called_once_with(llm="llm", cefr_level="B1")
+    tier.assert_not_awaited()
 
 
 # ---------------------------------------------------------------------------

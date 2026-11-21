@@ -123,7 +123,7 @@ export function ProfileSection({ title }: { title?: string } = {}) {
       clearAvatarCache()
       setUser({ ...user!, avatar: updated.avatar })
     } catch {
-      setAvatarError(t('avatarTypeError'))
+      setAvatarError(t('saveFailed'))
     } finally {
       setAvatarUploading(false)
     }
@@ -140,7 +140,7 @@ export function ProfileSection({ title }: { title?: string } = {}) {
       clearAvatarCache()
       setUser({ ...user!, avatar: null })
     } catch {
-      setAvatarError(t('avatarTypeError'))
+      setAvatarError(t('saveFailed'))
     } finally {
       setAvatarUploading(false)
     }

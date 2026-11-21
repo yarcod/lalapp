@@ -5,20 +5,18 @@ import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { Check } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
+import { useBillingPortal } from '@/hooks/useBillingPortal'
 import { trackDashboardLink } from '@/lib/analytics'
-import {
-  isSubscribed,
-  needsPaymentRecovery,
-  isFreemiumTrialActive,
-  useAuthStore,
-} from '@/store/auth'
+import { isSubscribed, needsPaymentRecovery, useAuthStore } from '@/store/auth'
 import { useProgressStore } from '@/store/progress'
 import { useLanguageStore } from '@/store/language'
 import { useConfigStore } from '@/store/config'
+import { useTrialStatus } from '@/hooks/useTrialStatus'
 import OnboardingTour from '@/components/tour/OnboardingTour'
 import WhatsNew from '@/components/whats-new/WhatsNew'
 import { PageLoading } from '@/components/ui/page-loading'
 import { SubscriptionPlanButtons } from '@/components/billing/SubscriptionPlanButtons'
+import { TrialExpiredNotice } from '@/components/billing/TrialExpiredNotice'
 import { DashboardAnnouncement } from '@/components/dashboard/DashboardAnnouncement'
 import {
   ProgressOverview,
@@ -53,22 +51,14 @@ export default function DashboardPage() {
   const tError = useTranslations('error')
   const user = useAuthStore((s) => s.user)
   const stripeEnabled = useConfigStore((s) => s.stripeEnabled)
-  const trialEligible = !user?.trial_used
-  const freemiumTrialActive = isFreemiumTrialActive(user, stripeEnabled)
-  const [freemiumTrialDaysLeft, setFreemiumTrialDaysLeft] = useState(0)
-
-  useEffect(() => {
-    if (freemiumTrialActive && user?.freemium_trial_ends_at) {
-      const days = Math.max(
-        1,
-        Math.ceil(
-          (new Date(user.freemium_trial_ends_at).getTime() - Date.now()) /
-            86400000
-        )
-      )
-      setFreemiumTrialDaysLeft(days)
-    }
-  }, [freemiumTrialActive, user?.freemium_trial_ends_at])
+  const stripeTrialDays = useConfigStore((s) => s.stripeTrialDays)
+  const configLoaded = useConfigStore((s) => s.loaded)
+  const trialEligible =
+    configLoaded &&
+    Number.isInteger(stripeTrialDays) &&
+    stripeTrialDays > 0 &&
+    user?.trial_used === false
+  const { freemiumTrialActive, freemiumTrialDaysLeft } = useTrialStatus()
 
   const {
     streak,
@@ -101,8 +91,11 @@ export default function DashboardPage() {
   const [vocabularyProgress, setVocabularyProgress] = useState(0)
   const [skipping, setSkipping] = useState(false)
   const [skipError, setSkipError] = useState(false)
-  const [portalLoading, setPortalLoading] = useState(false)
-  const [portalError, setPortalError] = useState<string | null>(null)
+  const {
+    openPortal,
+    loading: portalLoading,
+    error: portalError,
+  } = useBillingPortal()
 
   const loadData = useCallback(async () => {
     const sequence = ++loadSequence.current
@@ -202,20 +195,6 @@ export default function DashboardPage() {
     }
   }
 
-  async function handleManageSubscription() {
-    setPortalLoading(true)
-    setPortalError(null)
-    try {
-      const res = await apiFetch('/api/billing/portal', { method: 'POST' })
-      if (!res.ok) throw new Error(tBilling('portalError'))
-      const { url } = await res.json()
-      window.location.assign(url)
-    } catch {
-      setPortalError(tBilling('portalError'))
-      setPortalLoading(false)
-    }
-  }
-
   if (loading) {
     return <PageLoading label={t('loadingProgress')} />
   }
@@ -279,6 +258,7 @@ export default function DashboardPage() {
     <>
       <OnboardingTour />
       <WhatsNew />
+      <TrialExpiredNotice />
       <div
         className="mx-auto max-w-4xl p-6"
         onClick={(event) => {
@@ -749,25 +729,24 @@ export default function DashboardPage() {
                 </span>
               )}
             </div>
-            {!freemiumTrialActive &&
-              (paymentRecovery ? (
-                <div className="border-fl-border mt-4 border-t pt-4">
-                  <button
-                    onClick={handleManageSubscription}
-                    disabled={portalLoading}
-                    className="bg-fl-accent text-fl-accent-fg hover:bg-fl-accent/90 w-full px-4 py-2.5 font-mono text-sm font-bold tracking-widest uppercase transition-colors disabled:opacity-50 sm:w-auto"
-                  >
-                    {portalLoading ? '...' : tBilling('updatePayment')}
-                  </button>
-                  {portalError && (
-                    <p className="text-fl-hint mt-3 font-mono text-red-500">
-                      {portalError}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <SubscriptionPlanButtons className="border-fl-border mt-4 border-t pt-4" />
-              ))}
+            {paymentRecovery ? (
+              <div className="border-fl-border mt-4 border-t pt-4">
+                <button
+                  onClick={openPortal}
+                  disabled={portalLoading}
+                  className="bg-fl-accent text-fl-accent-fg hover:bg-fl-accent/90 w-full px-4 py-2.5 font-mono text-sm font-bold tracking-widest uppercase transition-colors disabled:opacity-50 sm:w-auto"
+                >
+                  {portalLoading ? '...' : tBilling('updatePayment')}
+                </button>
+                {portalError && (
+                  <p className="text-fl-hint mt-3 font-mono text-red-500">
+                    {portalError}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <SubscriptionPlanButtons className="border-fl-border mt-4 border-t pt-4" />
+            )}
           </div>
         )}
 

@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import asyncio
 import struct
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 from jwt.exceptions import PyJWTError
 from pydantic import BaseModel
+from redis.asyncio import Redis
 from sqlalchemy import select
 
 from app.core.app_logger import get_logger
@@ -25,20 +27,27 @@ from app.models.conversation import Conversation as ConversationModel
 from app.models.study_plan import StudyPlan
 from app.models.user import User
 from app.models.user_language import UserLanguage
+from app.schemas.auth import SUPPORTED_TARGET_LANGUAGES
+from app.schemas.tts_stt import CLOUD_TTS_VOICES
 from app.services.assessment_voice_trial import (
     AssessmentVoiceTrial,
     consume_assessment_voice_trial_token,
     validate_assessment_voice_trial_token,
 )
+from app.services.conversation_pipeline import ConversationPipeline
 from app.services.freemium_service import (
+    check_situations_quota,
     check_voice_quota,
     is_freemium_trial_active,
+    record_situation_usage,
 )
+from app.services.grammar_voice_practice import load_grammar_voice_practice
 from app.services.language_helpers import lesson_practice_title, voice_session_title
 from app.services.lesson_voice_practice import load_lesson_voice_practice
 from app.services.llm_adapter import llm_adapter
 from app.services.memory_service import get_user_memories
 from app.services.quota_service import check_all_quotas
+from app.services.situations import load_situation_practice
 from app.services.subscription_service import is_subscribed
 from app.utils.db import db_session
 from app.utils.redis import redis_client as _redis_client
@@ -54,30 +63,34 @@ WARMUP_TIMEOUT_SECONDS = 60
 
 async def _check_voice_access(
     user: User,
-    redis_client,
+    redis_client: Redis,
     voice_trial_token: str | None = None,
-) -> tuple[bool, bool, AssessmentVoiceTrial | None, int]:
+) -> tuple[bool, bool, AssessmentVoiceTrial | None, int, dict[str, str | int] | None]:
     """Check whether a user can access voice conversation.
 
-    Returns (allowed, freemium_ok, voice_trial, freemium_remaining_seconds).
+    Returns (allowed, freemium_ok, voice_trial, freemium_remaining_seconds, failure).
     - allowed: overall access granted
     - freemium_ok: access via freemium voice quota (for usage recording)
     - voice_trial: access via one-time assessment demo (None if not used)
     - freemium_remaining_seconds: remaining seconds when access is via voice quota
+    - failure: additive denial metadata, including quota seconds only when known
 
     Check order: subscribed → freemium trial → freemium voice quota → assessment trial.
     """
     if is_subscribed(user, settings.STRIPE_ENABLED):
-        return True, False, None, 0
+        return True, False, None, 0, None
 
     if is_freemium_trial_active(user.freemium_trial_ends_at):
-        return True, False, None, 0
+        return True, False, None, 0, None
 
+    vq = None
+    unavailable = False
     try:
         vq = await check_voice_quota(redis_client, user.id)
         if vq.allowed:
-            return True, True, None, vq.remaining
+            return True, True, None, vq.remaining, None
     except Exception:
+        unavailable = True
         logger.exception("[voice_access] Redis unavailable during freemium quota check")
 
     try:
@@ -88,11 +101,18 @@ async def _check_voice_access(
             stripe_enabled=settings.STRIPE_ENABLED,
         )
         if trial:
-            return True, False, trial, 0
+            return True, False, trial, 0, None
     except Exception:
+        unavailable = True
         logger.exception("[voice_access] Redis unavailable during assessment trial validation")
 
-    return False, False, None, 0
+    failure: dict[str, str | int] = {
+        "reason": "freemium_unavailable" if unavailable else "freemium_exhausted",
+        "feature": "voice",
+    }
+    if vq is not None:
+        failure.update(remaining=vq.remaining, limit=vq.limit)
+    return False, False, None, 0, failure
 
 
 class ConversationWarmupRequest(BaseModel):
@@ -137,13 +157,13 @@ async def conversation_warmup(
     Awaits best-effort provider probes within a shared time budget before
     the frontend opens the WebSocket. This is not a strict health check.
     """
-    allowed, _, _, _ = await _check_voice_access(
+    allowed, _, _, _, failure = await _check_voice_access(
         current_user,
         redis,
         voice_trial_token=data.trial_token if data else None,
     )
     if not allowed:
-        return JSONResponse({"detail": "subscription_required"}, status_code=402)
+        return JSONResponse({"detail": "subscription_required", **(failure or {})}, status_code=402)
 
     tts_service = getattr(request.app.state, "tts_service", None)
     stt_service = getattr(request.app.state, "stt_service", None)
@@ -210,24 +230,14 @@ async def conversation_ws(
         target_language_from_client: str | None = auth_msg.get("target_language")
         lesson_id_raw = auth_msg.get("lesson_id")
         has_lesson_practice = "lesson_id" in auth_msg
+        grammar_practice_id_raw = auth_msg.get("grammar_practice_session_id")
+        has_grammar_practice = "grammar_practice_session_id" in auth_msg
+        has_situation_practice = "situation_id" in auth_msg or "situation_study_plan_id" in auth_msg
         client_conversation_id_raw = auth_msg.get(
             "conversation_id"
         )  # optional: reserved for future API use
-        if settings.TTS_PROVIDER == "openai":
-            _VALID_VOICES = frozenset(
-                {
-                    "alloy",
-                    "ash",
-                    "coral",
-                    "echo",
-                    "fable",
-                    "nova",
-                    "onyx",
-                    "sage",
-                    "shimmer",
-                }
-            )
-            if voice_pref not in _VALID_VOICES:
+        if settings.TTS_PROVIDER in {"openai", "gemini"}:
+            if not isinstance(voice_pref, str) or voice_pref not in CLOUD_TTS_VOICES:
                 voice_pref = ""
         else:
             voice_pref = ""  # local TTS ignores voice param
@@ -272,17 +282,71 @@ async def conversation_ws(
         except Exception:
             pass  # Redis failure → allow through
 
+        # Situations are server-selected sources, validated before any quota or demo claim.
+        situation_practice = None
+        if has_situation_practice:
+            if not (has_lesson_practice or has_grammar_practice or "voice_trial_token" in auth_msg):
+                situation_practice = await load_situation_practice(
+                    db,
+                    user_id,
+                    auth_msg.get("situation_id"),
+                    auth_msg.get("situation_study_plan_id"),
+                )
+            if situation_practice is None:
+                await websocket.send_json({"type": "error", "code": "situation_unavailable"})
+                await websocket.close(code=1008)
+                return
+
+        freemium_situation = bool(
+            situation_practice
+            and not is_subscribed(user, settings.STRIPE_ENABLED)
+            and not is_freemium_trial_active(user.freemium_trial_ends_at)
+        )
+        if freemium_situation:
+            situation_failure: dict[str, str | int] | None = None
+            try:
+                async with _redis_client() as redis_situation:
+                    quota = await check_situations_quota(redis_situation, user_id)
+                if not quota.allowed:
+                    situation_failure = {
+                        "reason": "freemium_exhausted",
+                        "remaining": quota.remaining,
+                        "limit": quota.limit,
+                    }
+            except Exception:
+                logger.exception("[conversation] Situation quota unavailable — blocking")
+                situation_failure = {"reason": "freemium_unavailable"}
+            if situation_failure is not None:
+                await websocket.send_json(
+                    {
+                        "type": "error",
+                        "code": "subscription_required",
+                        "feature": "situations",
+                        **situation_failure,
+                    }
+                )
+                await websocket.close(code=1008)
+                return
+
         # Check subscription, freemium trial, freemium voice quota, or assessment voice trial.
         allowed = False
         voice_trial = None
         freemium_ok = False
         freemium_remaining_seconds = 0
+        access_failure: dict[str, str | int] | None = {
+            "reason": "freemium_unavailable",
+            "feature": "voice",
+        }
         try:
             async with _redis_client() as redis_access:
-                allowed, freemium_ok, voice_trial, freemium_remaining_seconds = (
-                    await _check_voice_access(
-                        user, redis_access, voice_trial_token=voice_trial_token
-                    )
+                (
+                    allowed,
+                    freemium_ok,
+                    voice_trial,
+                    freemium_remaining_seconds,
+                    access_failure,
+                ) = await _check_voice_access(
+                    user, redis_access, voice_trial_token=voice_trial_token
                 )
         except Exception:
             logger.exception(
@@ -298,6 +362,7 @@ async def conversation_ws(
                     "type": "error",
                     "code": "subscription_required",
                     "message": "Voice conversation is not available on your current plan.",
+                    **(access_failure or {}),
                 }
             )
             await websocket.close(code=1008)
@@ -322,6 +387,22 @@ async def conversation_ws(
         from app.services.user_language_service import get_active_language
 
         lesson_practice = None
+        grammar_practice = None
+        if has_grammar_practice:
+            grammar_practice_id = None
+            if isinstance(grammar_practice_id_raw, str) and not has_lesson_practice:
+                try:
+                    grammar_practice_id = str(UUID(grammar_practice_id_raw))
+                except ValueError:
+                    pass
+            if grammar_practice_id is not None:
+                grammar_practice = await load_grammar_voice_practice(
+                    db, user_id, grammar_practice_id
+                )
+            if grammar_practice is None:
+                await websocket.send_json({"type": "error", "code": "grammar_practice_unavailable"})
+                await websocket.close(code=1008)
+                return
         if has_lesson_practice:
             if type(lesson_id_raw) is int and 1 <= lesson_id_raw <= 2_147_483_647:
                 lesson_practice = await load_lesson_voice_practice(db, user_id, lesson_id_raw)
@@ -333,59 +414,47 @@ async def conversation_ws(
         plan: StudyPlan | None = None
         if lesson_practice:
             plan = lesson_practice.plan
-        elif target_language_from_client:
-            ul_result = await db.execute(
-                select(UserLanguage).where(
-                    UserLanguage.user_id == user_id,
-                    UserLanguage.target_language == target_language_from_client,
-                )
-            )
-            ul = ul_result.scalar_one_or_none()
-            if ul:
-                plan_result = await db.execute(
-                    select(StudyPlan)
-                    .where(
-                        StudyPlan.user_language_id == ul.id,
-                        StudyPlan.is_active == True,  # noqa: E712
-                    )
-                    .limit(1)
-                )
-                plan = plan_result.scalar_one_or_none()
-        if not plan:
-            active_lang = await get_active_language(db, user_id)
-            if active_lang:
-                result = await db.execute(
-                    select(StudyPlan)
-                    .where(
-                        StudyPlan.user_language_id == active_lang.id,
-                        StudyPlan.is_active == True,  # noqa: E712
-                    )
-                    .limit(1)
-                )
-                plan = result.scalar_one_or_none()
-        if not plan:
-            # No plan for the selected language — use A2 + the selected language
-            cefr_level = "A2"
-            study_plan_id_for_conv = None
-            if target_language_from_client:
-                target_language = target_language_from_client
-            elif active_lang:
-                target_language = active_lang.target_language
-            else:
-                target_language = "en-GB"
+        elif grammar_practice:
+            plan = grammar_practice.plan
+        elif situation_practice:
+            plan = situation_practice.plan
         else:
-            cefr_level = plan.cefr_level
-            if lesson_practice:
-                target_language = plan.target_language
-            elif target_language_from_client:
+            if target_language_from_client is not None:
                 target_language = target_language_from_client
             else:
-                ul_row = await db.execute(
-                    select(UserLanguage).where(UserLanguage.id == plan.user_language_id)
+                active_lang = await get_active_language(db, user_id)
+                target_language = active_lang.target_language if active_lang else "en-GB"
+
+            if (
+                not isinstance(target_language, str)
+                or target_language not in SUPPORTED_TARGET_LANGUAGES
+            ):
+                await websocket.send_json({"type": "error", "code": "invalid_target_language"})
+                await websocket.close(code=1008)
+                return
+
+            # Resolve only this language; another active track must not supply its plan or level.
+            plan_result = await db.execute(
+                select(StudyPlan)
+                .join(UserLanguage, StudyPlan.user_language_id == UserLanguage.id)
+                .where(
+                    UserLanguage.user_id == user_id,
+                    UserLanguage.target_language == target_language,
+                    StudyPlan.user_id == user_id,
+                    StudyPlan.target_language == target_language,
+                    StudyPlan.is_active.is_(True),
                 )
-                ul = ul_row.scalar_one_or_none()
-                target_language = ul.target_language if ul else plan.target_language
-            study_plan_id_for_conv = plan.id
+                .order_by(StudyPlan.created_at.desc())
+                .limit(1)
+            )
+            plan = plan_result.scalar_one_or_none()
+
+        if plan:
+            target_language = plan.target_language
+        cefr_level = plan.cefr_level if plan else "A2"
+        if grammar_practice:
+            cefr_level = grammar_practice.session.learner_level
+        study_plan_id_for_conv = plan.id if plan else None
 
         # Read user settings before session closes to avoid DetachedInstanceError
         max_duration = (
@@ -406,7 +475,9 @@ async def conversation_ws(
 
     # Validate and sanitize optional chat context passed from the tutor chat
     valid_context: list[dict] | None = None
-    if not lesson_practice and isinstance(initial_context_raw, list):
+    if not (lesson_practice or grammar_practice or situation_practice) and isinstance(
+        initial_context_raw, list
+    ):
         sanitized = [
             {"role": m["role"], "content": m["content"]}
             for m in initial_context_raw[:20]
@@ -457,14 +528,17 @@ async def conversation_ws(
         if voice_trial:
             try:
                 async with db_session() as db_trial:
-                    trial_user = await db_trial.get(User, user_id)
-                    if trial_user:
+                    try:
                         await consume_assessment_voice_trial_token(
                             redis,
-                            user=trial_user,
+                            db=db_trial,
+                            user_id=user_id,
                             token=voice_trial.token,
                         )
                         await db_trial.commit()
+                    except Exception:
+                        await db_trial.rollback()
+                        raise
             except Exception as exc:
                 logger.error("[conversation] Failed to consume voice trial: %s", exc)
                 await websocket.send_json(
@@ -488,7 +562,7 @@ async def conversation_ws(
                 # Reuse path: if a caller explicitly passes a valid conversation_id
                 # that belongs to this user, append to that conversation.
                 if (
-                    not lesson_practice
+                    not (lesson_practice or grammar_practice or situation_practice)
                     and isinstance(client_conversation_id_raw, (int, float))
                     and int(client_conversation_id_raw) > 0
                 ):
@@ -508,7 +582,19 @@ async def conversation_ws(
                         title=(
                             lesson_practice_title(native_language, lesson_practice.lesson.title)
                             if lesson_practice
-                            else voice_session_title(native_language)
+                            else (
+                                lesson_practice_title(
+                                    native_language, grammar_practice.session.title
+                                )
+                                if grammar_practice
+                                else (
+                                    lesson_practice_title(
+                                        native_language, situation_practice.situation.title
+                                    )
+                                    if situation_practice
+                                    else voice_session_title(native_language)
+                                )
+                            )
                         ),
                         source="voice",
                         study_plan_id=study_plan_id_for_conv,
@@ -539,6 +625,7 @@ async def conversation_ws(
             pass
 
         pipeline = await build_pipeline(
+            ConversationPipeline,
             llm=llm_adapter,
             tts=tts_service,
             stt=stt_service,
@@ -556,13 +643,30 @@ async def conversation_ws(
             memories=memories,
             voice=voice_pref,
             study_plan_id=study_plan_id_for_conv,
-            lesson_practice_context=lesson_practice.context if lesson_practice else "",
+            lesson_practice_context=(
+                lesson_practice.context
+                if lesson_practice
+                else (
+                    grammar_practice.context
+                    if grammar_practice
+                    else situation_practice.context if situation_practice else ""
+                )
+            ),
             user_agent=websocket.headers.get("user-agent", ""),
         )
         pipeline._redis = redis
         pipeline._freemium_voice = freemium_ok
 
         try:
+            if situation_practice:
+                await websocket.send_json({"type": "situation_started"})
+            if freemium_situation:
+                # The source was admitted and its startup acknowledgement was sent successfully.
+                # Like other Redis freemium counters, successful work is recorded best-effort.
+                try:
+                    await record_situation_usage(redis, user_id)
+                except Exception:
+                    logger.exception("[conversation] Failed to record situation usage")
             await pipeline.run(websocket)
         except WebSocketDisconnect:
             logger.info("[conversation] WebSocketDisconnect — user=%s", user_id)

@@ -1,11 +1,13 @@
 """Pronunciation instructions for instruction-capable speech models."""
 
 _SPEECH_LANGUAGES = {
+    "cs": "Czech from Czechia",
     "en": "British English",
     "en-US": "American English",
     "es": "Spanish from Spain",
     "fr": "French from France",
     "pt": "European Portuguese from Portugal",
+    "pt-BR": "Brazilian Portuguese from Brazil",
     "de": "Standard German from Germany",
     "it": "Standard Italian from Italy",
     "ja": "Standard Japanese from Japan",
@@ -24,6 +26,12 @@ _SPEECH_LANGUAGES = {
 
 
 _PRONUNCIATION_GUIDANCE = {
+    "cs": (
+        "Use native Czech vowel length independently of first-syllable stress. In prepositional "
+        "phrases, place stress on a preceding monosyllabic preposition where appropriate. "
+        "Preserve ř, palatal consonants, syllabic r and l, natural voicing assimilation and final "
+        "devoicing. Keep Czech vowel quality and phrasing rather than English reductions."
+    ),
     "en": "Use contemporary British vowel sounds and natural connected speech, without theatrical diction.",
     "en-US": "Use natural American vowels, rhotic r, and conversational connected speech.",
     "es": (
@@ -38,6 +46,11 @@ _PRONUNCIATION_GUIDANCE = {
     "pt": (
         "Use European Portuguese unstressed-vowel reduction, nasal vowels, and consonants. "
         "Preserve Portugal's natural rhythm and vowel quality rather than English or Brazilian patterns."
+    ),
+    "pt-BR": (
+        "Use natural Brazilian Portuguese vowels, nasalization, consonants, and conversational rhythm. "
+        "Keep a consistent Brazilian accent, with natural regional realizations of r, s, t, and d. "
+        "Avoid Portugal's strong unstressed-vowel reduction and English vowel patterns."
     ),
     "de": (
         "Preserve German vowel length, umlauts, ich and ach sounds, and final devoicing. "
@@ -92,7 +105,8 @@ _PRONUNCIATION_GUIDANCE = {
         "Keep syllables clear and rhythm natural without English vowel reduction."
     ),
     "hr": (
-        "Use native Croatian vowels, syllabic r, consonant distinctions, and natural lexical accent. "
+        "Use native Croatian vowels, syllabic r, č/ć and dž/đ distinctions, and palatal lj and nj. "
+        "Preserve natural lexical accent, vowel length and Croatian ijekavian pronunciation. "
         "Avoid English diphthongs, r, and stress patterns."
     ),
 }

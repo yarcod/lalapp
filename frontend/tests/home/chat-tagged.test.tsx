@@ -16,22 +16,32 @@ vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
 }))
 vi.mock('@/lib/api', () => ({ apiFetch: mocks.apiFetch }))
+function mockStore(state: object) {
+  return Object.assign(
+    (selector: (state: object) => unknown) => selector(state),
+    { getState: () => state, subscribe: () => () => {} }
+  )
+}
+
 vi.mock('@/store/auth', () => ({
-  useAuthStore: (selector: (state: object) => unknown) =>
-    selector({
-      user: {
-        username: 'learner',
-        displayName: 'Learner',
-        avatarUrl: null,
-        subscription_status: 'active',
-      },
-    }),
+  useAuthStore: mockStore({
+    sessionVersion: 0,
+    user: {
+      username: 'learner',
+      displayName: 'Learner',
+      avatarUrl: null,
+      subscription_status: 'active',
+    },
+  }),
   isSubscribed: () => true,
   isFreemiumTrialActive: () => false,
 }))
 vi.mock('@/store/language', () => ({
-  useLanguageStore: (selector: (state: object) => unknown) =>
-    selector({ activeLanguage: { code: mocks.activeCode } }),
+  useLanguageStore: mockStore({
+    get activeLanguage() {
+      return { code: mocks.activeCode }
+    },
+  }),
 }))
 vi.mock('@/store/config', () => ({
   useConfigStore: (selector: (state: object) => unknown) =>
@@ -44,6 +54,13 @@ vi.mock('@/store/freemium', () => ({
       fetchStatus: mocks.fetchFreemium,
       decrement: mocks.decrementFreemium,
     }),
+}))
+vi.mock('@/lib/freemium-access', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/freemium-access')>()),
+  useFreemiumAccessRecovery: () => ({
+    accessDenied: false,
+    reportAccessDenied: vi.fn(),
+  }),
 }))
 vi.mock('@/components/billing/MaintenanceBanner', () => ({
   MaintenanceGate: ({ children }: { children: ReactNode }) => children,

@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import { useLanguageStore } from '@/store/language'
+import { useAuthStore } from '@/store/auth'
+import { resolveConfiguredTtsVoice } from '@/lib/tts-voice'
 import {
   ExerciseGenerationError,
   type ExerciseContext,
@@ -18,22 +20,27 @@ export function useExerciseGeneration<T>({
   setPageState,
   setError,
   dismissTooltip,
+  onAccessDenied,
 }: {
   feature: 'listening' | 'reading'
   language: string | undefined
   studyPlanId?: number
   level?: string | null
   onExercise: (exercise: T, context: ExerciseContext) => void
-  setPageState: (state: 'loading' | 'generating' | 'idle' | 'exercise') => void
+  setPageState: (
+    state: 'loading' | 'generating' | 'idle' | 'exercise' | 'no-plan'
+  ) => void
   setError: (error: string) => void
   dismissTooltip: () => void
+  onAccessDenied?: () => void
 }) {
   const t = useTranslations('exerciseGeneration')
-  const tCommon = useTranslations('common')
   const active = useRef<AbortController | null>(null)
+  const lastAutomaticLoad = useRef<(() => Promise<void>) | null>(null)
   const needsRefresh = useLanguageStore((s) => s.needsRefresh)
   const isSwitching = useLanguageStore((s) => s.isSwitching)
   const fetchLanguages = useLanguageStore((s) => s.fetchLanguages)
+  const sessionVersion = useAuthStore((s) => s.sessionVersion)
 
   const run = useCallback(
     async (generate: boolean, voice = '') => {
@@ -44,6 +51,25 @@ export function useExerciseGeneration<T>({
       active.current?.abort()
       const controller = new AbortController()
       active.current = controller
+      const initialContext = useLanguageStore.getState()
+      const initialPlan = initialContext.userLanguages.find(
+        (item) => item.is_active
+      )?.plan
+      const current = () => {
+        const context = useLanguageStore.getState()
+        const plan = context.userLanguages.find((item) => item.is_active)?.plan
+        if (context.isSwitching) lastAutomaticLoad.current = null
+        return (
+          !controller.signal.aborted &&
+          useAuthStore.getState().sessionVersion === sessionVersion &&
+          !context.isSwitching &&
+          context.needsRefresh === initialContext.needsRefresh &&
+          context.activeLanguage?.code ===
+            initialContext.activeLanguage?.code &&
+          plan?.id === initialPlan?.id &&
+          plan?.cefr_level === initialPlan?.cefr_level
+        )
+      }
       setError('')
       dismissTooltip()
       setPageState(
@@ -58,6 +84,31 @@ export function useExerciseGeneration<T>({
           }
           // The updated context reruns the effect below with a read-only lookup.
           return
+        }
+        if (generate && feature === 'listening') {
+          voice =
+            (await resolveConfiguredTtsVoice(
+              AbortSignal.any([controller.signal, AbortSignal.timeout(20_000)]),
+              voice || undefined
+            )) ?? ''
+          const currentLanguage = useLanguageStore.getState()
+          const currentPlan = currentLanguage.userLanguages.find(
+            (item) => item.is_active
+          )?.plan
+          if (
+            controller.signal.aborted ||
+            useAuthStore.getState().sessionVersion !== sessionVersion ||
+            currentLanguage.needsRefresh ||
+            currentLanguage.activeLanguage?.code !== language ||
+            (studyPlanId !== undefined && currentPlan?.id !== studyPlanId) ||
+            (level != null && currentPlan?.cefr_level !== level)
+          )
+            return
+          if (currentLanguage.isSwitching) {
+            // The config wait can finish before the switch effect sees this request.
+            lastAutomaticLoad.current = null
+            return
+          }
         }
         let exerciseContext: ExerciseContext | undefined
         const exercise = await resolveExercise<T>({
@@ -74,17 +125,25 @@ export function useExerciseGeneration<T>({
             exerciseContext = context
           },
           onGenerating: () => {
-            if (!controller.signal.aborted) setPageState('generating')
+            if (current()) setPageState('generating')
           },
         })
-        if (controller.signal.aborted) return
+        if (!current()) return
         if (exercise && exerciseContext) onExercise(exercise, exerciseContext)
         setPageState(exercise ? 'exercise' : 'idle')
       } catch (error) {
-        if (controller.signal.aborted) return
+        if (!current()) return
         const code =
           error instanceof ExerciseGenerationError ? error.code : 'unavailable'
-        setError(code === 'noActivePlan' ? tCommon('noActivePlan') : t(code))
+        if (code === 'noActivePlan') {
+          setPageState('no-plan')
+          return
+        }
+        if (code === 'exhausted') {
+          onAccessDenied?.()
+        } else {
+          setError(t(code))
+        }
         setPageState('idle')
       } finally {
         if (active.current === controller) active.current = null
@@ -102,13 +161,13 @@ export function useExerciseGeneration<T>({
       setPageState,
       onExercise,
       t,
-      tCommon,
+      sessionVersion,
+      onAccessDenied,
     ]
   )
 
   const loadNext = useCallback(() => run(false), [run])
   const generate = useCallback((voice = '') => run(true, voice), [run])
-  const lastAutomaticLoad = useRef<typeof loadNext | null>(null)
 
   useEffect(() => {
     if (isSwitching) {

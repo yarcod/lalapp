@@ -4,14 +4,17 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func, or_, select, update
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.core.limiter import limiter
+from app.data.situations import SITUATIONS_BY_ID
 from app.models.flashcard import Flashcard, FlashcardReviewReceipt
 from app.models.study_plan import StudyPlan
 from app.models.user import User
+from app.models.user_language import UserLanguage
 from app.schemas.flashcards import (
     FlashcardBulkCreate,
     FlashcardBulkResponse,
@@ -29,7 +32,13 @@ from app.schemas.flashcards import (
     FlashcardSuspension,
     VocabularyListResponse,
 )
-from app.services.flashcard_sm2 import generate_flashcards, lookup_word, sm2_update
+from app.services.flashcard_sm2 import (
+    generate_flashcards,
+    lookup_word,
+    sm2_update,
+    translate_flashcards,
+)
+from app.services.grammar_voice_practice import get_grammar_practice_source
 from app.services.lesson_voice_practice import get_lesson_practice_source
 from app.services.llm_adapter import (
     LLMError,
@@ -41,6 +50,7 @@ from app.services.progress_service import (
     lock_progress_plan,
     update_daily_progress,
 )
+from app.services.situations import get_situation_plan
 from app.services.user_language_service import get_active_language
 
 router = APIRouter(prefix="/api/flashcards", tags=["flashcards"])
@@ -211,40 +221,108 @@ async def create_flashcards_bulk(
     plan = await _get_active_plan_or_404(db, current_user.id)
     if plan.id != data.study_plan_id or plan.target_language != data.target_language:
         raise HTTPException(status_code=409, detail="flashcard_context_changed")
-    existing = await db.execute(
-        select(Flashcard.word).where(
-            Flashcard.user_id == current_user.id,
-            Flashcard.study_plan_id == plan.id,
-        )
-    )
-    existing_words = {_normalize_flashcard_word(word) for word in existing.scalars().all()}
-    created_words: set[str] = set()
-
-    created = 0
+    plan_id, language_id, target_language = plan.id, plan.user_language_id, plan.target_language
+    native_language = current_user.native_language
+    existing_words = await _get_existing_flashcard_words(db, current_user.id, plan_id)
+    candidates: dict[str, FlashcardCreate] = {}
     for item in data.flashcards:
         normalized_word = _normalize_flashcard_word(item.word)
+        if normalized_word and normalized_word not in existing_words:
+            previous = candidates.get(normalized_word)
+            if previous is None or (not previous.translation.strip() and item.translation.strip()):
+                candidates[normalized_word] = item
+
+    missing_translations = [item for item in candidates.values() if not item.translation.strip()]
+    if missing_translations:
+        try:
+            translations = await translate_flashcards(
+                missing_translations,
+                native_language=native_language,
+                target_language=target_language,
+            )
+        except LLMError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="ai_service_unavailable",
+            ) from exc
+        for item, translation in zip(missing_translations, translations, strict=True):
+            candidates[_normalize_flashcard_word(item.word)] = item.model_copy(
+                update={"translation": translation}
+            )
+
+    # Profile updates autoflush User before locking languages: take User first too.
+    # NO KEY UPDATE permits FK KEY SHARE held by language/plan creation, avoiding
+    # a reverse dependency on their language locks. No locks span the LLM call.
+    # A no-op language switch can still hold language locks before updating User.
+    # NOWAIT avoids that reverse-order deadlock and unbounded post-generation waits.
+    try:
+        current_native_language = await db.scalar(
+            select(User.native_language)
+            .where(User.id == current_user.id)
+            .with_for_update(key_share=True, nowait=True)
+        )
+        if current_native_language != native_language:
+            raise HTTPException(status_code=409, detail="flashcard_context_changed")
+        # Fresh reads under User -> language -> plan locks protect the captured context.
+        active = await db.scalar(
+            select(UserLanguage.is_active)
+            .where(UserLanguage.id == language_id, UserLanguage.user_id == current_user.id)
+            .with_for_update(nowait=True)
+        )
+        if not active:
+            raise HTTPException(status_code=409, detail="flashcard_context_changed")
+        locked_plan = await db.scalar(
+            select(StudyPlan)
+            .where(StudyPlan.id == plan_id, StudyPlan.user_id == current_user.id)
+            .with_for_update(key_share=True, nowait=True)
+            .execution_options(populate_existing=True)
+        )
         if (
-            not normalized_word
-            or normalized_word in existing_words
-            or normalized_word in created_words
+            locked_plan is None
+            or not locked_plan.is_active
+            or locked_plan.user_language_id != language_id
+            or locked_plan.target_language != target_language
         ):
+            raise HTTPException(status_code=409, detail="flashcard_context_changed")
+    except DBAPIError as exc:
+        if getattr(exc.orig, "sqlstate", None) != "55P03":
+            raise
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="flashcard_import_busy",
+        ) from exc
+
+    # Serialize bulk inserts and retain any card saved while translations were generated.
+    existing_words = await _get_existing_flashcard_words(db, current_user.id, plan_id)
+
+    created = 0
+    for normalized_word, item in candidates.items():
+        if normalized_word in existing_words:
             continue
 
         card = Flashcard(
             user_id=current_user.id,
-            study_plan_id=plan.id,
+            study_plan_id=plan_id,
             word=item.word.strip(),
             definition=item.definition,
             example_sentence=item.example_sentence,
             translation=item.translation,
         )
         db.add(card)
-        created_words.add(normalized_word)
-        existing_words.add(normalized_word)
         created += 1
 
     await db.commit()
     return FlashcardBulkResponse(created=created)
+
+
+async def _get_existing_flashcard_words(db: AsyncSession, user_id: int, plan_id: int) -> set[str]:
+    words = await db.scalars(
+        select(Flashcard.word).where(
+            Flashcard.user_id == user_id, Flashcard.study_plan_id == plan_id
+        )
+    )
+    return {_normalize_flashcard_word(word) for word in words}
 
 
 @router.post("/{card_id}/review", response_model=FlashcardReviewResponse)
@@ -387,6 +465,23 @@ async def create_flashcard_from_word(
         if source is None:
             raise HTTPException(status_code=404, detail="Lesson not found")
         _, plan = source
+        cefr_level = plan.cefr_level
+    elif data.grammar_practice_session_id is not None:
+        grammar_source = await get_grammar_practice_source(
+            db, current_user.id, str(data.grammar_practice_session_id)
+        )
+        if grammar_source is None:
+            raise HTTPException(status_code=404, detail="Grammar practice not found")
+        practice, plan = grammar_source
+        cefr_level = practice.learner_level
+    elif data.situation_id is not None:
+        if data.situation_id not in SITUATIONS_BY_ID:
+            raise HTTPException(status_code=404, detail="situation_unavailable")
+        plan = await get_situation_plan(
+            db, current_user.id, data.situation_study_plan_id, require_active=False
+        )
+        if plan is None:
+            raise HTTPException(status_code=404, detail="situation_unavailable")
         cefr_level = plan.cefr_level
     else:
         plan = await _get_active_plan_or_404(db, current_user.id)

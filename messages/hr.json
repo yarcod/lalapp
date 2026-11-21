@@ -1,4 +1,276 @@
 {
+  "situations": {
+    "title": "Vježbaj stvarne situacije",
+    "description": "Odaberi scenarij i vježbaj govor s Linguom, koji će glumiti osobu s kojom trebaš razgovarati.",
+    "search": "Pretraži situacije",
+    "allCategories": "Sve kategorije",
+    "noResults": "Nema situacija koje odgovaraju tvojoj pretrazi.",
+    "loadError": "Situacije nije bilo moguće učitati.",
+    "retry": "Pokušaj ponovno",
+    "start": "Započni vježbu",
+    "unavailable": "Ova situacija nije dostupna. Pokušaj ponovno.",
+    "back": "Natrag na situacije",
+    "contextChanged": "Tvoj se kontekst učenja promijenio. Osvježi stranicu i ponovno pokreni vježbu.",
+    "categories": {
+      "daily_life": "Svakodnevni život",
+      "travel": "Putovanja",
+      "shopping_services": "Kupnja i usluge",
+      "social": "Društveni život",
+      "work": "Posao"
+    },
+    "items": {
+      "bakery_purchase": {
+        "title": "Kupi nešto u pekarnici",
+        "description": "Lingu će glumiti prodavača u pekarnici. Zatraži kruh ili nešto za doručak, reci koliko želiš i pitaj za cijenu."
+      },
+      "clothes_shopping": {
+        "title": "Kupi odjeću",
+        "description": "Razgovaraj s Linguom kao prodavačem o veličini i boji te pitaj možeš li isprobati odjeću."
+      },
+      "cafe_order": {
+        "title": "Naruči u kafiću",
+        "description": "Lingu će glumiti konobara u kafiću. Naruči piće i nešto za jelo."
+      },
+      "haircut_appointment": {
+        "title": "Otiđi frizeru",
+        "description": "Lingu će glumiti frizera. Zatraži jednostavno šišanje i objasni kakvu frizuru želiš."
+      },
+      "supermarket_help": {
+        "title": "Pitaj za pomoć u supermarketu",
+        "description": "Pitaj Lingua kao zaposlenika supermarketa gdje možeš pronaći proizvode koje tražiš."
+      },
+      "buy_ticket": {
+        "title": "Kupi kartu",
+        "description": "Lingu će raditi na blagajni za prodaju karata. Reci kamo putuješ, pitaj za vrijeme polaska i cijenu te kupi kartu."
+      },
+      "hotel_check_in": {
+        "title": "Prijavi se u hotel",
+        "description": "Lingu će glumiti recepcionara. Potvrdi rezervaciju i pitaj za osnovne informacije o boravku."
+      },
+      "taxi_ride": {
+        "title": "Naruči taksi",
+        "description": "Nazovi Lingua u ulozi dispečera taksi službe. Reci gdje te treba pokupiti i kamo ideš te pitaj kada taksi stiže."
+      },
+      "collect_key": {
+        "title": "Preuzmi ključ",
+        "description": "Preuzmi ključ apartmana za odmor od Lingua kao domaćina i pitaj kako ući u smještaj."
+      },
+      "local_recommendations": {
+        "title": "Pitaj što posjetiti",
+        "description": "Lingu će glumiti lokalnog stanovnika. Reci što te zanima i zatraži preporuke za mjesta koja možeš posjetiti."
+      },
+      "congratulate_friend": {
+        "title": "Čestitaj prijatelju",
+        "description": "Lingu će glumiti prijatelja koji slavi rođendan ili ima lijepe vijesti. Čestitaj mu i kratko porazgovarajte."
+      },
+      "hobbies_chat": {
+        "title": "Razgovaraj o hobijima",
+        "description": "Razgovaraj s Linguom kao prijateljem o tome što volite raditi u slobodno vrijeme i pronađite zajedničke interese."
+      },
+      "family_chat": {
+        "title": "Razgovaraj o obitelji",
+        "description": "Lingu će glumiti poznanika. Reci nešto o svojoj obitelji i pitaj za njegovu."
+      },
+      "invite_friend": {
+        "title": "Pozovi prijatelja na druženje",
+        "description": "Pozovi Lingua kao prijatelja na jelo ili piće i dogovorite vrijeme susreta."
+      },
+      "choose_gift": {
+        "title": "Odaberi poklon",
+        "description": "Odaberi zajednički poklon s Linguom kao prijateljem. Razgovarajte o tome što primatelj voli i odlučite zajedno."
+      },
+      "late_arrival": {
+        "title": "Javi da kasniš",
+        "description": "Javi Linguu kao kolegi da kasniš i reci otprilike kada ćeš stići."
+      },
+      "work_update": {
+        "title": "Ispričaj na čemu radiš",
+        "description": "Razgovaraj s Linguom kao kolegom o svom uobičajenom zadatku i reci kako napreduješ."
+      },
+      "arrange_meeting": {
+        "title": "Dogovori sastanak",
+        "description": "Organiziraj sastanak s Linguom kao kolegom i dogovorite dan i vrijeme koji vam oboma odgovaraju."
+      },
+      "colleague_help": {
+        "title": "Zamoli kolegu za pomoć",
+        "description": "Lingu će glumiti tvog kolegu. Objasni u čemu trebaš pomoć i zatraži savjet."
+      },
+      "break_chat": {
+        "title": "Razgovaraj tijekom stanke",
+        "description": "Lingu će glumiti tvog kolegu. Opušteno razgovarajte o svakodnevnim temama tijekom stanke na poslu."
+      },
+      "recount_day": {
+        "title": "Ispričaj kako ti je prošao dan",
+        "description": "Ispričaj Linguu kao prijatelju čime si se danas bavio i što ti se dogodilo."
+      },
+      "weather_chat": {
+        "title": "Razgovaraj o vremenu",
+        "description": "Lingu će glumiti tvog susjeda. Razgovarajte o vremenu i svojim planovima."
+      },
+      "daily_routine": {
+        "title": "Razgovaraj o dnevnoj rutini",
+        "description": "Lingu će glumiti poznanika. Opiši svoj uobičajeni dan i pitaj ga o njegovoj rutini."
+      },
+      "household_chores": {
+        "title": "Podijeli kućanske poslove",
+        "description": "Lingu će glumiti tvog sustanara. Dogovorite tko će obaviti koje kućanske poslove i kada."
+      },
+      "plan_dinner": {
+        "title": "Isplaniraj večeru",
+        "description": "Lingu će glumiti tvog sustanara. Odlučite što ćete kuhati i razgovarajte o sastojcima koje imate i koji vam nedostaju."
+      },
+      "medical_appointment": {
+        "title": "Dogovori liječnički pregled",
+        "description": "Nazovi ordinaciju. Lingu će raditi na prijemu: objasni razlog dolaska i dogovori termin."
+      },
+      "neighbour_problem": {
+        "title": "Razgovaraj sa susjedom",
+        "description": "Lingu će glumiti tvog susjeda. Objasni što te ometa kod kuće i zajedno pronađite obzirno rješenje."
+      },
+      "flat_viewing": {
+        "title": "Razgledaj stan",
+        "description": "Razgledaj stan s Linguom kao agentom za nekretnine. Pitaj za najamninu, režije i uvjete najma."
+      },
+      "school_meeting": {
+        "title": "Sastanak u školi",
+        "description": "Lingu će glumiti učitelja tvog djeteta. Razgovarajte o organizaciji škole i dogovorite kako podržati djetetovo učenje."
+      },
+      "household_repair": {
+        "title": "Dogovori popravak",
+        "description": "Razgovaraj s Linguom u ulozi servisera o kvaru u kući. Pitaj za cijenu i dogovori dolazak."
+      },
+      "change_reservation": {
+        "title": "Promijeni rezervaciju",
+        "description": "Razgovaraj s Linguom u službi za rezervacije. Objasni što želiš promijeniti i potvrdi nove uvjete."
+      },
+      "hotel_problem": {
+        "title": "Problem u hotelu",
+        "description": "Lingu će raditi na recepciji. Objasni problem sa svojom sobom i zatraži odgovarajuće rješenje."
+      },
+      "ask_directions": {
+        "title": "Pitaj za smjer",
+        "description": "Lingu će glumiti lokalnog stanovnika. Pitaj kako doći do odredišta i provjeri put."
+      },
+      "missed_connection": {
+        "title": "Propuštena veza",
+        "description": "Zbog kašnjenja ne možeš nastaviti put prema planu. Razgovaraj s Linguom na šalteru prijevoznika i pronađi drugu vezu."
+      },
+      "lost_luggage": {
+        "title": "Izgubljena prtljaga",
+        "description": "Lingu će raditi na šalteru za prtljagu. Opiši kovčeg koji nije stigao i pitaj kako ga možeš dobiti natrag."
+      },
+      "return_purchase": {
+        "title": "Vrati kupljeni proizvod",
+        "description": "Lingu će glumiti prodavača. Objasni zašto želiš vratiti proizvod i pitaj za povrat novca."
+      },
+      "restaurant_order": {
+        "title": "Naruči u restoranu",
+        "description": "Lingu će glumiti tvog konobara. Pitaj za jela, objasni svoje želje i naruči."
+      },
+      "phone_contract": {
+        "title": "Odaberi mobilnu tarifu",
+        "description": "Razgovaraj s Linguom kao savjetnikom za mobilne usluge. Usporedi tarife i razjasni troškove i uvjete prije odluke."
+      },
+      "bank_appointment": {
+        "title": "Sastanak u banci",
+        "description": "Lingu će glumiti bankovnog službenika. Objasni što trebaš obaviti i pitaj za dokumente i sljedeće korake."
+      },
+      "delivery_problem": {
+        "title": "Problem s dostavom",
+        "description": "Razgovaraj s Linguom u korisničkoj podršci. Objasni problem sa svojim paketom i dogovorite rješenje."
+      },
+      "meet_someone": {
+        "title": "Upoznaj novu osobu",
+        "description": "Lingu će glumiti osobu koju tek upoznaješ na druženju. Predstavi se i pronađite zajedničke interese."
+      },
+      "make_plans": {
+        "title": "Dogovorite izlazak",
+        "description": "Organiziraj izlazak s Linguom kao prijateljem. Predloži aktivnosti i dogovorite gdje i kada ćete se naći."
+      },
+      "decline_invitation": {
+        "title": "Odbij poziv",
+        "description": "Lingu će glumiti prijatelja koji te poziva na druženje. Ljubazno odbij poziv i predloži drugu priliku."
+      },
+      "resolve_misunderstanding": {
+        "title": "Razjasni nesporazum",
+        "description": "Razjasni pogrešno shvaćenu poruku s Linguom kao prijateljem i vratite razgovor u prijateljski ton."
+      },
+      "host_visitors": {
+        "title": "Dočekaj goste",
+        "description": "Lingu će glumiti gosta u tvom domu. Poželi mu dobrodošlicu, ponudi piće i objasni planove."
+      },
+      "introduce_yourself": {
+        "title": "Predstavi se timu",
+        "description": "Lingu će glumiti novog kolegu. Predstavi se, objasni svoju ulogu i pitaj o timu."
+      },
+      "explain_task": {
+        "title": "Objasni zadatak",
+        "description": "Lingu će glumiti kolegu. Objasni zadatak, opiši korake i provjeri je li sve jasno."
+      },
+      "clarify_instructions": {
+        "title": "Razjasni upute",
+        "description": "Lingu će glumiti tvog nadređenog. Pitaj o nejasnim uputama i potvrdi što trebaš učiniti."
+      },
+      "negotiate_deadline": {
+        "title": "Dogovori rok",
+        "description": "Razgovaraj s Linguom kao voditeljem projekta. Objasni poteškoću i dogovorite realan rok."
+      },
+      "share_proposal": {
+        "title": "Predstavi prijedlog",
+        "description": "Lingu će glumiti člana tima. Predstavi ideju za poboljšanje, objasni prednosti i odgovori na pitanja."
+      }
+    }
+  },
+  "grammarPractice": {
+    "retryCreation": "Ponovi izvorni zahtjev",
+    "voiceAction": "Vježbaj ovu gramatičku temu glasom",
+    "voiceDescription": "Započni glasovni razgovor s Linguom o ovoj temi i svojim završenim vježbama. Potreban je pristup mikrofonu i primjenjuju se ograničenja glasovne upotrebe.",
+    "title": "Vježbanje gramatike",
+    "description": "Spremi teme iz Resursa i vježbaj u skupovima od pet zadataka: tri pitanja s višestrukim izborom i dvije dopune praznina. Napredak se sprema; XP se ne dodjeljuje.",
+    "add": "Vježbaj",
+    "back": "Natrag na vježbanje gramatike",
+    "voiceUnavailable": "Ova gramatička vježba nije dostupna.",
+    "noPlan": "Za dodavanje tema ili stvaranje vježbi potreban je aktivan plan učenja na ovom jeziku. Spremljene sesije ostaju dostupne.",
+    "assessment": "Izradi plan učenja",
+    "contextChanged": "Kontekst učenja se promijenio. Osvježi i izričito pokušaj ponovno.",
+    "explore": "Istraži gramatiku",
+    "empty": "Tvoja biblioteka vježbi je prazna. Odaberi temu u gramatičkim resursima.",
+    "answered": "{count} odgovorenih",
+    "accuracy": "{percent}% točnih",
+    "lastPracticed": "Posljednje vježbanje",
+    "never": "Još ne",
+    "theory": "Pogledaj teoriju",
+    "continue": "Nastavi sesiju",
+    "recover": "Oporavi sesiju",
+    "generate": "Stvori pet vježbi",
+    "history": "Povijest sesija",
+    "noHistory": "Još nema sesija.",
+    "score": "{correct}/{answered} točnih",
+    "generating": "Priprema vježbi…",
+    "ready": "Spremna za nastavak",
+    "completed": "Vježba završena",
+    "failed": "Stvaranje nije uspjelo",
+    "abandoned": "Sesija napuštena",
+    "recoveryError": "Nije moguće potvrditi spremljeno stanje. Pokušaj ga ponovno dohvatiti bez ponovnog slanja odgovora.",
+    "another": "Još jedan skup",
+    "correct": "Točno",
+    "incorrect": "Ne sasvim",
+    "yourAnswer": "Tvoj odgovor",
+    "solution": "Točan odgovor",
+    "abandon": "Napusti sesiju",
+    "abandonDescription": "Zatvoriti ovu sesiju? Spremljeni odgovori ostaju u povijesti. Kvota za stvaranje vježbi ne vraća se.",
+    "choose": "Odaberi odgovor",
+    "fillBlank": "Popuni prazninu",
+    "check": "Provjeri odgovor"
+  },
+  "questionExplanation": {
+    "show": "Zašto ovaj odgovor",
+    "hide": "Sakrij objašnjenje",
+    "loading": "Priprema objašnjenja...",
+    "error": "Objašnjenje nije dostupno. Pokušaj ponovno.",
+    "evidence": "Ulomak izvornog teksta",
+    "language": "Jezik objašnjenja: {language}"
+  },
   "landing": {
     "freeTrialNote": "Početni Premium pristup pri registraciji, bez kartice. Nakon toga besplatno uz ograničenja ako se ne pretplatiš.",
     "modes": {
@@ -42,7 +314,7 @@
       },
       "languages": {
         "question": "Koje jezike mogu učiti?",
-        "answer": "Britanski i američki engleski, španjolski, talijanski, portugalski, njemački, francuski, japanski, korejski i kontinentalni kineski. Možeš učiti više jezika istodobno, uz zasebne planove i napredak za svaki jezik."
+        "answer": "{languages}. Možeš učiti više jezika istodobno, uz zasebne planove i napredak za svaki jezik."
       },
       "start": {
         "question": "Kako započeti učenje?",
@@ -92,12 +364,22 @@
     "footerProduct": "Proizvod",
     "footerLegal": "Pravne informacije",
     "languageGreetings": {
+      "ru-RU": "Привет!",
+      "sv-SE": "Hej!",
+      "da-DK": "Hej!",
+      "cs-CZ": "Ahoj!",
+      "hr-HR": "Bok!",
+      "fi-FI": "Hei!",
+      "ro-RO": "Bună!",
       "en-US": "Hello!",
       "en-GB": "Hello!",
       "de-DE": "Hallo!",
+      "pl-PL": "Cześć!",
       "es-ES": "¡Hola!",
       "fr-FR": "Bonjour !",
       "it-IT": "Ciao!",
+      "pt-BR": "Oi!",
+      "nl-NL": "Hallo!",
       "pt-PT": "Olá!",
       "ja-JP": "こんにちは！",
       "ko-KR": "안녕하세요!",
@@ -181,7 +463,7 @@
     "failed": "Generiranje nije uspjelo",
     "abandoned": "Igra napuštena",
     "generatingDescription": "Lingu priprema i provjerava pet izazova. Možeš napustiti stranicu i vratiti se kasnije.",
-    "failedDescription": "Nismo mogli pripremiti valjanu igru. Kvota igara nije potrošena. Vrati se na izbornik i pokušaj ponovno.",
+    "failedDescription": "Nismo mogli pripremiti igru. Ona se ne ubraja u tvoje ograničenje igara. Vrati se na izbornik i pokušaj ponovno.",
     "contextChanged": "Kontekst učenja se promijenio ili način nije dostupan. Osvježi prije početka.",
     "challenge": "Izazov {current} od {total}",
     "detect": "Odaberi dio koji sadrži pogrešku.",
@@ -242,13 +524,18 @@
     "goToPlan": "Idi na moj plan"
   },
   "nav": {
+    "situations": "Svakodnevne situacije",
+    "practiceGrammar": "Vježbanje gramatike",
+    "learning": "Moje učenje",
+    "practice": "Vježbaj",
+    "help": "Pomoć",
     "games": "Igre",
     "home": "Početna",
     "myPlan": "Moj plan",
     "progress": "Napredak",
     "flashcards": "Kartice",
-    "tutor": "Razgovaraj s učiteljem",
-    "assessment": "Procjena",
+    "tutor": "Chat s Linguom",
+    "assessment": "Procjena razine",
     "resources": "Materijali",
     "grammar": "Gramatika",
     "vocabulary": "Rječnik",
@@ -256,7 +543,7 @@
     "settings": "Postavke",
     "faq": "Česta pitanja",
     "admin": "Administracija",
-    "conversation": "Razgovor",
+    "conversation": "Glasovni razgovor",
     "listening": "Slušanje",
     "reading": "Čitanje",
     "contact": "Kontakt",
@@ -349,6 +636,13 @@
       "backToLogin": "Natrag na prijavu"
     }
   },
+  "accountDeletion": {
+    "cancellationRequired": "Prije brisanja ovog računa vlasnik mora otkazati obnovu u upravljanju pretplatom. Brisanje računa ne otkazuje pretplatu.",
+    "checkoutPending": "Kupnja je na čekanju ili njezin status još nije moguće potvrditi. Riješite to prije brisanja računa. Nijedna kupnja nije automatski otkazana.",
+    "verificationUnavailable": "Nije moguće provjeriti status naplate. Račun nije izbrisan. Pokušajte ponovno kasnije.",
+    "failed": "Račun nije moguće izbrisati. Pokušajte ponovno.",
+    "manageSubscription": "Upravljanje pretplatom"
+  },
   "settings": {
     "title": "Postavke",
     "sectionAccount": "Račun",
@@ -411,9 +705,12 @@
     "deleteAccountMessage": "Tvoj račun i svi podaci bit će trajno izbrisani. Ovu radnju nije moguće poništiti.",
     "deleteAccountConfirm": "Izbriši račun",
     "sectionUsageLimits": "Ograničenja upotrebe",
-    "sectionVoice": "Glas",
-    "voiceHint": "Odaberi Linguov glas i klikni na reprodukciju da ga poslušaš.",
-    "voicePlay": "Reproduciraj",
+    "sectionVoice": "Linguov glas",
+    "voiceFemale": "Ženski glas",
+    "voiceMale": "Muški glas",
+    "voiceHint": "Odaberi kako želiš da Lingu zvuči.",
+    "voiceCharacter": "Topao i prijateljski",
+    "voicePlay": "Poslušaj",
     "voiceStop": "Zaustavi",
     "quotaSessions": "Razgovori / tjedan",
     "quotaMinutesDay": "Minute / dan",
@@ -456,7 +753,7 @@
     "cardSessionSecurity": "Sesija i sigurnost",
     "cardTheme": "Tema",
     "cardConversationTiming": "Trajanje razgovora",
-    "cardTutorVoice": "Glas učitelja",
+    "cardTutorVoice": "Linguov glas",
     "cardCurrentUsage": "Trenutačna upotreba",
     "cardProductReview": "Recenzija proizvoda",
     "cardLegalDocuments": "Pravni dokumenti",
@@ -490,9 +787,9 @@
       "s4Title": "4. Sadržaj i interakcije s AI-jem",
       "s4Body": "Razgovori s AI učiteljem pohranjuju se u bazu podataka radi kontinuiteta učenja. U hostiranoj usluzi AI chat i glasovne funkcije obrađuju se putem OpenAI API-ja, a tvoj sadržaj podliježe pravilima korištenja OpenAI-ja. AI može dati netočne odgovore – uvijek prosuđuj sam. FreeLingo ne odgovara za sadržaj koji stvaraju temeljni jezični modeli. Sadržaj koji stvara AI učitelj (vježbe, ispravci, objašnjenja i drugi materijali) pripada tebi za osobnu upotrebu. FreeLingo ne polaže pravo vlasništva nad tvojim razgovorima ni sadržajem nastalim iz njih.",
       "s5Title": "5. Načini pružanja usluge",
-      "s5Body": "Samostalno hostane instalacije besplatne su i upravitelj ima potpunu kontrolu nad svojim podacima i infrastrukturom. Hostirana usluga tima FreeLingo nudi besplatan plan s ograničenjima upotrebe i plaćene mjesečne ili godišnje pretplate za neograničen pristup. Besplatan plan uključuje sedmodnevnu probnu upotrebu s punim pristupom (bez potrebe za načinom plaćanja), a nakon toga dnevna ograničenja za lekcije i AI chat te tjedna za vježbe slušanja, čitanja i glasovne razgovore. Plaćene pretplate uklanjaju sva ograničenja tih funkcija. U hostiranoj usluzi tvoji se podaci čuvaju na poslužiteljima kojima upravlja tim FreeLingo. Trenutačna ograničenja svojeg računa možeš vidjeti na nadzornoj ploči.",
+      "s5Body": "Samostalno hostane instalacije besplatne su i upravitelj ima potpunu kontrolu nad svojim podacima i infrastrukturom. Hostirana usluga tima FreeLingo nudi besplatan plan s ograničenjima upotrebe i plaćene mjesečne ili godišnje pretplate za Premium pristup. Besplatan plan ima dnevne kvote za lekcije i AI chat te tjedne za vježbe slušanja, čitanja i glasovne razgovore. Kada je ponuđena, početna probna upotreba omogućuje Premium pristup bez načina plaćanja tijekom razdoblja navedenog na tvojem računu. Plaćene pretplate i probna upotreba uklanjaju kvote besplatnog plana, ali opća ograničenja računa, uključujući ona za upotrebu umjetne inteligencije i glasovne razgovore, i dalje vrijede. U hostiranoj usluzi tvoji se podaci čuvaju na poslužiteljima kojima upravlja tim FreeLingo. Trenutačna ograničenja svojeg računa možeš vidjeti na nadzornoj ploči.",
       "s6Title": "6. Pretplata i naplata",
-      "s6Body": "Besplatan plan pruža ograničen pristup AI funkcijama, uz sedmodnevnu probnu upotrebu s punim pristupom za nove korisnike (bez potrebe za načinom plaćanja). Plaćene pretplate dostupne su mjesečno ili godišnje i automatski se obnavljaju ako ih prethodno ne otkažeš. Pretplatu možeš otkazati u bilo kojem trenutku u Postavkama; otkazivanje stupa na snagu krajem tekućeg razdoblja. Upravitelj također može otkazati obnove ili pretplate ako se usluga promijeni ili zatvori. Ako usluga prestane prije isteka plaćenog razdoblja, primjenjuje se povrat koji zahtijeva zakon o zaštiti potrošača. Pravo na odustajanje i važeće cijene prikazuju se i obrađuju u skladu s važećim zakonom.",
+      "s6Body": "Besplatan plan pruža ograničen pristup AI funkcijama i, kada je ponuđena, početnu probnu upotrebu Premiuma za nove korisnike bez načina plaćanja, tijekom razdoblja navedenog na tvojem računu. Premium uklanja kvote besplatnog plana; opća ograničenja računa i dalje vrijede, uključujući tijekom probne upotrebe. Plaćene pretplate dostupne su mjesečno ili godišnje i automatski se obnavljaju ako ih prethodno ne otkažeš. Pretplatu možeš otkazati u bilo kojem trenutku u Postavkama; otkazivanje stupa na snagu krajem tekućeg razdoblja. Upravitelj također može otkazati obnove ili pretplate ako se usluga promijeni ili zatvori. Ako usluga prestane prije isteka plaćenog razdoblja, primjenjuje se povrat koji zahtijeva zakon o zaštiti potrošača. Pravo na odustajanje i važeće cijene prikazuju se i obrađuju u skladu s važećim zakonom.",
       "s7Title": "7. Dostupnost",
       "s7Body": "Hostirana usluga pruža se bez jamstva neprekidnog rada ili dostupnosti. Upravitelj je može promijeniti, privremeno obustaviti ili zatvoriti u bilo kojem trenutku zbog tehničkih, financijskih ili drugih razloga. Planirana zatvaranja objavit će se u aplikaciji ili e-poštom kada je to razumno moguće. Nakon objavljenog datuma računi i operativni podaci mogu se nepovratno izbrisati. FreeLingo ne pruža uslugu sigurnosnog kopiranja ni automatizirani alat za izvoz.",
       "s8Title": "8. Ograničenje odgovornosti",
@@ -599,16 +896,16 @@
     "performanceNeedsPractice": "Potrebno vježbati",
     "performanceInProgress": "U tijeku",
     "performanceStrong": "Dobro",
-    "premiumBannerTitle": "Otključaj razgovor, slušanje i čitanje",
+    "premiumBannerTitle": "Više vježbaj razgovor, slušanje i čitanje",
     "premiumBannerDesc": "Počni s besplatnim probnim razdobljem i vježbaj s Linguom tekstom, glasom i zadacima prilagođenima tvojoj razini.",
-    "premiumBannerDescTrialUsed": "Aktiviraj Premium za tekstualni chat s Linguom, glasovne razgovore, čitanje i slušanje.",
+    "premiumBannerDescTrialUsed": "Aktiviraj Premium za više vježbe u tekstualnom chatu s Linguom, glasovnim razgovorima, čitanju i slušanju.",
     "premiumBannerCta": "Besplatno probno razdoblje",
     "premiumBannerCtaTrialUsed": "Pogledaj planove",
     "premiumBannerPastDueTitle": "Plaćanje na čekanju",
     "premiumBannerPastDueDesc": "Ažuriraj način plaćanja kako bi ponovno dobio pristup Premium chatu, glasovnim razgovorima, čitanju i slušanju.",
     "premiumBannerPastDueCta": "Vrati Premium",
     "freemiumTrialTitle": "{days, plural, one {# dan besplatnog probnog razdoblja} few {# dana besplatnog probnog razdoblja} other {# dana besplatnog probnog razdoblja}}",
-    "freemiumTrialDesc": "Uživaj u neograničenom pristupu chatu, glasu, slušanju i čitanju. Isprobaj sve Premium značajke besplatno.",
+    "freemiumTrialDesc": "Besplatno isprobaj Premium pristup chatu, glasu, slušanju i čitanju. Opća ograničenja tvojeg računa i dalje vrijede.",
     "announcementDismiss": "Zatvori obavijest",
     "announcementDismissError": "Obavijest nije bilo moguće zatvoriti. Pokušaj ponovno."
   },
@@ -757,6 +1054,7 @@
     "generatingError": "Lekciju nije bilo moguće stvoriti",
     "loading": "Učitavanje plana...",
     "learningRoadmap": "Put učenja",
+    "progressSummary": "Dovršeno lekcija: {completed} od {total}",
     "level": "Razina",
     "duration": "Trajanje",
     "durationDetail": "{weeks, plural, one {# tjedan} few {# tjedna} other {# tjedana}} · {days, plural, one {# dan/tjedan} few {# dana/tjedan} other {# dana/tjedan}}",
@@ -815,7 +1113,7 @@
     "feedback": "Povratne informacije",
     "corrections": "Ispravci",
     "completeLesson": "Dovrši lekciju",
-    "completing": "Dovršavanje...",
+    "completing": "Spremanje tvog napretka i priprema sljedeće lekcije...",
     "relatedGrammar": "Povezana gramatika",
     "explanation": "Objašnjenje",
     "exercises": "Zadaci",
@@ -828,7 +1126,14 @@
     "showNativeExplanation": "Prikaži na jeziku",
     "hint": "Savjet",
     "showNativeHint": "Prikaži savjet na jeziku",
+    "showQuestionTranslation": "Prikaži prijevod pitanja (jezik: {language})",
+    "hideQuestionTranslation": "Sakrij prijevod pitanja",
+    "translatingQuestion": "Prevođenje pitanja...",
+    "questionTranslationError": "Pitanje nije moguće prevesti. Pokušaj ponovno.",
+    "retryQuestionTranslation": "Pokušaj ponovno prevesti pitanje",
     "regenerateExercise": "Ponovno stvori zadatak",
+    "listeningIncomplete": "Ovaj zadatak slušanja nije potpun. Ponovno ga stvori prije odgovaranja.",
+    "listeningUnavailable": "Zvuk nije dostupan za ovaj spremljeni zadatak. Tvoj spremljeni odgovor i rezultat ostaju sačuvani.",
     "regeneratingExercise": "Ponovno stvaranje...",
     "regenerateError": "Zadatak nije bilo moguće ponovno stvoriti. Pokušaj ponovno.",
     "regenerateNotNeeded": "Ovaj zadatak ne treba ponovno stvarati.",
@@ -1277,6 +1582,12 @@
   "faq": {
     "title": "Česta pitanja",
     "subtitle": "Često postavljana pitanja i odgovori",
+    "sectionGettingStarted": "Prvi koraci i jezici",
+    "sectionPractice": "Materijali i vježbanje",
+    "sectionLingu": "Razgovori s Linguom",
+    "sectionSubscription": "Planovi i ograničenja korištenja",
+    "sectionAccount": "Račun i pomoć",
+    "sectionAdmin": "Administracija",
     "q_start": "Odakle početi?",
     "a_start": "Odaberi jezik koji želiš učiti i otvori <strong>procjenu razine</strong> kako bi procijenio znanje. Početnici mogu odabrati A1 bez testa. Potvrdi razinu i trajanje za izradu <strong>plana učenja</strong> za taj jezik.",
     "q_workflow": "Kako izgleda cijeli postupak?",
@@ -1287,7 +1598,7 @@
     "workflowStep5": "Istodobno vježbaj rječnik karticama",
     "workflowStep6": "Vježbaj slobodan razgovor s Linguom",
     "q_language": "Koji ću jezik učiti?",
-    "a_language": "FreeLingo trenutačno podržava više jezika (američki engleski, britanski engleski, francuski, njemački, talijanski, japanski, korejski, kineski koji se govori u kontinentalnoj Kini, portugalski i španjolski), a s vremenom ćemo dodati još jezika. Kad novi jezik postane dostupan, pronaći ćeš ga pod Postavke → Moji jezici – dodaj ga i odmah počni učiti.",
+    "a_language": "FreeLingo trenutačno podržava više jezika ({languages}), a s vremenom ćemo dodati još jezika. Kad novi jezik postane dostupan, pronaći ćeš ga pod Postavke → Moji jezici – dodaj ga i odmah počni učiti.",
     "q_assessment": "Što je procjena razine?",
     "a_assessment": "Prilagodljivi test s najviše 15 pitanja iz banke pitanja za jezik koji učiš. Obuhvaća gramatiku, rječnik i razumijevanje pročitanog od A1 do C2. Rezultat procjenjuje CEFR razinu i pokazuje prednosti i područja za vježbu; predloženu razinu možeš prilagoditi prije izrade plana.",
     "q_studyPlan": "Što je plan učenja i kako ga stvaram?",
@@ -1301,11 +1612,11 @@
     "q_tutor": "Kako mogu vježbati s Linguom?",
     "a_tutor": "Lingu prilagođava odgovore aktivnom jeziku učenja i kontekstu tvog plana. Pitaj o gramatici, zatraži objašnjenja, vježbaj pisanje na tom jeziku ili razgovaraj. Razgovori se spremaju po jeziku i možeš ih nastaviti iz povijesti.",
     "q_voice": "Kako funkcionira glasovni razgovor?",
-    "a_voice": "U načinu <strong>Glasovni razgovor</strong> možeš razgovarati s Linguom u stvarnom vremenu. Pritisni Započni – aplikacija automatski sluša tvoj glas prepoznavanjem govorne aktivnosti (VAD), a učitelj odgovara sintetiziranim govorom. Učitelja možeš prekinuti u bilo kojem trenutku. Sesija završava kada istekne vrijeme ili pritisneš Zaustavi. Dopusti pregledniku pristup mikrofonu.",
+    "a_voice": "U načinu <strong>Glasovni razgovor</strong> pritisni Započni i dopusti pristup mikrofonu. Aplikacija prepoznaje kada govoriš, a Lingu odgovara glasom. Pričekaj da Lingu završi prije nego što ponovno progovoriš: govor dok učitelj govori ne prekida njegov odgovor. U <settingsLink>Postavkama</settingsLink> možeš prilagoditi stanku prije slanja svojeg govornog unosa, trajanje sesije i vrijeme neaktivnosti. Sesija završava kada pritisneš Zaustavi ili dosegneš neko od primjenjivih ograničenja.",
     "q_listening": "Kako funkcioniraju vježbe slušanja?",
-    "a_listening": "U odjeljku <strong>Slušanje</strong> Lingu priprema vježbe slušanja prilagođene tvojoj CEFR razini. Poslušaj i odgovori na pet pitanja za provjeru razumijevanja. Nakon slanja dobit ćeš rezultat (0–5), XP, točne odgovore i cijeli prijepis. Nove vježbe možeš stvarati kad poželiš.",
+    "a_listening": "U odjeljku <strong>Slušanje</strong> Lingu priprema vježbe slušanja prilagođene tvojoj CEFR razini. Poslušaj zvučni zapis i odgovori na pet pitanja za provjeru razumijevanja. Nakon slanja možeš pregledati rezultat (0–5), osvojeni XP, točne odgovore i cijeli prijepis. Odaberi <strong>Zašto ovaj odgovor</strong> kako bi zatražio objašnjenje na svojem materinskom jeziku s ulomkom prijepisa koji ga potkrepljuje. Nove vježbe možeš zatražiti u okviru ograničenja korištenja svojeg računa.",
     "q_reading": "Kako funkcioniraju vježbe čitanja?",
-    "a_reading": "Odjeljak <strong>Čitanje</strong> stvara tekstove na tvojoj CEFR razini – obavijesti, e-poruke, članke, objave na blogu i drugo. Pročitaj tekst i odgovori na pet pitanja s višestrukim odabirom. Nakon slanja dobit ćeš rezultat (0–5) i XP. Nove vježbe možeš stvarati kad poželiš.",
+    "a_reading": "U odjeljku <strong>Čitanje</strong> Lingu priprema tekstove na tvojoj CEFR razini, poput obavijesti, e-poruka i članaka. Pročitaj tekst i odgovori na pet pitanja s višestrukim odabirom. Nakon slanja možeš pregledati rezultat (0–5), osvojeni XP i točne odgovore. Odaberi <strong>Zašto ovaj odgovor</strong> kako bi zatražio objašnjenje na svojem materinskom jeziku s ulomkom teksta koji ga potkrepljuje. Nove vježbe možeš zatražiti u okviru ograničenja korištenja svojeg računa.",
     "q_providers": "Koje AI pružatelje FreeLingo podržava?",
     "a_providers_intro": "Postavlja se u datoteci <code>.env</code> putem <code>LLM_PROVIDER</code>:",
     "provider_ollama": "Lokalno i besplatno. Ollama mora biti pokrenuta na poslužitelju. Preporučeni model: gemma4:e4b. Bez GPU-a može biti sporo.",
@@ -1313,11 +1624,25 @@
     "provider_anthropic": "Anthropic Claude. Potreban je ANTHROPIC_API_KEY.",
     "provider_deepseek": "DeepSeek API. Potreban je DEEPSEEK_API_KEY.",
     "q_invite": "Mogu li pozvati druge?",
-    "a_invite": "Da. U odjeljku <adminLink>Administracija → Korisnici</adminLink> administrator može izravno stvarati korisnike ili stvarati jednokratne pozivnice koje istječu nakon 48 sati. Javna registracija zadano je isključena (<code>ALLOW_REGISTRATION=false</code>).",
+    "a_invite": "Da. U odjeljku <adminLink>Administracija → Korisnici</adminLink> administratori mogu izravno stvarati korisnike ili generirati jednokratne poveznice za poziv koje istječu nakon 48 sati. Javna registracija ovisi o postavci poslužitelja <code>ALLOW_REGISTRATION</code>.",
     "q_password": "Kako mijenjam lozinku ili materinski jezik?",
     "a_password": "Idi u <settingsLink>Postavke</settingsLink>. Ondje možeš promijeniti ime za prikaz, materinski jezik i lozinku.",
     "q_uiLanguage": "Kako mijenjam jezik platforme?",
-    "a_uiLanguage": "Idi u <settingsLink>Postavke</settingsLink> i u odjeljku Profil pronađi izbornik <strong>Jezik sučelja</strong>. Odaberi jezik i cijelo sučelje odmah će se promijeniti.",
+    "a_uiLanguage": "Idi u <settingsLink>Postavke</settingsLink> i u svojem profilu pronađi padajući izbornik <strong>Jezik sučelja</strong>. Odaberi željeni jezik i pritisni <strong>Spremi promjene</strong>. Nakon spremanja stranica se ponovno učitava na odabranom jeziku. To ne mijenja jezik koji učiš.",
+    "q_multiLanguage": "Mogu li učiti više jezika bez gubitka napretka?",
+    "a_multiLanguage": "Da. Dodaj jezik u odjeljku <languagesLink>Postavke → Moji jezici</languagesLink> i koristi birač jezika za prebacivanje između njih. Svaki jezik zadržava svoj plan, napredak, kartice i povijest razgovora. Promjena jezika ne briše spremljeni napredak. Postavke računa, pretplata, kvote korištenja i Linguove uspomene zajedničke su svim jezicima.",
+    "q_grammarPractice": "Kako vježbati određenu gramatičku temu?",
+    "a_grammarPractice": "Otvori temu u odjeljku <grammarLink>Materijali → Gramatika</grammarLink> i odaberi <strong>Vježbaj</strong> kako bi je dodao u svoju biblioteku za vježbanje gramatike. Uz aktivan plan možeš stvarati skupove od pet vježbi: tri pitanja s višestrukim odabirom i dva zadatka dopunjavanja praznina. Tvoji odgovori i rezultati spremaju se kako bi mogao pratiti vježbanje. Ova aktivnost ne donosi XP.",
+    "q_games": "Koje su igre dostupne i koji način odabrati?",
+    "a_games": "U odjeljku <gamesLink>Igre</gamesLink> možeš pronalaziti i ispravljati pogreške u igri Detektiv pogrešaka, poredati dijelove u igri Složi rečenicu ili povezivati riječi i značenja u igri Parovi riječi. Odaberi ponavljanje za povratak na završene lekcije, pripremu za učvršćivanje poznatog gradiva povezanog sa sljedećom lekcijom ili slobodnu vježbu za rad na razini svojeg plana. Načini za koje nema dovoljno izvornog materijala onemogućeni su uz objašnjenje.",
+    "q_plans": "Koja je razlika između besplatnog plana, Premiuma i probnog razdoblja?",
+    "a_plans": "Besplatni plan omogućuje učenje uz kvote korištenja. Premium uklanja kvote besplatnog plana, ali opća ograničenja računa i dalje vrijede. Ako tvoj račun uključuje početno probno razdoblje bez kartice, nakon njegova isteka možeš nastaviti na besplatnom planu bez automatske naplate. Svako probno razdoblje ponuđeno pri ugovaranju pretplate zasebno je i može zahtijevati karticu. Svoj status i važeće uvjete pretplate provjeri u odjeljku <billingLink>Postavke → Plan i pretplata</billingLink>.",
+    "q_quotas": "Zašto sam dosegnuo ograničenje i kada se kvota obnavlja?",
+    "a_quotas": "Kvote korištenja pripadaju tvojem računu i zajedničke su svim jezicima koje učiš. Dnevne kvote besplatnog plana obnavljaju se u 00:00 UTC, a tjedne ponedjeljkom u 00:00 UTC. Preostalu kvotu provjeri u svakoj aktivnosti, a opća ograničenja računa u <billingLink>Postavkama</billingLink>. Značajke dostupne samo uz Premium ne otključavaju se čekanjem obnove kvote, a opća ograničenja računa vrijede i za Premium i za probna razdoblja.",
+    "q_cancelSubscription": "Kako otkazati obnovu pretplate?",
+    "a_cancelSubscription": "Idi u <billingLink>Postavke → Plan i pretplata</billingLink>, odaberi <strong>Upravljaj pretplatom</strong> i dovrši otkazivanje na portalu koji se otvori. Ako otkažeš obnovu na kraju trenutačnog razdoblja, zadržavaš pristup do njegova isteka. Brisanje računa ne otkazuje naplatu: najprije moraš otkazati obnovu.",
+    "q_memories": "Što Lingu pamti o meni i kako to mogu izbrisati?",
+    "a_memories": "Lingu može spremiti korisne osobne pojedinosti iz tekstualnih i glasovnih razgovora kako bi prilagodio buduće odgovore. Te uspomene zajedničke su svim jezicima koje učiš. U odjeljku <memoriesLink>Postavke → Uspomene</memoriesLink> možeš ih pregledati, dodati vlastite, izbrisati pojedinačne uspomene ili ih sve obrisati.",
     "q_feedback": "Kako predložiti novu značajku ili prijaviti pogrešku?",
     "a_feedback": "Upotrijebi odjeljak <feedbackLink>Povratne informacije</feedbackLink> u bočnoj traci. Možeš predložiti novu značajku ili prijaviti pogrešku. Glasaj za ideje drugih korisnika, ostavljaj komentare i prati status svakog zahtjeva. Svi su podnesci javni, a administrator ih pregledava."
   },
@@ -1361,14 +1686,14 @@
     "statusSpeaking": "Govori...",
     "statusThinking": "Priprema odgovora...",
     "statusError": "Pogreška",
-    "errorServicesDisabled": "Glasovne usluge nisu omogućene na ovom poslužitelju.",
+    "errorServicesDisabled": "Glasovni razgovori nisu dostupni. Ako trebaš pomoć, obrati se podršci.",
     "errorConnection": "Pogreška veze. Pokušaj ponovno.",
     "errorTranscription": "Nije moguće pretvoriti tvoj govor u tekst. Pokušaj ponovno govoriti.",
     "errorResponse": "Lingu nije mogao odgovoriti. Pokušaj ponovno.",
     "errorSpeech": "Nije moguće pretvoriti Linguov odgovor u govor. Pokušaj ponovno.",
     "errorUnauthorized": "Sesija je istekla. Osvježi stranicu.",
-    "errorMic": "Pristup mikrofonu je odbijen.",
-    "errorVadInit": "Prepoznavanje govora nije bilo moguće pokrenuti. Provjeri podržava li tvoj preglednik WebAssembly.",
+    "errorMic": "Ne možemo pristupiti mikrofonu. Provjeri dopuštenja u pregledniku i pokušaj ponovno.",
+    "errorVadInit": "Nismo mogli pokrenuti glasovni razgovor. Ponovno učitaj stranicu ili pokušaj s ažuriranim preglednikom.",
     "warningTimeout": "Razgovor završava za {seconds} s",
     "sessionEnded": "Razgovor je završio",
     "tapToStart": "Govori kad budeš spreman",
@@ -1379,14 +1704,14 @@
     "quotaUnlimited": "Neograničeno",
     "quotaExceededSessions": "Iskoristio si sve razgovore za ovaj tjedan.",
     "quotaExceededTime": "Iskoristio si sve dnevno vrijeme za vježbu.",
-    "quotaExceededTokens": "Iskoristio si sve mjesečne AI tokene.",
+    "quotaExceededTokens": "Dosegnuo si mjesečno ograničenje upotrebe umjetne inteligencije. Možeš nastaviti kada se ono obnovi.",
     "freemiumVoiceRemaining": "Besplatni glasovni razgovori: {remaining}/{limit} min ovaj tjedan",
     "quotaTokens": "Tokeni ovaj mjesec",
     "memoryUpdated": "Uspomena je ažurirana",
     "trialBanner": "Besplatan razgovor za procjenu · {minutes} min",
     "trialCtaLabel": "Nastavi razgovarati",
     "trialCtaTitle": "Nastavi vježbati s Linguom",
-    "trialCtaDesc": "Otključaj pune glasovne razgovore, chat s učiteljem te vježbe slušanja i čitanja uz Premium.",
+    "trialCtaDesc": "Više vježbaj uz glasovne razgovore, chat s učiteljem te vježbe slušanja i čitanja uz Premium.",
     "startersHint": "Ili započni temom",
     "starters": [
       "Umjetnost i kreativnost",
@@ -1430,6 +1755,8 @@
     "ariaStop": "Zaustavi snimanje"
   },
   "audioPlayer": {
+    "ariaPause": "Pauziraj zvuk",
+    "ariaSeek": "Položaj reprodukcije zvuka",
     "listen": "Poslušaj",
     "stop": "Zaustavi",
     "ariaListen": "Poslušaj izgovor",
@@ -1474,13 +1801,39 @@
     "supportedLanguages": "Dostupni jezici"
   },
   "targetLanguages": {
+    "ro-RO": "Rumunjski (Rumunjska)",
+    "ro": "Rumunjski",
+    "ro-RO-description": "Rumunjski kakav se govori u Rumunjskoj.",
+    "fi-FI": "Finski",
+    "fi": "Finski",
+    "fi-FI-description": "Finski kakav se govori u Finskoj.",
+    "hr-HR": "Hrvatski",
+    "hr": "Hrvatski",
+    "hr-HR-description": "Hrvatski kakav se govori u Hrvatskoj.",
+    "cs-CZ": "Češki",
+    "cs": "Češki",
+    "cs-CZ-description": "Češki kakav se govori u Češkoj.",
+    "da-DK": "Danski",
+    "da": "Danski",
+    "da-DK-description": "Danski kakav se govori u Danskoj.",
+    "sv-SE": "Švedski",
+    "sv": "Švedski",
+    "sv-SE-description": "Švedski kakav se govori u Švedskoj.",
+    "ru-RU": "Ruski",
+    "ru": "Ruski",
+    "ru-RU-description": "Ruski kakav se govori u Rusiji, pisan ćirilicom.",
+    "nl-NL": "Nizozemski (Nizozemska)",
+    "nl": "Nizozemski",
+    "nl-NL-description": "Nizozemski kakav se govori u Nizozemskoj.",
     "en-US": "Američki engleski",
     "en-GB": "Britanski engleski",
     "es-ES": "Španjolski",
     "it-IT": "Talijanski",
-    "pt-PT": "Portugalski",
+    "pt-BR": "Portugalski (Brazil)",
+    "pt-PT": "Portugalski (Portugal)",
     "fr-FR": "Francuski",
     "de-DE": "Njemački",
+    "pl-PL": "Poljski",
     "ja-JP": "Japanski",
     "ko-KR": "Korejski",
     "zh-CN": "Kineski (kontinentalna Kina)",
@@ -1490,16 +1843,19 @@
     "pt": "Portugalski",
     "fr": "Francuski",
     "de": "Njemački",
+    "pl": "Poljski",
     "ja": "Japanski",
     "ko": "Korejski",
     "zh": "Kineski",
     "es-ES-description": "Španjolski kakav se govori u Španjolskoj.",
     "it-IT-description": "Talijanski kakav se govori u Italiji.",
+    "pt-BR-description": "Portugalski kakav se govori u Brazilu.",
     "pt-PT-description": "Portugalski kakav se govori u Portugalu.",
     "en-US-description": "Engleski kakav se govori u SAD-u.",
     "en-GB-description": "Engleski kakav se govori u Ujedinjenoj Kraljevini.",
     "fr-FR-description": "Francuski kakav se govori u Francuskoj.",
     "de-DE-description": "Njemački kakav se govori u Njemačkoj.",
+    "pl-PL-description": "Poljski kako se govori u Poljskoj.",
     "ja-JP-description": "Japanski kakav se govori u Japanu.",
     "ko-KR-description": "Korejski kakav se govori u Južnoj Koreji.",
     "zh-CN-description": "Mandarinski kineski kakav se govori u kontinentalnoj Kini, s pojednostavljenim znakovima."
@@ -1527,18 +1883,18 @@
     "trialHeadlineTrialUsed": "Premium",
     "trialTitle": "Počni s {days} besplatnih dana",
     "trialTitleTrialUsed": "Aktiviraj FreeLingo Premium",
-    "trialDesc": "Dobij puni pristup Lingu, govornim vježbama, slušanju i čitanju prije prve uplate.",
-    "trialDescTrialUsed": "Odaberi plan kako bi otključao Lingu, govorne vježbe, slušanje i čitanje.",
+    "trialDesc": "Isprobaj Premium pristup za vježbu s Linguom, govorne vježbe, slušanje i čitanje prije prve uplate.",
+    "trialDescTrialUsed": "Odaberi plan za više vježbe s Linguom, govornih vježbi, slušanja i čitanja.",
     "trialCtaMonthly": "Isprobaj besplatno, zatim €{price}/mjesečno",
     "trialCtaMonthlyTrialUsed": "Fleksibilni mjesečni plan · €{price}/mjesečno",
     "trialCtaYearly": "Isprobaj besplatno, zatim €{price}/godišnje · 2 mjeseca gratis",
     "trialCtaYearlyTrialUsed": "Najbolja vrijednost · €{price}/godišnje · 2 mjeseca gratis",
     "trialSkip": "Nastavi s besplatnim značajkama",
-    "trialNoCharge": "Danas nema naplate. Kartica je potrebna, otkaži kad god želiš.",
-    "trialNoChargeTrialUsed": "Provjeri iznos prije pretplate. Otkaži kad god želiš.",
+    "trialNoCharge": "Pretplatom počinje zasebno probno razdoblje od {days} dana; preostali dani početnog probnog razdoblja ne zbrajaju se. Kartica je potrebna; prva naplata slijedi na kraju ako prethodno ne otkažeš.",
+    "trialNoChargeTrialUsed": "Plaćena pretplata počinje pri ugovaranju. Provjeri iznos prije pretplate. Otkaži kad god želiš.",
     "trialError": "Plaćanje nije bilo moguće pokrenuti. Pokušaj ponovno.",
     "freemiumTrialTitle": "Tvoje besplatno probno razdoblje je počelo",
-    "freemiumTrialDesc": "Koristi sve značajke bez ograničenja sedam dana. Kartica nije potrebna. Na Premium možeš prijeći kad god želiš na nadzornoj ploči.",
+    "freemiumTrialDesc": "Tijekom probnog razdoblja uživaj u Premium pristupu bez kartice. Opća ograničenja tvojeg računa i dalje vrijede. Pretplati se na Premium kad god želiš na nadzornoj ploči.",
     "freemiumChatLabel": "Chat s Linguom",
     "freemiumVoiceLabel": "Glasovni razgovori",
     "freemiumListeningLabel": "Vježbe slušanja",
@@ -1592,14 +1948,18 @@
     }
   },
   "billing": {
+    "paywallSituationsTitle": "Nastavi vježbati stvarne situacije",
+    "paywallSituationsDesc": "Besplatne vježbe situacija za ovaj tjedan su iskorištene ili ova značajka zahtijeva Premium. Uz Premium možeš vježbati više; opća ograničenja glasovne upotrebe i dalje vrijede.",
+    "paywallGrammarPracticeTitle": "Nastavi vježbati gramatiku",
+    "paywallGrammarPracticeDesc": "Iskoristili ste današnje besplatne skupove. Uz Premium možete stvoriti još; spremljene sesije ostaju dostupne.",
     "planFreeTrialDesc": "Isprobaj Premium pri registraciji, bez kartice ili pretplate. Nakon toga nastavi besplatno uz ograničenja korištenja.",
     "paywallGamesTitle": "Nastavi vježbati uz igre",
     "paywallGamesDesc": "Besplatna kvota je potrošena ili igre zahtijevaju Premium. Možeš nastaviti postojeće igre.",
     "paywallLabel": "Potreban je Premium",
     "paywallTitle": "Otključaj FreeLingo Premium",
-    "paywallDesc": "Započni besplatno probno razdoblje od {days} dana i otključaj sve Premium vježbe prije prve uplate.",
-    "paywallDescTrialUsed": "Otključaj sve Premium vježbe i provjeri iznos prije potvrde.",
-    "paywallChatTitle": "Vježbaj s Linguom bez ograničenja",
+    "paywallDesc": "Započni besplatno probno razdoblje od {days} dana i više vježbaj uz Premium prije prve uplate.",
+    "paywallDescTrialUsed": "Više vježbaj uz Premium i provjeri iznos prije potvrde.",
+    "paywallChatTitle": "Više vježbe s Linguom",
     "paywallChatDesc": "Postavljaj pitanja, dobivaj ispravke i razgovaraj s Linguom pisanim putem.",
     "paywallLessonsTitle": "Dovrši neograničeno mnogo lekcija",
     "paywallLessonsDesc": "Gramatika, rječnik, čitanje i pisanje – svaki dan dovrši onoliko lekcija koliko želiš.",
@@ -1626,7 +1986,7 @@
     "month": "mjesec",
     "year": "godina",
     "planFeature": {
-      "feature1": "Neograničen pristup – bez dnevnih ili tjednih ograničenja",
+      "feature1": "Bez kvota besplatnog plana; opća ograničenja računa i dalje vrijede",
       "feature2": "2 mjeseca gratis"
     },
     "planFreeName": "Besplatno",
@@ -1635,6 +1995,7 @@
     "ctaRegister": "Započni besplatno probno razdoblje",
     "ctaRegisterTrialUsed": "Odaberi plan",
     "freeFeature": {
+      "situations": "Glasovne vježbe situacija",
       "f1": "Test i procjena razine",
       "f2": "Personalizirani plan učenja",
       "lessons": "Dovršavanje lekcija",
@@ -1648,9 +2009,9 @@
       "l4": "Vježbe čitanja",
       "l5": "Sedmodnevno probno razdoblje s punim pristupom"
     },
-    "successLabel": "Plaćanje je potvrđeno",
+    "successLabel": "Pretplata je potvrđena",
     "successTitle": "Dobrodošli u FreeLingo Premium!",
-    "successDesc": "Tvoja pretplata sada je aktivna. Uživaj u neograničenom pristupu svim značajkama.",
+    "successDesc": "Tvoja pretplata sada je aktivna. Uživaj u Premium pristupu unutar općih ograničenja tvojeg računa.",
     "successCheckingLabel": "Potvrda pretplate",
     "successCheckingTitle": "Provjeravamo tvoju pretplatu",
     "successCheckingDesc": "To obično traje nekoliko sekundi.",
@@ -1662,12 +2023,12 @@
     "successErrorDesc": "Idi na nadzornu ploču i osvježi je za trenutak ili provjeri postavke plaćanja.",
     "successRedirect": "Preusmjeravanje na nadzornu ploču za {seconds} s...",
     "successCta": "Idi na nadzornu ploču",
-    "canceledLabel": "Plaćanje je otkazano",
-    "canceledTitle": "Ništa nije naplaćeno",
-    "canceledDesc": "Ništa nije naplaćeno. Tvoj je napredak sačuvan, a plan možeš odabrati kasnije u Postavkama.",
+    "canceledLabel": "Postupak pretplate je prekinut",
+    "canceledTitle": "Napustio si postupak pretplate",
+    "canceledDesc": "Tvoj je napredak sačuvan. U Postavkama možeš provjeriti svoju pretplatu ili odabrati plan.",
     "canceledCtaDashboard": "Idi na nadzornu ploču",
     "canceledCtaSettings": "Pogledaj planove",
-    "canceledNoCharge": "Ništa nije naplaćeno · Odaberi plan kad god želiš",
+    "canceledNoCharge": "Provjeri svoju pretplatu u Postavkama",
     "section": "Pretplata",
     "status": "Status",
     "statusActive": "Aktivna",
@@ -1687,7 +2048,7 @@
     "pastDueTitle": "Plaćanje na čekanju",
     "pastDueDesc": "Ažuriraj način plaćanja kako bi vratio Premium pristup.",
     "subscribe": "Pretplati se",
-    "portalError": "Portal za plaćanje nije bilo moguće otvoriti. Pokušaj ponovno.",
+    "portalError": "Nismo mogli otvoriti upravljanje pretplatom. Pokušaj ponovno.",
     "openSourceTitle": "Otvoreni kod",
     "openSourceDesc": "Besplatno hostaj na svojem poslužitelju",
     "openSourceCta": "Pogledaj na GitHubu",
@@ -1699,7 +2060,47 @@
     "planFreeCta": "Započni",
     "limitedLabel": "Ograničeno"
   },
+  "premiumOffer": {
+    "navLabel": "Premium",
+    "viewPremium": "Otkrij Premium",
+    "planSection": "Plan i pretplata",
+    "viewPlans": "Pogledaj planove",
+    "stayFree": "Nastavi s besplatnim planom",
+    "expiredTitle": "Tvoje Premium probno razdoblje je završilo",
+    "expiredDescription": "Tvoj je napredak spremljen. Možeš nastaviti učiti besplatno uz ograničenja korištenja ili odabrati Premium za više vježbanja s Linguom, lekcija, igara, čitanja i slušanja. Opća ograničenja tvog računa i dalje vrijede.",
+    "resultTitle": "Nastavi napredovati na temelju naučenog",
+    "exhaustedTitle": "Nastavi vježbati uz Premium",
+    "continuePremium": "Nastavi uz Premium",
+    "dailyReset": "Tvoja besplatna kvota obnavlja se svaki dan u 00:00 UTC.",
+    "weeklyReset": "Tvoja besplatna kvota obnavlja se ponedjeljkom u 00:00 UTC.",
+    "trialResultNote": "Tvoje besplatno probno razdoblje još traje. Pogledaj planove za nastavak nakon njegova završetka.",
+    "result": {
+      "situations": "Nastavi vježbati stvarne situacije glasom s Linguom uz Premium.",
+      "voice": "Nadogradi ovaj razgovor dodatnim vježbanjem govora i povratnim informacijama od Lingua uz Premium.",
+      "lessons": "Nastavi dovršavati lekcije i primjenjivati naučeno s Linguom uz Premium.",
+      "listening": "Uz Premium nastavi razvijati razumijevanje slušanjem kroz dodatne vježbe na svojoj razini.",
+      "reading": "Uz Premium nastavi razvijati razumijevanje pročitanog kroz dodatne vježbe čitanja na svojoj razini.",
+      "games": "Uz Premium nastavi vježbati kroz još više igara za učenje.",
+      "flashcards": "Primijeni ponovljene riječi u razgovorima s Linguom. Premium ti omogućuje više vježbanja putem chata i glasovnih razgovora."
+    },
+    "benefitsTitle": "Što uključuje Premium",
+    "benefitsDescription": "Nastavi vježbati bez kvota besplatnog plana.",
+    "benefitsVoice": "Glasovni razgovori s Linguom",
+    "benefitsChat": "Pisani chat s ispravcima i objašnjenjima",
+    "benefitsComprehension": "Vježbe razumijevanja pročitanog i slušanog",
+    "benefitsLessonsGames": "Dovršavanje lekcija i igre za učenje",
+    "benefitsLanguages": "Svi dostupni jezici za učenje u jednoj pretplati",
+    "generalLimits": "Opća ograničenja korištenja i razgovora i dalje vrijede.",
+    "noCardTrialStatus": "Premium probno razdoblje · bez kartice",
+    "noCardTrialDescription": "Tvoje Premium probno razdoblje traje do {date}, bez kartice i automatske naplate. Nakon toga vrijede ograničenja besplatnog plana, osim ako se pretplatiš.",
+    "monthlyCommitment": "Plaćaj mjesečno uz manju početnu financijsku obvezu.",
+    "yearlyCommitment": "Jedna uplata za cijelu godinu.",
+    "cardTrialTerms": "Kad se pretplatiš, počinje zasebno probno razdoblje u trajanju od {days} dana; ne dodaje se preostalim danima tvog trenutačnog probnog razdoblja. Potrebna je kartica. Nakon toga naplaćuje se cijena odabranog plana, osim ako otkažeš pretplatu prije završetka probnog razdoblja pretplate.",
+    "paidTerms": "Potrebna je kartica. Tvoja plaćena pretplata počinje kupnjom. Obnavlja se u odabranim intervalima, osim ako je otkažeš."
+  },
   "freemium": {
+    "situationsLabel": "Situacije ovaj tjedan",
+    "grammarPracticeLabel": "Današnji skupovi gramatike",
     "gamesLabel": "Današnje igre",
     "chatLabel": "Chat",
     "lessonsLabel": "Lekcije",
@@ -1708,7 +2109,7 @@
     "voiceLabel": "Glas (min)",
     "freeLimit": "Uzmi Premium",
     "trialDaysLeft": "{days, plural, one {Preostao je # dan besplatnog probnog razdoblja} few {Preostala su # dana besplatnog probnog razdoblja} other {Preostalo je # dana besplatnog probnog razdoblja}}",
-    "trialUnlimited": "Neograničen pristup",
+    "trialUnlimited": "Premium pristup",
     "requiresSubscription": "Samo za Premium"
   },
   "lessonPractice": {
@@ -1760,13 +2161,29 @@
   },
   "whatsNew": {
     "title": "Novosti",
-    "version": "v1.10.50",
+    "version": "v1.14.10",
     "cta": "Razumijem",
     "entry1": {
-      "label": "Tečniji glasovni razgovori",
-      "desc": "Poboljšali smo razgovore s Linguom za tečniju reprodukciju glasa i jasnije oznake čiji je red za govor."
+      "label": "Vježbaj svakodnevne razgovore",
+      "desc": "Pripremi se za stvarne situacije uz 50 scenarija iz svakodnevnog života, putovanja, kupovine, društvenog života i posla. Vježbaj u glasovnom razgovoru s Linguom, koji će preuzeti ulogu tvog sugovornika i prilagoditi razgovor tvojoj razini."
     },
     "entry2": {
+      "label": "Tvoj plan, korak po korak",
+      "desc": "Moj plan sada prikazuje tvoje učenje kao put: prati napredak, pronađi trenutačnu cjelinu i otkrij sljedeće etape. Otvori svaku cjelinu da vidiš njezine lekcije, nastaviš učiti ili ponoviš ono što si već završio."
+    },
+    "entry3": {
+      "label": "Vježbaj gramatiku svojim tempom",
+      "desc": "Dodaj teme iz gramatičkih materijala u svoju osobnu biblioteku i vježbaj uz skupove od pet zadataka s ispravcima i objašnjenjima. Pregledaj rezultate, a nakon završetka nastavi vježbati u glasovnom razgovoru s Linguom na temelju teme i svojih odgovora."
+    },
+    "entry4": {
+      "label": "Novi jezici: hrvatski, češki, danski, finski i rumunjski",
+      "desc": "Dodali smo hrvatski, češki, danski, finski i rumunjski kao jezike za učenje, sa sadržajem od A1 do C2. Odaberi ih na početku ili ih dodaj putem Postavke → Moji jezici."
+    },
+    "entry5": {
+      "label": "Lingu ti pomaže kad ti zatreba",
+      "desc": "Ako nešto ne razumiješ tijekom glasovnog razgovora, zatraži pomoć od Lingua. Može ti to ukratko objasniti na tvom materinskom jeziku, a zatim nastaviti vježbu na jeziku koji učiš."
+    },
+    "entry6": {
       "label": "Ugodnije iskustvo",
       "desc": "Ispravili smo i manje pogreške te doradili pojedinosti kako bi svakodnevno učenje uz FreeLingo bilo ugodnije."
     }

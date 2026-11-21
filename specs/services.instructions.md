@@ -11,12 +11,18 @@ Services implement reusable domain behavior and external-provider adapters. Rout
 for authentication, ownership resolution, rate limits, transport framing, and HTTP status mapping.
 The frontend never calls an external provider directly.
 
+This specification owns shared service interfaces and orchestration. Domain summaries below identify
+their service boundary; detailed workflows and eligibility rules belong to the linked domain specs.
+
 ## LLM adapter
 
 `llm_adapter.py` provides provider-neutral access to Ollama, OpenAI, Anthropic, and DeepSeek.
 
 OpenAI uses the Responses API for every LLM request; Ollama and DeepSeek use Chat Completions and
-Anthropic uses its native API. The OpenAI model defaults to `gpt-6-luna`. Optional
+Anthropic uses its native API. `LLM_PROVIDER` selects the adapter; `OLLAMA_MODEL`, `OPENAI_MODEL`,
+`ANTHROPIC_MODEL`, and `DEEPSEEK_MODEL` select its model. Backend defaults live in
+`backend/app/core/config.py`; forwarded values and deployment fallbacks live in `docker-compose.yml`
+and `docker-compose.dev.yml`, with `.env.example` as the operator template. Optional
 `OPENAI_REASONING_EFFORT` is sent as `reasoning.effort` on chat, structured generation, tool
 continuations, and fallbacks. An empty value omits it. Supported values depend on the model; the
 adapter does not infer reasoning settings from model names or force `none` for tools.
@@ -58,6 +64,40 @@ Pairs' term/meaning matches. It credits the progress/reward ledger under plan/se
 Saved content and native language are stable across active-language/profile changes. See
 `games.instructions.md`.
 
+## Grammar Practice
+
+`grammar_practice.py` owns topic selection, captured-context validation, saved sessions, deterministic
+answer evaluation, historical statistics, and durable global admission. It reuses the existing LLM
+adapter for structured generation and semantic review, with at most two candidate batches under
+`EXERCISE_GENERATION_TIMEOUT_SECONDS`. FastAPI `BackgroundTasks` runs the job in process; publication
+checks its saved deadline and atomically consumes or releases the reservation. Answer and activity
+persistence share the original plan transaction and award no XP or proficiency updates.
+
+`grammar_practice_context.py` serializes the full escaped reference, challenges, and answers, enforcing
+a 65,536-character ceiling and 20,480-character answer reserve at generation. It rejects oversized
+content rather than truncating it. `grammar_voice_practice.py` loads only completed sessions through
+their owned historical plan and language track. It supplies the existing `lesson_practice_context`
+pipeline input; the same ownership resolver binds selected-word flashcard saves to that plan.
+`grammar-practice.instructions.md` owns the complete domain contract.
+
+## Situations
+
+The server-owned catalog in `data/situations.py` supplies stable category/situation IDs and canonical
+role-play source data. `situations.py` resolves both plan and language-track ownership, their matching
+supported target language, and active-plan status for catalog/start. The currently selected track is
+not authoritative. It builds an escaped JSON scenario reference with that plan's language and level
+before quota consumption. The voice router
+passes the result through the existing `lesson_practice_context` pipeline input; clients cannot
+replace the scenario with their own prompt or select another language through free-form context.
+The prompt builder selects a Situations-specific branch from a server-generated marker, leaving the
+lesson/Grammar Practice wrapper and `ConversationPipeline` unchanged.
+Selected-word saves reuse `get_situation_plan(..., require_active=False)` so historical owned plans
+retain lookup language, level, deduplication, and storage without active-plan fallback.
+
+`situations.instructions.md` owns the catalog, roles, objectives, and learning flow.
+`voice-conversation.instructions.md` owns the shared pipeline and session lifecycle;
+`subscriptions-freemium.instructions.md` owns the additional weekly allowance and its accounting.
+
 ## Assessment
 
 `assessment.py` evaluates adaptive quiz records deterministically and provides LLM-backed free-write
@@ -85,6 +125,7 @@ LLM calls. The eligibility contract lives in `study-plan.instructions.md`.
 constraints. It:
 
 - generates lesson explanation, vocabulary, and validated exercise structures;
+- includes optional native-language question translations in generated/replacement exercises;
 - varies instructions by declared lesson type;
 - summarizes bounded prior-unit content to reduce repetition;
 - generates/caches missing native explanations and hints;
@@ -94,24 +135,31 @@ constraints. It:
 Persisted plan ownership supplied by routers determines language. Detailed lifecycle and compatibility
 behavior belongs to `study-plan.instructions.md`.
 
+The lessons router generates missing question translations through the existing LLM adapter and stores
+them in lesson JSON. `utils/lesson_exercises.py` owns source normalization, blank-preservation checks,
+and translation cache metadata. The lifecycle/cache contract is defined in `study-plan.instructions.md`
+(Optional question translation); prompt composition is defined in `prompts.instructions.md`.
+
 ## Flashcards and progress
 
 `flashcard_sm2.py` applies SM-2 updates for quality 0-5 and generates cards with native-language
 translation context. Generated cards receive target language from the persisted active plan.
+Its bulk-translation helper translates supplied new-card terms in context and validates exactly one
+nonblank, length-bounded translation per input index before returning. The router deduplicates first,
+preserves existing cards and provided translations, and rechecks context/duplicates before insertion.
+Translation and any corrective retry share a 20-second provider deadline. Only the first 300 characters
+of each definition/example enter the prompt, without changing stored originals. Request bounds and
+nonblocking user/language/plan lock checks are documented in `api-endpoints.instructions.md` (Flashcards).
+The import contract is defined in `learning-resources.instructions.md` (Vocabulary hub).
 
 `progress_service.py` updates daily XP, streak, exercise skill EMA, and unit competency EMA. It can
 flush without committing so lesson completion can include progress in one transaction. Progress is
 always credited to the resource-owning plan.
-New daily rows store ordered per-skill scores in `Progress.skill_updates`. A write to an earlier date
-reconciles subsequent streaks and replays subsequent days' own skill updates in date order, under the
-same plan lock and transaction. Every EMA step retains its three-decimal rounding; gaps reset only
-streaks. Legacy null score histories preserve their skill snapshots as opaque checkpoints rather than
-pretending they contain no scored activity. Daily counters and XP are not moved between dates.
 
 `progress_rewards.py` grants additional conversation, spaced-replay, unit, and level XP with durable
 source keys and plan-row serialization. Reward inserts and daily credit share a transaction. Activity
-uses UTC and can have zero XP; new days retain prior skill snapshots. Streak reads expire when the
-latest date is older than yesterday. Exact award thresholds live in `learning-resources.instructions.md`.
+uses UTC and can have zero XP. `learning-resources.instructions.md` owns award thresholds, daily
+reconciliation, skill-history compatibility, and streak expiry.
 
 Serialization uses PostgreSQL `FOR NO KEY UPDATE`, compatible with FK `KEY SHARE` locks from transcript
 and attempt inserts. `reward_conversation` receives a persisted response ID, validates its explicit
@@ -128,6 +176,8 @@ request being answered. Transcript reads order by timestamp and ID to keep equal
 `resource_native_help.py` hashes canonical resource source data, returns only hash-current cache rows,
 upserts generated help, and builds Redis lock keys. Grammar, Vocabulary, and Phrasebook identify cache
 rows by resource type/key, target language, and native language; source hash determines freshness.
+Comprehension explanations reuse these cache primitives under separate resource types; their access
+and concurrency rules are defined below.
 
 ## Language helpers and lifecycle
 
@@ -163,12 +213,23 @@ It does not call a provider or persist anything. The HTTP TTS router invokes it 
 `conversation_id`; other TTS callers
 and the voice pipeline continue supplying their existing text.
 
-`tts_service.py` exposes `synthesize(text, voice=None, language=None) -> bytes` through local Kokoro or
-OpenAI. OpenAI supplies shared native-pronunciation instructions for `gpt-4o-mini-tts` and its snapshots,
-using the supplied language/region when available and requesting language inference otherwise.
+`tts_service.py` implements local Kokoro and OpenAI; `gemini_tts_service.py` implements Gemini.
+All expose `synthesize(text, voice=None, language=None) -> bytes`. `get_tts_audio_format()` supplies
+the selected adapter's output MIME type and extension: local/OpenAI use MP3;
+Gemini uses native WAV. OpenAI supplies shared native-pronunciation instructions for `gpt-4o-mini-tts`
+and its snapshots, using the supplied language/region when available and requesting language inference otherwise.
 Legacy/unknown OpenAI models and Kokoro ignore `language` and receive no pronunciation instructions.
-Voice selection remains independent of language. OpenAI synthesis cache keys include instructions
-only when supported by the configured model.
+Voice selection remains independent of language. OpenAI and Gemini expose logical `female`/`male`
+choices and resolve actual configured voices only in the backend. Model selection, voice mappings,
+and configuration validation are owned by `speech-services.instructions.md`.
+OpenAI synthesis cache keys include the resolved actual voice for every model and instructions
+only when supported. Previews and Phrasebook use hashed keys even with legacy OpenAI models;
+Phrasebook uses the configured backend default rather than a browser preference.
+
+Gemini uses HTTPX REST Interactions with separate spoken text and style, mapped female/male voices,
+and explicit regional language when supplied. Its cache identity includes the actual voice mapping
+and output format. Provider configuration and the supported Gemini 3.8 contract are owned by
+`speech-services.instructions.md`; no transcoding or additional SDK is required.
 
 `stt_service.py` exposes
 `transcribe(audio_bytes, filename, mime_type, *, language) -> str` through local faster-whisper or
@@ -191,19 +252,61 @@ together; even a zero-score or zero-XP attempt records activity.
 The service captures the attempt timestamp once before database awaits and reuses its UTC date for
 replay eligibility, source keys, reward limits, ledger dates, and progress dates.
 
-`exercise_generation.py` coordinates both domains' background tasks through unique-owner Redis
-leases, 60-second expiry, 20-second renewal, atomic owner-checked completion, and expiring status.
-`EXERCISE_GENERATION_TIMEOUT_SECONDS` (default 600, positive integer) bounds the entire task from
-acquisition. The domain services accept a monotonic `deadline` and async `before_save` ownership
-guard. The coordinator cancels work on timeout or renewal failure, stops its heartbeat in all cases,
-and exposes controlled failure codes through immediate `/next` responses. Database content remains
-the authority when an exercise is available; Redis stores no learner answers or generated content.
-Status reads calculate remaining generation seconds on the server. Redis ownership checks do not
-form an atomic transaction with PostgreSQL commits. Listening compensates audio writes on failure or
-cancellation before commit is attempted, while preserving audio after an uncertain commit or failed
-post-commit refresh. The coordinator recognizes OpenAI TTS `APITimeoutError` as `timeout`.
+Pool selection, content/audio persistence, attempts, and history belong to
+`listening.instructions.md` and `reading.instructions.md`.
 
-Pool, generation-lock, attempt, and history behavior belongs to the Listening and Reading specs.
+### Comprehension review help
+
+`comprehension_help.py` serves post-attempt explanations for both domains. It verifies the saved attempt
+and its plan belong to the authenticated user, and that the exercise language matches that plan, before
+reading shared cached content. It does not depend on the currently active language or plan.
+
+- Cache types are `reading_explanation` and `listening_explanation`, keyed by exercise ID/question index,
+  target language and profile native language. The source hash covers the passage, full question, level
+  and prompt-contract version. Content is reusable across learners because it contains no personal answer.
+- Structured output contains a short native explanation and a contiguous exact source quote. Empty,
+  oversized or nonliteral evidence is rejected; existing malformed cached content is regenerated.
+- A token-owned Redis lock lasts 90 seconds. Generation and cache persistence have a 20-second deadline;
+  acquisition/release each have a two-second bound, leaving margin within the client's 30-second budget.
+  The provider receives the same generation deadline, including corrective retries. Busy or unavailable
+  generation returns recoverable 503. Release compares the owner token, so an old request cannot delete
+  a replacement lock.
+- Cache writes reuse the existing uniqueness constraint; a concurrent insert conflict reloads a valid
+  cache winner or returns 503. Redis and database commits are separate boundaries.
+- Help never creates an attempt, changes an answer/score, credits progress, or consumes feature quota.
+  The endpoint uses the feature's read-only access policy, maintenance checks and its own rate limit.
+
+### Shared generation coordinator
+
+`exercise_generation.py` owns the common backend lifecycle. Each domain uses
+`{domain}:generating:{level}:{target_language}` as its Redis lease key:
+
+- Acquisition creates a unique owner and running state atomically. The lease expires after 60 seconds
+  and renews every 20 seconds. Lua operations compare owners before renewal or completion; an older
+  task cannot release a replacement lease or overwrite its status.
+- FastAPI background tasks open independent database and Redis resources. Closing a browser page or
+  losing the generation response does not cancel accepted work. This is not a durable job queue.
+- `EXERCISE_GENERATION_TIMEOUT_SECONDS` (positive integer, configured through the sources above) sets
+  the deadline at acquisition.
+  The job budget includes structured generation, one possible JSON correction, persistence, and TTS
+  for Listening. Provider-specific TTS timeouts also apply.
+- Domain services receive a monotonic `deadline` and an async `before_save` ownership guard. The LLM
+  uses remaining time with SDK/adapter transport retries disabled. Timeout, detected lease loss,
+  renewal failure, or cancellation stops local work; cleanup stops the heartbeat too.
+- Redis `{lock_key}:state` expires after the configured budget plus 900 seconds for running state,
+  and after 900 seconds for terminal state. A running state without its lease is reported as
+  `failed` with `interrupted`. Status reads calculate remaining seconds on the server.
+- Controlled errors are `timeout`, `generation_failed`, and `interrupted`; raw exceptions stay in
+  logs. Recognized timeout exceptions include OpenAI TTS `APITimeoutError`.
+- Routers check exercise availability before and after acquiring a lease. `/next` prioritizes saved
+  exercises over Redis status and responds without waiting for generation; a `wait` query parameter
+  does not enable long-polling. Redis stores no generated content or learner answers.
+
+Redis ownership checks and PostgreSQL commits are separate operations. The pre-save guard prevents
+ordinary duplicate work but does not provide transactional fencing if ownership disappears before
+commit. Listening's audio compensation rules remain in its domain specification.
+`architecture-frontend.instructions.md` owns the shared polling and client recovery contract;
+`api-endpoints.instructions.md` owns the HTTP status/context fields.
 
 ## Reviews
 
@@ -213,9 +316,34 @@ is performed by the router.
 
 ## Access and quotas
 
-`subscription_service.py` is the source of paid-access state. When Stripe is disabled it grants
-self-hosted access; otherwise only `trialing` and `active` grant subscription access. Subscription
-activation reapplies configured account quotas.
+`subscription_service.py` is the source of paid-access decisions. When Stripe is disabled it grants
+self-hosted access; otherwise only persisted `trialing` and `active` states grant subscription access.
+Access uses the last confirmed snapshot, not a locally computed expiration; RevenueCat reconciliation
+evaluates entitlement expiry and grace periods before updating that snapshot. Subscription activation
+reapplies configured account quotas; callers can stage quota changes without committing
+when they belong to a larger billing transaction.
+
+`revenuecat_service.py` reads API v1 customer information through the existing async HTTP client and
+normalizes the configured Premium entitlement into the shared subscription fields. The canonical
+App User ID is the string form of the FreeLingo account ID. User-row locks serialize snapshot writes;
+provider request timestamps reject older snapshots. Explicit Stripe imports use only the persisted
+Subscription ID. The service also resolves the provider's HTTPS subscription-management URL without
+persisting a per-store authorization model. Credentials, environment isolation, retries, and the
+activation workflow are owned by `subscriptions-freemium.instructions.md`.
+The same service publishes current customer profile attributes under a user-row lock for explicit
+billing/profile actions. Attribute writes have a separate short timeout and best-effort failure policy;
+they do not apply provider response data to subscription access. The attribute and country-estimate
+contract is owned by `subscriptions-freemium.instructions.md`.
+
+`stripe_checkout_service.py` owns serialized web purchase creation and recovery. It uses async Stripe
+SDK calls, user-row locks, and durable Checkout reservations containing frozen request parameters and
+idempotency keys. Preliminary Customer requests also freeze their inputs and persist the Customer ID
+before any later provider call. The service resumes an open session's own incomplete payment, expires
+a session before replacing its price, and discovers uncertain results before retrying creation.
+Definitive expiry validation failures can renew a reservation; ambiguous failures cannot.
+Live Stripe subscription checks choose Checkout versus payment recovery;
+they never overwrite RevenueCat's Premium snapshot. The router maps provider failures to `503` and
+subscription conflicts to `409`. Billing lifecycle rules belong to `subscriptions-freemium.instructions.md`.
 
 `quota_service.py` evaluates global per-user voice session/minute and monthly token limits. A global
 quota value of zero means unlimited.

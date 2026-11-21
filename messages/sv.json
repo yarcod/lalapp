@@ -1,4 +1,276 @@
 {
+  "situations": {
+    "title": "Öva på verkliga situationer",
+    "description": "Välj ett scenario och öva muntligt med Lingu, som spelar personen du behöver prata med.",
+    "search": "Sök situationer",
+    "allCategories": "Alla kategorier",
+    "noResults": "Inga situationer matchar din sökning.",
+    "loadError": "Det gick inte att ladda situationerna.",
+    "retry": "Försök igen",
+    "start": "Börja öva",
+    "unavailable": "Den här situationen är inte tillgänglig. Försök igen.",
+    "back": "Tillbaka till situationer",
+    "contextChanged": "Ditt studiesammanhang har ändrats. Uppdatera sidan och starta övningen igen.",
+    "categories": {
+      "daily_life": "Vardag",
+      "travel": "Resor",
+      "shopping_services": "Inköp och tjänster",
+      "social": "Socialt liv",
+      "work": "Arbete"
+    },
+    "items": {
+      "bakery_purchase": {
+        "title": "Handla på ett bageri",
+        "description": "Lingu spelar butiksbiträdet på ett bageri. Be om bröd eller något till frukost, säg hur mycket du vill ha och fråga om priset."
+      },
+      "clothes_shopping": {
+        "title": "Handla kläder",
+        "description": "Prata med Lingu som butiksbiträde om storlek och färg och fråga om du kan prova kläderna."
+      },
+      "cafe_order": {
+        "title": "Beställ på ett kafé",
+        "description": "Lingu spelar servitören på ett kafé. Beställ något att dricka och lite att äta."
+      },
+      "haircut_appointment": {
+        "title": "Gå till frisören",
+        "description": "Lingu spelar din frisör. Be om en enkel klippning och beskriv hur du vill ha håret."
+      },
+      "supermarket_help": {
+        "title": "Fråga om hjälp i mataffären",
+        "description": "Fråga Lingu som anställd i mataffären var du hittar varorna du letar efter."
+      },
+      "buy_ticket": {
+        "title": "Köp en biljett",
+        "description": "Lingu arbetar i biljettkassan. Berätta vart du ska resa, fråga om avgångstider och priser och köp en biljett."
+      },
+      "hotel_check_in": {
+        "title": "Checka in på ett hotell",
+        "description": "Lingu spelar receptionisten. Bekräfta din bokning och fråga om det viktigaste inför din vistelse."
+      },
+      "taxi_ride": {
+        "title": "Beställ en taxi",
+        "description": "Ring Lingu på taxibeställningen. Säg var du vill bli hämtad och vart du ska och fråga när taxin kommer."
+      },
+      "collect_key": {
+        "title": "Hämta nyckeln",
+        "description": "Hämta nyckeln till din semesterlägenhet hos Lingu som värd och fråga hur du kommer in."
+      },
+      "local_recommendations": {
+        "title": "Fråga vad som är värt att besöka",
+        "description": "Lingu spelar en person från trakten. Berätta om dina intressen och be om tips på platser att besöka."
+      },
+      "congratulate_friend": {
+        "title": "Gratulera en vän",
+        "description": "Lingu spelar en vän som fyller år eller har en glad nyhet. Gratulera och småprata en stund."
+      },
+      "hobbies_chat": {
+        "title": "Prata om fritidsintressen",
+        "description": "Prata med Lingu som vän om vad ni gillar att göra på fritiden och hitta gemensamma intressen."
+      },
+      "family_chat": {
+        "title": "Prata om familjen",
+        "description": "Lingu spelar en bekant. Berätta lite om din familj och fråga om Lingus familj."
+      },
+      "invite_friend": {
+        "title": "Bjud med en vän",
+        "description": "Fråga Lingu som vän om ni ska äta eller dricka något tillsammans och bestäm en tid."
+      },
+      "choose_gift": {
+        "title": "Välj en present",
+        "description": "Välj en gemensam present med Lingu som vän. Prata om vad mottagaren gillar och bestäm er tillsammans."
+      },
+      "late_arrival": {
+        "title": "Meddela att du blir sen",
+        "description": "Berätta för Lingu som kollega att du blir försenad och säg ungefär när du kommer fram."
+      },
+      "work_update": {
+        "title": "Berätta vad du jobbar med",
+        "description": "Prata med Lingu som kollega om en vanlig arbetsuppgift och berätta hur arbetet går."
+      },
+      "arrange_meeting": {
+        "title": "Boka ett möte",
+        "description": "Planera ett möte med Lingu som kollega och hitta en dag och tid som passar er båda."
+      },
+      "colleague_help": {
+        "title": "Be en kollega om hjälp",
+        "description": "Lingu spelar din kollega. Förklara vad du behöver hjälp med och be om vägledning."
+      },
+      "break_chat": {
+        "title": "Småprata på rasten",
+        "description": "Lingu spelar din kollega. Prata avslappnat om vardagliga saker under en rast på jobbet."
+      },
+      "recount_day": {
+        "title": "Berätta om din dag",
+        "description": "Berätta för Lingu som vän vad du har gjort idag och om något som har hänt."
+      },
+      "weather_chat": {
+        "title": "Prata om vädret",
+        "description": "Lingu spelar din granne. Prata om vädret och vad ni har för planer."
+      },
+      "daily_routine": {
+        "title": "Prata om vardagsrutiner",
+        "description": "Lingu spelar en bekant. Beskriv hur en vanlig dag ser ut för dig och fråga om Lingus rutiner."
+      },
+      "household_chores": {
+        "title": "Dela upp hushållssysslorna",
+        "description": "Lingu spelar någon du bor med. Bestäm vem som gör vad hemma och när ni ska göra det."
+      },
+      "plan_dinner": {
+        "title": "Planera middagen",
+        "description": "Lingu spelar någon du bor med. Bestäm vad ni ska laga och prata om vilka ingredienser ni har och vilka som saknas."
+      },
+      "medical_appointment": {
+        "title": "Boka ett läkarbesök",
+        "description": "Ring en mottagning. Lingu arbetar i receptionen: förklara varför du vill boka ett besök och kom överens om en tid."
+      },
+      "neighbour_problem": {
+        "title": "Prata med en granne",
+        "description": "Lingu spelar din granne. Beskriv störningar du upplever hemma och hitta en hänsynsfull lösning tillsammans."
+      },
+      "flat_viewing": {
+        "title": "Gå på lägenhetsvisning",
+        "description": "Titta på en lägenhet med Lingu som mäklare. Fråga om hyran, övriga kostnader och villkoren."
+      },
+      "school_meeting": {
+        "title": "Ett möte i skolan",
+        "description": "Lingu spelar ditt barns lärare. Prata om skolans rutiner och kom överens om hur ni kan stödja barnets lärande."
+      },
+      "household_repair": {
+        "title": "Boka en reparation",
+        "description": "Beskriv ett fel hemma för Lingu, som spelar reparatör. Fråga om kostnaden och boka ett besök."
+      },
+      "change_reservation": {
+        "title": "Ändra en bokning",
+        "description": "Prata med Lingu på bokningsavdelningen. Förklara vad du behöver ändra och bekräfta de nya villkoren."
+      },
+      "hotel_problem": {
+        "title": "Ett problem på hotellet",
+        "description": "Lingu arbetar i receptionen. Förklara ett problem med ditt rum och be om en lämplig lösning."
+      },
+      "ask_directions": {
+        "title": "Fråga efter vägen",
+        "description": "Fråga Lingu, som spelar en person från trakten, hur du når ditt mål och kontrollera att du förstått vägen."
+      },
+      "missed_connection": {
+        "title": "Missa en anslutning",
+        "description": "Du har missat en anslutning. Prata med Lingu vid trafikbolagets servicedisk för att hitta en annan resväg."
+      },
+      "lost_luggage": {
+        "title": "Försvunnet bagage",
+        "description": "Din väska har inte kommit fram. Beskriv den för Lingu vid bagagedisken och fråga hur du får tillbaka den."
+      },
+      "return_purchase": {
+        "title": "Lämna tillbaka en vara",
+        "description": "Förklara för Lingu som butiksbiträde varför du vill lämna tillbaka en vara och fråga om återbetalning."
+      },
+      "restaurant_order": {
+        "title": "Beställa på restaurang",
+        "description": "Lingu spelar servitör. Fråga om rätterna, berätta vad du föredrar och gör din beställning."
+      },
+      "phone_contract": {
+        "title": "Välja mobilabonnemang",
+        "description": "Prata med Lingu som mobilrådgivare. Jämför abonnemang och red ut kostnader och villkor innan du bestämmer dig."
+      },
+      "bank_appointment": {
+        "title": "Ett möte på banken",
+        "description": "Lingu spelar en bankanställd. Förklara ditt ärende och fråga vilka handlingar som behövs och vad nästa steg är."
+      },
+      "delivery_problem": {
+        "title": "Ett leveransproblem",
+        "description": "Kontakta Lingu på kundtjänst. Förklara problemet med ditt paket och kom överens om en lösning."
+      },
+      "meet_someone": {
+        "title": "Lära känna någon",
+        "description": "Lingu spelar någon du just träffat på en sammankomst. Presentera dig och hitta gemensamma intressen."
+      },
+      "make_plans": {
+        "title": "Göra planer tillsammans",
+        "description": "Planera en utflykt med Lingu som vän. Föreslå aktiviteter och bestäm var och när ni ska ses."
+      },
+      "decline_invitation": {
+        "title": "Tacka nej till en inbjudan",
+        "description": "Lingu spelar en vän som bjuder med dig på något. Tacka nej på ett vänligt sätt och föreslå en annan gång."
+      },
+      "resolve_misunderstanding": {
+        "title": "Reda ut ett missförstånd",
+        "description": "Prata med Lingu som vän om ett missförstått meddelande och hitta tillbaka till en vänlig samtalston."
+      },
+      "host_visitors": {
+        "title": "Ta emot gäster",
+        "description": "Lingu spelar en gäst hemma hos dig. Hälsa välkommen, erbjud något att dricka och berätta vad du har planerat."
+      },
+      "introduce_yourself": {
+        "title": "Presentera dig på jobbet",
+        "description": "Lingu spelar en ny kollega. Presentera dig, förklara din roll och ställ frågor om teamet."
+      },
+      "explain_task": {
+        "title": "Förklara en uppgift",
+        "description": "Förklara en uppgift för Lingu som kollega. Beskriv stegen och kontrollera att din förklaring är tydlig."
+      },
+      "clarify_instructions": {
+        "title": "Förtydliga instruktioner",
+        "description": "Lingu spelar din chef. Ställ frågor om otydliga instruktioner och bekräfta vad du ska göra."
+      },
+      "negotiate_deadline": {
+        "title": "Förhandla om en tidsfrist",
+        "description": "Prata med Lingu som projektledare. Förklara en svårighet och kom överens om en realistisk tidsfrist."
+      },
+      "share_proposal": {
+        "title": "Presentera ett förslag",
+        "description": "Presentera en förbättringsidé för Lingu som kollega. Förklara fördelarna och svara på frågor."
+      }
+    }
+  },
+  "grammarPractice": {
+    "retryCreation": "Försök med den ursprungliga begäran igen",
+    "voiceAction": "Öva det här grammatikämnet muntligt",
+    "voiceDescription": "Starta ett röstsamtal med Lingu om det här ämnet och dina slutförda övningar. Mikrofonåtkomst krävs och gränserna för röstanvändning gäller.",
+    "title": "Grammatikövningar",
+    "description": "Spara ämnen från Resurser och öva i omgångar om fem: tre flervalsfrågor och två lucktexter. Framstegen sparas; inga XP delas ut.",
+    "add": "Öva",
+    "back": "Tillbaka till grammatikövningar",
+    "voiceUnavailable": "Den här grammatikövningen är inte tillgänglig.",
+    "noPlan": "Du behöver en aktiv studieplan på det här språket för att lägga till ämnen eller skapa övningar. Sparade sessioner är fortfarande tillgängliga.",
+    "assessment": "Skapa en studieplan",
+    "contextChanged": "Ditt studiesammanhang har ändrats. Uppdatera och försök sedan igen manuellt.",
+    "explore": "Utforska grammatik",
+    "empty": "Ditt övningsbibliotek är tomt. Välj ett ämne bland grammatikresurserna.",
+    "answered": "{count} besvarade",
+    "accuracy": "{percent}% rätt",
+    "lastPracticed": "Senast övat",
+    "never": "Inte ännu",
+    "theory": "Visa teori",
+    "continue": "Fortsätt sessionen",
+    "recover": "Återställ sessionen",
+    "generate": "Skapa fem övningar",
+    "history": "Sessionshistorik",
+    "noHistory": "Inga sessioner ännu.",
+    "score": "{correct}/{answered} rätt",
+    "generating": "Förbereder övningar…",
+    "ready": "Redo att fortsätta",
+    "completed": "Övningen är klar",
+    "failed": "Det gick inte att skapa övningarna",
+    "abandoned": "Sessionen avbruten",
+    "recoveryError": "Det sparade läget kunde inte bekräftas. Försök igen för att hämta det utan att skicka svaret på nytt.",
+    "another": "En omgång till",
+    "correct": "Rätt",
+    "incorrect": "Inte riktigt",
+    "yourAnswer": "Ditt svar",
+    "solution": "Rätt svar",
+    "abandon": "Avbryt sessionen",
+    "abandonDescription": "Stänga den här sessionen? Sparade svar finns kvar i historiken. Kvoten för att skapa övningar återbetalas inte.",
+    "choose": "Välj ett svar",
+    "fillBlank": "Fyll i luckan",
+    "check": "Kontrollera svaret"
+  },
+  "questionExplanation": {
+    "show": "Varför det här svaret",
+    "hide": "Dölj förklaringen",
+    "loading": "Förbereder förklaringen...",
+    "error": "Förklaringen är inte tillgänglig. Försök igen.",
+    "evidence": "Utdrag ur originaltexten",
+    "language": "Förklaring på {language}"
+  },
   "landing": {
     "freeTrialNote": "Inledande Premium-åtkomst vid registrering, utan kort. Därefter gratis med användningsgränser om du inte tecknar abonnemang.",
     "modes": {
@@ -42,7 +314,7 @@
       },
       "languages": {
         "question": "Vilka språk kan jag lära mig?",
-        "answer": "Brittisk och amerikansk engelska, spanska, italienska, portugisiska, tyska, franska, japanska, koreanska och fastlandskinesiska. Du kan lära dig flera samtidigt med separata planer och framsteg för varje språk."
+        "answer": "{languages}. Du kan lära dig flera samtidigt med separata planer och framsteg för varje språk."
       },
       "start": {
         "question": "Hur börjar jag lära mig?",
@@ -92,12 +364,22 @@
     "footerProduct": "Produkt",
     "footerLegal": "Juridiskt",
     "languageGreetings": {
+      "ru-RU": "Привет!",
+      "sv-SE": "Hej!",
+      "da-DK": "Hej!",
+      "cs-CZ": "Ahoj!",
+      "hr-HR": "Bok!",
+      "fi-FI": "Hei!",
+      "ro-RO": "Bună!",
       "en-US": "Hello!",
       "en-GB": "Hello!",
       "de-DE": "Hallo!",
+      "pl-PL": "Cześć!",
       "es-ES": "¡Hola!",
       "fr-FR": "Bonjour !",
       "it-IT": "Ciao!",
+      "pt-BR": "Oi!",
+      "nl-NL": "Hallo!",
       "pt-PT": "Olá!",
       "ja-JP": "こんにちは！",
       "ko-KR": "안녕하세요!",
@@ -181,7 +463,7 @@
     "failed": "Genereringen misslyckades",
     "abandoned": "Spelet avbrutet",
     "generatingDescription": "Lingu förbereder och granskar fem utmaningar. Du kan lämna sidan och återkomma senare.",
-    "failedDescription": "Vi kunde inte förbereda ett giltigt spel. Ingen spelkvot förbrukades. Gå tillbaka till menyn och försök igen.",
+    "failedDescription": "Vi kunde inte förbereda spelet. Det räknas inte mot din spelgräns. Gå tillbaka till menyn och försök igen.",
     "contextChanged": "Ditt inlärningssammanhang har ändrats eller läget är otillgängligt. Uppdatera innan du börjar.",
     "challenge": "Utmaning {current} av {total}",
     "detect": "Välj textstycket som innehåller felet.",
@@ -242,12 +524,17 @@
     "goToPlan": "Gå till min plan"
   },
   "nav": {
+    "situations": "Vardagssituationer",
+    "practiceGrammar": "Grammatikövningar",
+    "learning": "Mitt lärande",
+    "practice": "Öva",
+    "help": "Hjälp",
     "games": "Spel",
     "home": "Hem",
     "myPlan": "Min plan",
     "progress": "Framsteg",
     "flashcards": "Gloskort",
-    "tutor": "Chatta med handledaren",
+    "tutor": "Chatta med Lingu",
     "assessment": "Nivåbedömning",
     "resources": "Resurser",
     "grammar": "Grammatik",
@@ -256,7 +543,7 @@
     "settings": "Inställningar",
     "faq": "Vanliga frågor",
     "admin": "Administration",
-    "conversation": "Samtal",
+    "conversation": "Röstsamtal",
     "listening": "Hörförståelse",
     "reading": "Läsning",
     "contact": "Kontakt",
@@ -349,6 +636,13 @@
       "backToLogin": "Tillbaka till inloggningen"
     }
   },
+  "accountDeletion": {
+    "cancellationRequired": "Innan kontot kan raderas måste ägaren avbryta förnyelsen via prenumerationshanteringen. Att radera kontot avslutar inte prenumerationen.",
+    "checkoutPending": "Ett köp väntar eller så kan dess status ännu inte bekräftas. Lös detta innan du raderar kontot. Inget köp har avbrutits automatiskt.",
+    "verificationUnavailable": "Faktureringsstatusen kunde inte verifieras. Kontot har inte raderats. Försök igen senare.",
+    "failed": "Kontot kunde inte raderas. Försök igen.",
+    "manageSubscription": "Hantera prenumeration"
+  },
   "settings": {
     "title": "Inställningar",
     "sectionAccount": "Konto",
@@ -411,9 +705,12 @@
     "deleteAccountMessage": "Detta raderar ditt konto och alla dina uppgifter permanent. Åtgärden kan inte ångras.",
     "deleteAccountConfirm": "Radera konto",
     "sectionUsageLimits": "Användningsgränser",
-    "sectionVoice": "Röst",
-    "voiceHint": "Välj Lingus röst och klicka på spela upp för att höra den.",
-    "voicePlay": "Spela upp",
+    "sectionVoice": "Lingus röst",
+    "voiceFemale": "Kvinnlig röst",
+    "voiceMale": "Manlig röst",
+    "voiceHint": "Välj hur du vill att Lingu ska låta.",
+    "voiceCharacter": "Varm och vänlig",
+    "voicePlay": "Lyssna",
     "voiceStop": "Stoppa",
     "quotaSessions": "Samtal per vecka",
     "quotaMinutesDay": "Minuter per dag",
@@ -456,7 +753,7 @@
     "cardSessionSecurity": "Session och säkerhet",
     "cardTheme": "Tema",
     "cardConversationTiming": "Samtalstid",
-    "cardTutorVoice": "Handledarens röst",
+    "cardTutorVoice": "Lingus röst",
     "cardCurrentUsage": "Aktuell användning",
     "cardProductReview": "Produktomdöme",
     "cardLegalDocuments": "Juridiska dokument",
@@ -490,9 +787,9 @@
       "s4Title": "4. Innehåll och AI-interaktioner",
       "s4Body": "Samtal med AI-handledaren lagras i databasen för att din inlärning ska kunna fortsätta över tid. I den hostade tjänsten behandlas AI-chatt och röstfunktioner via OpenAI:s API, och ditt innehåll omfattas av OpenAI:s användningspolicyer. AI kan ge felaktiga svar – använd alltid ditt eget omdöme. FreeLingo ansvarar inte för innehåll som genereras av underliggande språkmodeller. Det innehåll som AI-handledaren genererar (övningar, rättelser, förklaringar och annat material) tillhör dig för ditt personliga bruk. FreeLingo gör inga anspråk på äganderätten till dina samtal eller det innehåll som genereras från dem.",
       "s5Title": "5. Tjänstens olika former",
-      "s5Body": "Installationer med egen drift är kostnadsfria och den som driver dem har full kontroll över sina data och sin infrastruktur. Den hostade tjänst som drivs av FreeLingo-teamet erbjuder en gratisplan med användningsgränser och betalda prenumerationer för obegränsad åtkomst, per månad eller år. Gratisplanen omfattar en sjudagars provperiod med full åtkomst (inget betalningsmedel krävs) och därefter begränsade dagliga kvoter för lektioner och AI-chatt samt veckovisa kvoter för hörförståelse, läsning och röstsamtal. Betalda prenumerationer tar bort alla användningsgränser för dessa funktioner. I den hostade tjänsten lagras dina data på servrar som drivs av FreeLingo-teamet. Aktuella användningsgränser för ditt konto visas på din översikt.",
+      "s5Body": "Installationer med egen drift är kostnadsfria och den som driver dem har full kontroll över sina data och sin infrastruktur. Den hostade tjänst som drivs av FreeLingo-teamet erbjuder en gratisplan med användningsgränser och betalda prenumerationer för Premium-åtkomst, per månad eller år. Gratisplanen har begränsade dagliga kvoter för lektioner och AI-chatt samt veckovisa kvoter för hörförståelse, läsning och röstsamtal. När en inledande provperiod erbjuds ger den Premium-åtkomst utan betalningsmedel under den period som anges på ditt konto. Betalda prenumerationer och provperioden tar bort gratisplanens kvoter, men allmänna kontogränser, inklusive gränser för AI-användning och röstsamtal, gäller fortfarande. I den hostade tjänsten lagras dina data på servrar som drivs av FreeLingo-teamet. Aktuella användningsgränser för ditt konto visas på din översikt.",
       "s6Title": "6. Prenumeration och betalning",
-      "s6Body": "Gratisplanen ger begränsad åtkomst till AI-funktioner med en sjudagars provperiod med full åtkomst för nya användare (inget betalningsmedel krävs). Betalda prenumerationer erbjuds per månad eller år och förnyas automatiskt om de inte sägs upp i förväg. Du kan när som helst säga upp prenumerationen under Inställningar; uppsägningen träder i kraft när den aktuella perioden löper ut. Operatören kan också avsluta förnyelser eller prenumerationer om tjänsten ändras eller stängs. Om tjänsten upphör innan en betald period är slut gäller eventuell återbetalning som krävs enligt konsumentlagstiftning. Ångerrätt och gällande priser visas och hanteras i enlighet med tillämplig lag.",
+      "s6Body": "Gratisplanen ger begränsad åtkomst till AI-funktioner och, när den erbjuds, en inledande Premium-provperiod för nya användare utan betalningsmedel, under den period som anges på ditt konto. Premium tar bort gratisplanens kvoter; allmänna kontogränser gäller fortfarande, även under provperioden. Betalda prenumerationer erbjuds per månad eller år och förnyas automatiskt om de inte sägs upp i förväg. Du kan när som helst säga upp prenumerationen under Inställningar; uppsägningen träder i kraft när den aktuella perioden löper ut. Operatören kan också avsluta förnyelser eller prenumerationer om tjänsten ändras eller stängs. Om tjänsten upphör innan en betald period är slut gäller eventuell återbetalning som krävs enligt konsumentlagstiftning. Ångerrätt och gällande priser visas och hanteras i enlighet med tillämplig lag.",
       "s7Title": "7. Tillgänglighet",
       "s7Body": "Den hostade tjänsten tillhandahålls utan garantier för kontinuitet eller tillgänglighet. Operatören kan när som helst ändra, pausa eller stänga den av tekniska, ekonomiska eller andra skäl. Planerade nedstängningar meddelas genom appen eller via e-post när det är rimligen möjligt. Efter det angivna datumet kan konton och driftsdata raderas utan möjlighet till återställning. FreeLingo erbjuder ingen säkerhetskopieringstjänst eller något automatiserat exportverktyg.",
       "s8Title": "8. Ansvarsbegränsning",
@@ -599,16 +896,16 @@
     "performanceNeedsPractice": "Behöver övas",
     "performanceInProgress": "Pågår",
     "performanceStrong": "Stark",
-    "premiumBannerTitle": "Lås upp samtal, hörförståelse och läsning",
+    "premiumBannerTitle": "Öva mer på samtal, hörförståelse och läsning",
     "premiumBannerDesc": "Börja med en gratis provperiod och öva med Lingu genom text, röst och övningar anpassade till din nivå.",
-    "premiumBannerDescTrialUsed": "Aktivera Premium för att låsa upp textchatt med Lingu, röstsamtal, läsning och hörförståelse.",
+    "premiumBannerDescTrialUsed": "Aktivera Premium för mer textchatt med Lingu, röstsamtal, läsning och hörförståelse.",
     "premiumBannerCta": "Gratis provperiod",
     "premiumBannerCtaTrialUsed": "Se planer",
     "premiumBannerPastDueTitle": "Betalning väntar",
     "premiumBannerPastDueDesc": "Uppdatera din betalningsmetod för att återfå Premium-åtkomst till chatt, röstsamtal, läsning och hörförståelse.",
     "premiumBannerPastDueCta": "Återställ Premium",
     "freemiumTrialTitle": "{days, plural, one {# dag gratis provperiod} other {# dagar gratis provperiod}}",
-    "freemiumTrialDesc": "Få obegränsad åtkomst till chatt, röst, hörförståelse och läsning. Prova alla Premium-funktioner gratis.",
+    "freemiumTrialDesc": "Prova Premium-åtkomst till chatt, röst, hörförståelse och läsning gratis. De allmänna gränserna för ditt konto gäller fortfarande.",
     "announcementDismiss": "Stäng meddelandet",
     "announcementDismissError": "Det gick inte att stänga meddelandet. Försök igen."
   },
@@ -757,6 +1054,7 @@
     "generatingError": "Det gick inte att skapa lektionen",
     "loading": "Laddar plan...",
     "learningRoadmap": "Lärandeplan",
+    "progressSummary": "{completed} av {total} lektioner slutförda",
     "level": "Nivå",
     "duration": "Längd",
     "durationDetail": "{weeks} veckor · {days} dagar/vecka",
@@ -815,7 +1113,7 @@
     "feedback": "Återkoppling",
     "corrections": "Rättelser",
     "completeLesson": "Slutför lektion",
-    "completing": "Slutför...",
+    "completing": "Sparar dina framsteg och förbereder nästa lektion...",
     "relatedGrammar": "Relaterad grammatik",
     "explanation": "Förklaring",
     "exercises": "Övningar",
@@ -828,7 +1126,14 @@
     "showNativeExplanation": "Visa på",
     "hint": "Ledtråd",
     "showNativeHint": "Visa ledtråd på",
+    "showQuestionTranslation": "Visa översättningen av frågan på {language}",
+    "hideQuestionTranslation": "Dölj översättningen av frågan",
+    "translatingQuestion": "Översätter frågan...",
+    "questionTranslationError": "Det gick inte att översätta frågan. Försök igen.",
+    "retryQuestionTranslation": "Försök översätta frågan igen",
     "regenerateExercise": "Skapa om övningen",
+    "listeningIncomplete": "Den här hörövningen är ofullständig. Skapa om den innan du svarar.",
+    "listeningUnavailable": "Ljud är inte tillgängligt för den här sparade övningen. Ditt sparade svar och resultat behålls.",
     "regeneratingExercise": "Skapar om...",
     "regenerateError": "Det gick inte att skapa om övningen. Försök igen.",
     "regenerateNotNeeded": "Den här övningen behöver inte skapas om.",
@@ -1277,6 +1582,12 @@
   "faq": {
     "title": "Vanliga frågor",
     "subtitle": "Vanliga frågor och svar",
+    "sectionGettingStarted": "Kom igång och välj språk",
+    "sectionPractice": "Resurser och övning",
+    "sectionLingu": "Samtal med Lingu",
+    "sectionSubscription": "Planer och användningsgränser",
+    "sectionAccount": "Konto och hjälp",
+    "sectionAdmin": "Administration",
     "q_start": "Var börjar jag?",
     "a_start": "Välj språket du vill lära dig och öppna <strong>nivåbedömningen</strong> för att uppskatta din nivå. Nybörjare kan välja A1 utan test. Bekräfta nivå och längd för att skapa en <strong>studieplan</strong> för det språket.",
     "q_workflow": "Hur går det till från början till slut?",
@@ -1287,7 +1598,7 @@
     "workflowStep5": "Använd gloskort för att öva ordförråd parallellt",
     "workflowStep6": "Öva fria samtal med Lingu",
     "q_language": "Vilket språk kommer jag att lära mig?",
-    "a_language": "FreeLingo stöder för närvarande flera språk (amerikansk engelska, brittisk engelska, franska, tyska, italienska, japanska, koreanska, kinesiska från Fastlandskina, portugisiska och spanska), och vi kommer att lägga till fler med tiden. När ett nytt språk blir tillgängligt hittar du det under Inställningar → Mina språk – lägg till det och börja lära dig direkt.",
+    "a_language": "FreeLingo stöder för närvarande flera språk ({languages}), och vi kommer att lägga till fler med tiden. När ett nytt språk blir tillgängligt hittar du det under Inställningar → Mina språk – lägg till det och börja lära dig direkt.",
     "q_assessment": "Vad är nivåbedömningen?",
     "a_assessment": "Ett adaptivt test med högst 15 frågor från en frågebank för ditt studiespråk. Det omfattar grammatik, ordförråd och läsförståelse från A1 till C2. Resultatet uppskattar din GERS-nivå och visar styrkor och övningsområden; du kan ändra den föreslagna nivån innan du skapar planen.",
     "q_studyPlan": "Vad är studieplanen och hur skapar jag en?",
@@ -1301,11 +1612,11 @@
     "q_tutor": "Hur kan jag öva med Lingu?",
     "a_tutor": "Lingu anpassar svaren till ditt aktiva studiespråk och din plans sammanhang. Ställ grammatikfrågor, be om förklaringar, öva på att skriva på språket eller samtala. Samtal sparas per språk och kan återupptas från historiken.",
     "q_voice": "Hur fungerar röstsamtal?",
-    "a_voice": "I läget <strong>Röstsamtal</strong> kan du prata med Lingu i realtid. Tryck på Starta så lyssnar appen automatiskt med röstaktivitetsdetektering (VAD), och handledaren svarar med syntetiskt tal. Du kan avbryta handledaren när som helst. Samtalet avslutas när tidsgränsen nås eller när du trycker på Stoppa. Se till att webbläsaren har åtkomst till mikrofonen.",
+    "a_voice": "I <strong>Röstsamtal</strong> trycker du på Starta och tillåter mikrofonåtkomst. Appen känner av när du pratar och Lingu svarar med ljud. Vänta tills Lingu har pratat klart innan du talar igen: att prata samtidigt som handledaren avbryter inte svaret. Under <settingsLink>Inställningar</settingsLink> kan du justera pausen innan din tur skickas, sessionens längd och tidsgränsen för inaktivitet. Sessionen avslutas när du trycker på Stoppa eller når en tillämplig gräns.",
     "q_listening": "Hur fungerar hörövningar?",
-    "a_listening": "Under <strong>Hörförståelse</strong> förbereder Lingu hörövningar som passar din GERS-nivå. Lyssna och svara sedan på fem förståelsefrågor. När du skickat in får du ditt resultat (0–5), XP, rätt svar och hela transkriptionen. Du kan skapa nya övningar när du vill.",
+    "a_listening": "Under <strong>Hörförståelse</strong> förbereder Lingu hörövningar som passar din GERS-nivå. Lyssna på ljudet och svara sedan på fem förståelsefrågor. När du har skickat in svaren kan du granska ditt resultat (0–5), intjänade XP, rätt svar och hela transkriptionen. Välj <strong>Varför det här svaret</strong> för att be om en förklaring på ditt modersmål med ett utdrag ur transkriptionen som stöd. Du kan begära nya övningar inom kontots användningsgränser.",
     "q_reading": "Hur fungerar läsövningar?",
-    "a_reading": "Under <strong>Läsning</strong> skapas texter på din GERS-nivå – meddelanden, e-post, artiklar, blogginlägg med mera. Läs texten och svara på fem flervalsfrågor. När du skickat in får du ditt resultat (0–5) och XP. Du kan skapa nya övningar när du vill.",
+    "a_reading": "Under <strong>Läsning</strong> förbereder Lingu texter på din GERS-nivå, till exempel meddelanden, e-post och artiklar. Läs texten och svara på fem flervalsfrågor. När du har skickat in svaren kan du granska ditt resultat (0–5), intjänade XP och rätt svar. Välj <strong>Varför det här svaret</strong> för att be om en förklaring på ditt modersmål med ett utdrag ur texten som stöd. Du kan begära nya övningar inom kontots användningsgränser.",
     "q_providers": "Vilka AI-leverantörer stöder FreeLingo?",
     "a_providers_intro": "Konfigureras i <code>.env</code> med <code>LLM_PROVIDER</code>:",
     "provider_ollama": "Lokalt och kostnadsfritt. Kräver att Ollama körs på värddatorn. Rekommenderad modell: gemma4:e4b. Kan vara långsam utan GPU.",
@@ -1313,11 +1624,25 @@
     "provider_anthropic": "Anthropic Claude. Kräver ANTHROPIC_API_KEY.",
     "provider_deepseek": "DeepSeek API. Kräver DEEPSEEK_API_KEY.",
     "q_invite": "Kan jag bjuda in andra?",
-    "a_invite": "Ja. Under <adminLink>Administration → Användare</adminLink> kan administratören skapa användare direkt eller generera engångslänkar som går ut efter 48 timmar. Offentlig registrering är avstängd som standard (<code>ALLOW_REGISTRATION=false</code>).",
+    "a_invite": "Ja. Under <adminLink>Administration → Användare</adminLink> kan administratörer skapa användare direkt eller generera inbjudningslänkar för engångsbruk som går ut efter 48 timmar. Offentlig registrering beror på serverns inställning <code>ALLOW_REGISTRATION</code>.",
     "q_password": "Hur ändrar jag lösenord eller modersmål?",
     "a_password": "Gå till <settingsLink>Inställningar</settingsLink>. Där kan du uppdatera visningsnamn, modersmål och lösenord.",
     "q_uiLanguage": "Hur ändrar jag plattformens språk?",
-    "a_uiLanguage": "Gå till <settingsLink>Inställningar</settingsLink> och hitta menyn <strong>Gränssnittsspråk</strong> under Profil. Välj önskat språk så byts hela gränssnittet direkt.",
+    "a_uiLanguage": "Gå till <settingsLink>Inställningar</settingsLink> och hitta rullgardinsmenyn <strong>Gränssnittsspråk</strong> i din profil. Välj önskat språk och tryck på <strong>Spara ändringar</strong>. När ändringarna har sparats laddas sidan om på det valda språket. Det ändrar inte språket du lär dig.",
+    "q_multiLanguage": "Kan jag lära mig flera språk utan att förlora mina framsteg?",
+    "a_multiLanguage": "Ja. Lägg till ett språk under <languagesLink>Inställningar → Mina språk</languagesLink> och använd språkväljaren för att växla mellan dem. Varje språk har sin egen plan, sina framsteg, gloskort och samtalshistorik. Att byta språk raderar inte dina sparade framsteg. Kontoinställningar, prenumeration, användningskvoter och Lingus minnen delas mellan språken.",
+    "q_grammarPractice": "Hur övar jag på ett visst grammatikämne?",
+    "a_grammarPractice": "Öppna ett ämne under <grammarLink>Resurser → Grammatik</grammarLink> och välj <strong>Öva</strong> för att lägga till det i ditt personliga bibliotek med grammatikövningar. Med en aktiv plan kan du skapa omgångar med fem övningar: tre flervalsfrågor och två lucktexter. Dina svar och resultat sparas så att du kan följa din övning. Den här aktiviteten ger inga XP.",
+    "q_games": "Vilka spel finns och vilket läge ska jag välja?",
+    "a_games": "Under <gamesLink>Spel</gamesLink> kan du hitta och rätta fel i Feldetektiv, ordna delar i Ordna meningen eller para ihop ord och betydelser i Ordpar. Välj repetitionsläget för att återvända till slutförda lektioner, förberedelseläget för att befästa bekant material som hör ihop med nästa lektion eller fri övning för att arbeta på din plans nivå. Lägen som saknar tillräckligt med underlag är inaktiverade med en förklaring.",
+    "q_plans": "Vad är skillnaden mellan gratisplanen, Premium och provperioden?",
+    "a_plans": "Med gratisplanen kan du lära dig inom användningskvoter. Premium tar bort gratisplanens kvoter, men kontots allmänna gränser gäller fortfarande. Om ditt konto inkluderar en inledande provperiod utan kort kan du fortsätta med gratisplanen när den tar slut, utan automatisk debitering. En eventuell provperiod som erbjuds när du tecknar en prenumeration är separat och kan kräva ett kort. Se din status och de aktuella prenumerationsvillkoren under <billingLink>Inställningar → Plan och prenumeration</billingLink>.",
+    "q_quotas": "Varför har jag nått en gräns och när återställs den?",
+    "a_quotas": "Användningskvoterna tillhör ditt konto och delas mellan studiespråken. Gratisplanens dagliga kvoter återställs kl. 00:00 UTC och veckokvoterna på måndagar kl. 00:00 UTC. Se hur mycket du har kvar i varje aktivitet och kontots allmänna gränser under <billingLink>Inställningar</billingLink>. Funktioner som kräver Premium låses inte upp genom att vänta på att en kvot återställs, och de allmänna kontogränserna gäller även för Premium och provperioder.",
+    "q_cancelSubscription": "Hur avbryter jag förnyelsen av min prenumeration?",
+    "a_cancelSubscription": "Gå till <billingLink>Inställningar → Plan och prenumeration</billingLink>, välj <strong>Hantera prenumeration</strong> och slutför uppsägningen i portalen som öppnas. Om du avbryter förnyelsen vid den nuvarande periodens slut behåller du åtkomsten tills perioden tar slut. Att radera kontot avslutar inte faktureringen: du måste först avbryta förnyelsen.",
+    "q_memories": "Vad minns Lingu om mig och hur raderar jag det?",
+    "a_memories": "Lingu kan spara användbara personliga uppgifter från text- och röstsamtal för att anpassa framtida svar. Dessa minnen delas mellan alla dina studiespråk. Under <memoriesLink>Inställningar → Minnen</memoriesLink> kan du granska dem, lägga till egna, radera enskilda minnen eller rensa alla.",
     "q_feedback": "Hur föreslår jag en ny funktion eller rapporterar ett fel?",
     "a_feedback": "Använd <feedbackLink>Feedback</feedbackLink> i sidofältet. Du kan föreslå nya funktioner eller rapportera fel. Rösta på andras idéer, lämna kommentarer och följ statusen för varje ärende. Alla inlägg är offentliga och granskas av administratören."
   },
@@ -1361,14 +1686,14 @@
     "statusSpeaking": "Talar...",
     "statusThinking": "Förbereder svar...",
     "statusError": "Fel",
-    "errorServicesDisabled": "Rösttjänster är inte aktiverade på den här servern.",
+    "errorServicesDisabled": "Röstsamtal är inte tillgängliga. Kontakta supporten om du behöver hjälp.",
     "errorConnection": "Anslutningsfel. Försök igen.",
     "errorTranscription": "Det gick inte att omvandla ditt tal till text. Försök säga det igen.",
     "errorResponse": "Lingu kunde inte svara. Försök igen.",
     "errorSpeech": "Det gick inte att läsa upp Lingus svar. Försök igen.",
     "errorUnauthorized": "Sessionen har gått ut. Uppdatera sidan.",
-    "errorMic": "Åtkomst till mikrofonen nekades.",
-    "errorVadInit": "Det gick inte att starta röstigenkänningen. Kontrollera att din webbläsare stöder WebAssembly.",
+    "errorMic": "Vi kommer inte åt mikrofonen. Kontrollera behörigheterna i webbläsaren och försök igen.",
+    "errorVadInit": "Vi kunde inte starta röstsamtalet. Ladda om sidan eller prova en uppdaterad webbläsare.",
     "warningTimeout": "Samtalet avslutas om {seconds} sekunder",
     "sessionEnded": "Samtalet avslutades",
     "tapToStart": "Prata när du är redo",
@@ -1379,14 +1704,14 @@
     "quotaUnlimited": "Obegränsat",
     "quotaExceededSessions": "Du har använt alla dina samtal för den här veckan.",
     "quotaExceededTime": "Du har använt all din dagliga övningstid.",
-    "quotaExceededTokens": "Du har använt alla dina AI-token för den här månaden.",
+    "quotaExceededTokens": "Du har nått din månadsgräns för AI-användning. Du kan fortsätta när den återställs.",
     "freemiumVoiceRemaining": "Gratis röst: {remaining}/{limit} min den här veckan",
     "quotaTokens": "Token den här månaden",
     "memoryUpdated": "Minnet har uppdaterats",
     "trialBanner": "Gratis samtal för nivåbedömning · {minutes} min",
     "trialCtaLabel": "Fortsätt prata",
     "trialCtaTitle": "Fortsätt öva med Lingu",
-    "trialCtaDesc": "Lås upp fullständiga röstsamtal, handledarchatt, hörförståelse och läsning med Premium.",
+    "trialCtaDesc": "Öva mer med röstsamtal, handledarchatt, hörförståelse och läsning med Premium.",
     "startersHint": "Eller börja med ett ämne",
     "starters": [
       "Konst och kreativitet",
@@ -1430,6 +1755,8 @@
     "ariaStop": "Stoppa inspelning"
   },
   "audioPlayer": {
+    "ariaPause": "Pausa ljud",
+    "ariaSeek": "Ljudposition",
     "listen": "Lyssna",
     "stop": "Stoppa",
     "ariaListen": "Lyssna på uttal",
@@ -1474,13 +1801,39 @@
     "supportedLanguages": "Tillgängliga språk"
   },
   "targetLanguages": {
+    "ro-RO": "Rumänska (Rumänien)",
+    "ro": "Rumänska",
+    "ro-RO-description": "Rumänska som talas i Rumänien.",
+    "fi-FI": "Finska",
+    "fi": "Finska",
+    "fi-FI-description": "Finska som talas i Finland.",
+    "hr-HR": "Kroatiska",
+    "hr": "Kroatiska",
+    "hr-HR-description": "Kroatiska som talas i Kroatien.",
+    "cs-CZ": "Tjeckiska",
+    "cs": "Tjeckiska",
+    "cs-CZ-description": "Tjeckiska som talas i Tjeckien.",
+    "da-DK": "Danska",
+    "da": "Danska",
+    "da-DK-description": "Danska som talas i Danmark.",
+    "sv-SE": "Svenska",
+    "sv": "Svenska",
+    "sv-SE-description": "Svenska som talas i Sverige.",
+    "ru-RU": "Ryska",
+    "ru": "Ryska",
+    "ru-RU-description": "Ryska som talas i Ryssland, med det kyrilliska alfabetet.",
+    "nl-NL": "Nederländska (Nederländerna)",
+    "nl": "Nederländska",
+    "nl-NL-description": "Nederländska som talas i Nederländerna.",
     "en-US": "Amerikansk engelska",
     "en-GB": "Brittisk engelska",
     "es-ES": "Spanska",
     "it-IT": "Italienska",
-    "pt-PT": "Portugisiska",
+    "pt-BR": "Portugisiska (Brasilien)",
+    "pt-PT": "Portugisiska (Portugal)",
     "fr-FR": "Franska",
     "de-DE": "Tyska",
+    "pl-PL": "Polska",
     "ja-JP": "Japanska",
     "ko-KR": "Koreanska",
     "zh-CN": "Kinesiska (Fastlandskina)",
@@ -1490,16 +1843,19 @@
     "pt": "Portugisiska",
     "fr": "Franska",
     "de": "Tyska",
+    "pl": "Polska",
     "ja": "Japanska",
     "ko": "Koreanska",
     "zh": "Kinesiska",
     "es-ES-description": "Spanska som talas i Spanien.",
     "it-IT-description": "Italienska som talas i Italien.",
+    "pt-BR-description": "Portugisiska som talas i Brasilien.",
     "pt-PT-description": "Portugisiska som talas i Portugal.",
     "en-US-description": "Engelska som talas i USA.",
     "en-GB-description": "Engelska som talas i Storbritannien.",
     "fr-FR-description": "Franska som talas i Frankrike.",
     "de-DE-description": "Tyska som talas i Tyskland.",
+    "pl-PL-description": "Polska som det talas i Polen.",
     "ja-JP-description": "Japanska som talas i Japan.",
     "ko-KR-description": "Koreanska som talas i Sydkorea.",
     "zh-CN-description": "Mandarinkinesiska som talas i Fastlandskina med förenklade tecken."
@@ -1527,18 +1883,18 @@
     "trialHeadlineTrialUsed": "Premium",
     "trialTitle": "Börja med {days} dagar gratis",
     "trialTitleTrialUsed": "Aktivera FreeLingo Premium",
-    "trialDesc": "Få full åtkomst till Lingu, röstövningar, hörförståelse och läsning före din första betalning.",
-    "trialDescTrialUsed": "Välj en plan för att låsa upp Lingu, röstövningar, hörförståelse och läsning.",
+    "trialDesc": "Prova Premium-åtkomst för övning med Lingu, röstövningar, hörförståelse och läsning före din första betalning.",
+    "trialDescTrialUsed": "Välj en plan för mer övning med Lingu, röstövningar, hörförståelse och läsning.",
     "trialCtaMonthly": "Prova gratis, därefter €{price}/månad",
     "trialCtaMonthlyTrialUsed": "Flexibel månadsplan · €{price}/månad",
     "trialCtaYearly": "Prova gratis, därefter €{price}/år · 2 månader gratis",
     "trialCtaYearlyTrialUsed": "Bästa värdet · €{price}/år · 2 månader gratis",
     "trialSkip": "Fortsätt med gratis funktioner",
-    "trialNoCharge": "Ingen debitering i dag. Kort krävs, avsluta när du vill.",
-    "trialNoChargeTrialUsed": "Granska beloppet innan du prenumererar. Avsluta när du vill.",
+    "trialNoCharge": "När du tecknar prenumerationen börjar en separat provperiod på {days} dagar; återstående dagar från den inledande provperioden läggs inte till. Kort krävs; den första debiteringen sker vid slutet om du inte säger upp prenumerationen innan dess.",
+    "trialNoChargeTrialUsed": "Den betalda prenumerationen börjar när du tecknar den. Granska beloppet först. Avsluta när du vill.",
     "trialError": "Det gick inte att starta betalningen. Försök igen.",
     "freemiumTrialTitle": "Din gratis provperiod har börjat",
-    "freemiumTrialDesc": "Få obegränsad åtkomst till alla funktioner i sju dagar. Inget kort krävs. Uppgradera till Premium när du vill från översikten.",
+    "freemiumTrialDesc": "Få Premium-åtkomst under din provperiod utan kort. De allmänna gränserna för ditt konto gäller fortfarande. Prenumerera på Premium när du vill från översikten.",
     "freemiumChatLabel": "Chatt med Lingu",
     "freemiumVoiceLabel": "Röstsamtal",
     "freemiumListeningLabel": "Hörövningar",
@@ -1592,14 +1948,18 @@
     }
   },
   "billing": {
+    "paywallSituationsTitle": "Fortsätt öva på verkliga situationer",
+    "paywallSituationsDesc": "Du har använt veckans kostnadsfria situationsövningar, eller så kräver funktionen Premium. Med Premium kan du öva mer; de allmänna gränserna för röstanvändning gäller fortfarande.",
+    "paywallGrammarPracticeTitle": "Fortsätt öva grammatik",
+    "paywallGrammarPracticeDesc": "Du har använt dagens kostnadsfria omgångar. Med Premium kan du skapa fler; sparade sessioner är fortfarande tillgängliga.",
     "planFreeTrialDesc": "Prova Premium vid registrering utan kort eller abonnemang. Fortsätt sedan gratis med användningsgränser.",
     "paywallGamesTitle": "Fortsätt öva med spel",
     "paywallGamesDesc": "Din gratis spelkvot är slut eller spelen kräver Premium. Du kan fortsätta befintliga spel.",
     "paywallLabel": "Premium krävs",
     "paywallTitle": "Lås upp FreeLingo Premium",
-    "paywallDesc": "Börja din gratis provperiod på {days} dagar och lås upp alla Premium-övningar före din första betalning.",
-    "paywallDescTrialUsed": "Lås upp alla Premium-övningar och granska beloppet innan du bekräftar.",
-    "paywallChatTitle": "Öva med Lingu utan begränsningar",
+    "paywallDesc": "Börja din gratis provperiod på {days} dagar och öva mer med Premium före din första betalning.",
+    "paywallDescTrialUsed": "Öva mer med Premium och granska beloppet innan du bekräftar.",
+    "paywallChatTitle": "Mer övning med Lingu",
     "paywallChatDesc": "Ställ frågor, få rättelser och prata med Lingu i skrift.",
     "paywallLessonsTitle": "Slutför obegränsat antal lektioner",
     "paywallLessonsDesc": "Grammatik, ordförråd, läsning och skrivning – slutför så många lektioner du vill varje dag.",
@@ -1626,7 +1986,7 @@
     "month": "månad",
     "year": "år",
     "planFeature": {
-      "feature1": "Obegränsad åtkomst – inga dagliga eller veckovisa gränser",
+      "feature1": "Utan gratisplanens kvoter; allmänna kontogränser gäller fortfarande",
       "feature2": "2 månader gratis"
     },
     "planFreeName": "Gratis",
@@ -1635,6 +1995,7 @@
     "ctaRegister": "Starta gratis provperiod",
     "ctaRegisterTrialUsed": "Välj plan",
     "freeFeature": {
+      "situations": "Muntliga situationsövningar",
       "f1": "Nivåtest och nivåbedömning",
       "f2": "Personlig studieplan",
       "lessons": "Slutföra lektioner",
@@ -1648,9 +2009,9 @@
       "l4": "Läsövningar",
       "l5": "7 dagars provperiod med full åtkomst"
     },
-    "successLabel": "Betalningen bekräftad",
+    "successLabel": "Prenumerationen bekräftad",
     "successTitle": "Välkommen till FreeLingo Premium!",
-    "successDesc": "Din prenumeration är nu aktiv. Njut av obegränsad åtkomst till alla funktioner.",
+    "successDesc": "Din prenumeration är nu aktiv. Använd Premium inom de allmänna gränserna för ditt konto.",
     "successCheckingLabel": "Bekräftar prenumeration",
     "successCheckingTitle": "Kontrollerar din prenumeration",
     "successCheckingDesc": "Det tar vanligtvis några sekunder.",
@@ -1662,12 +2023,12 @@
     "successErrorDesc": "Gå till översikten och uppdatera om en stund, eller kontrollera betalningsinställningarna.",
     "successRedirect": "Skickar dig till översikten om {seconds} sekunder...",
     "successCta": "Gå till översikten",
-    "canceledLabel": "Betalningen avbröts",
-    "canceledTitle": "Du har inte debiterats",
-    "canceledDesc": "Du har inte debiterats. Dina framsteg finns kvar, och du kan välja en plan senare i Inställningar.",
+    "canceledLabel": "Beställningen avbröts",
+    "canceledTitle": "Du har lämnat beställningen",
+    "canceledDesc": "Dina framsteg är sparade. Du kan kontrollera din prenumeration eller välja en plan i Inställningar.",
     "canceledCtaDashboard": "Gå till översikten",
     "canceledCtaSettings": "Visa planer",
-    "canceledNoCharge": "Ingen debitering gjordes denna gång · Välj en plan när du vill",
+    "canceledNoCharge": "Kontrollera din prenumeration i Inställningar",
     "section": "Prenumeration",
     "status": "Status",
     "statusActive": "Aktiv",
@@ -1687,7 +2048,7 @@
     "pastDueTitle": "Betalning väntar",
     "pastDueDesc": "Uppdatera din betalningsmetod för att återfå Premium-åtkomst.",
     "subscribe": "Prenumerera",
-    "portalError": "Det gick inte att öppna betalningsportalen. Försök igen.",
+    "portalError": "Vi kunde inte öppna hanteringen av din prenumeration. Försök igen.",
     "openSourceTitle": "Öppen källkod",
     "openSourceDesc": "Gratis att köra på din egen server",
     "openSourceCta": "Visa på GitHub",
@@ -1699,7 +2060,47 @@
     "planFreeCta": "Starta",
     "limitedLabel": "Begränsat"
   },
+  "premiumOffer": {
+    "navLabel": "Premium",
+    "viewPremium": "Upptäck Premium",
+    "planSection": "Plan och prenumeration",
+    "viewPlans": "Se planer",
+    "stayFree": "Fortsätt med gratisplanen",
+    "expiredTitle": "Din provperiod med Premium är slut",
+    "expiredDescription": "Dina framsteg är sparade. Du kan fortsätta lära dig gratis med användningsgränser eller välja Premium för mer övning med Lingu, lektioner, spel, läsning och hörförståelse. Kontots allmänna gränser gäller fortfarande.",
+    "resultTitle": "Bygg vidare på dina framsteg",
+    "exhaustedTitle": "Fortsätt öva med Premium",
+    "continuePremium": "Fortsätt med Premium",
+    "dailyReset": "Din gratiskvot förnyas varje dag kl. 00:00 UTC.",
+    "weeklyReset": "Din gratiskvot förnyas på måndagar kl. 00:00 UTC.",
+    "trialResultNote": "Din gratis provperiod pågår fortfarande. Utforska planerna inför att den tar slut.",
+    "result": {
+      "situations": "Fortsätt öva muntligt på verkliga situationer med Lingu med Premium.",
+      "voice": "Bygg vidare på det här samtalet med mer talträning och återkoppling från Lingu med Premium.",
+      "lessons": "Fortsätt slutföra lektioner och använda det du lär dig i praktiken med Lingu med Premium.",
+      "listening": "Fortsätt träna din hörförståelse med fler lyssningsövningar på din nivå med Premium.",
+      "reading": "Fortsätt förbättra din läsförståelse med fler läsövningar på din nivå med Premium.",
+      "games": "Fortsätt öva med fler lärorika spel med Premium.",
+      "flashcards": "Använd orden du har repeterat i samtal med Lingu. Premium ger dig mer övning i chatt och röstsamtal."
+    },
+    "benefitsTitle": "Det här ingår i Premium",
+    "benefitsDescription": "Fortsätt öva utan gratisplanens kvoter.",
+    "benefitsVoice": "Röstsamtal med Lingu",
+    "benefitsChat": "Skriftlig chatt med rättelser och förklaringar",
+    "benefitsComprehension": "Övningar i läs- och hörförståelse",
+    "benefitsLessonsGames": "Slutför lektioner och öva med lärorika spel",
+    "benefitsLanguages": "Alla tillgängliga språk att lära sig i en och samma prenumeration",
+    "generalLimits": "Allmänna användnings- och samtalsgränser gäller fortfarande.",
+    "noCardTrialStatus": "Provperiod med Premium · inget kort",
+    "noCardTrialDescription": "Din provperiod med Premium varar till {date}, utan kort eller automatisk debitering. Därefter gäller gratisplanens gränser om du inte tecknar en prenumeration.",
+    "monthlyCommitment": "Betala månadsvis med ett mindre ekonomiskt åtagande från början.",
+    "yearlyCommitment": "En betalning för hela året.",
+    "cardTrialTerms": "När du tecknar en prenumeration börjar en separat provperiod på {days} dagar. Den läggs inte till de återstående dagarna i din nuvarande provperiod. Kort krävs. Därefter debiteras priset för den valda planen om du inte säger upp prenumerationen innan dess provperiod tar slut.",
+    "paidTerms": "Kort krävs. Din betalda prenumeration börjar vid köpet. Den förnyas med det valda intervallet om du inte säger upp den."
+  },
   "freemium": {
+    "situationsLabel": "Situationer den här veckan",
+    "grammarPracticeLabel": "Dagens grammatikomgångar",
     "gamesLabel": "Dagens spel",
     "chatLabel": "Chatt",
     "lessonsLabel": "Lektioner",
@@ -1708,7 +2109,7 @@
     "voiceLabel": "Röst (min)",
     "freeLimit": "Skaffa Premium",
     "trialDaysLeft": "{days, plural, one {# dag kvar av gratis provperiod} other {# dagar kvar av gratis provperiod}}",
-    "trialUnlimited": "Obegränsad åtkomst",
+    "trialUnlimited": "Premium-åtkomst",
     "requiresSubscription": "Endast Premium"
   },
   "lessonPractice": {
@@ -1760,13 +2161,29 @@
   },
   "whatsNew": {
     "title": "Nyheter",
-    "version": "v1.10.50",
+    "version": "v1.14.10",
     "cta": "Jag förstår",
     "entry1": {
-      "label": "Smidigare röstsamtal",
-      "desc": "Vi har förbättrat samtalen med Lingu för smidigare röstuppspelning och tydligare signaler om vems tur det är att prata."
+      "label": "Öva på vardagliga samtal",
+      "desc": "Förbered dig för verkliga situationer med 50 scenarier om vardagsliv, resor, shopping, socialt liv och arbete. Öva muntligt med Lingu, som spelar rollen som din samtalspartner och anpassar samtalet till din nivå."
     },
     "entry2": {
+      "label": "Din plan, steg för steg",
+      "desc": "Min plan visar nu ditt lärande som en väg framåt: följ dina framsteg, hitta ditt aktuella avsnitt och upptäck nästa etapper. Öppna varje avsnitt för att se lektionerna, fortsätta lära dig eller repetera det du har slutfört."
+    },
+    "entry3": {
+      "label": "Öva grammatik i din egen takt",
+      "desc": "Lägg till ämnen från grammatikresurserna i ditt personliga bibliotek och öva med fem övningar åt gången, med rättningar och förklaringar. Se dina resultat och fortsätt sedan att öva muntligt med Lingu utifrån ämnet och dina svar."
+    },
+    "entry4": {
+      "label": "Nya språk: kroatiska, tjeckiska, danska, finska och rumänska",
+      "desc": "Kroatiska, tjeckiska, danska, finska och rumänska finns nu som språk att lära sig, med innehåll från A1 till C2. Välj dem när du börjar eller lägg till dem under Inställningar → Mina språk."
+    },
+    "entry5": {
+      "label": "Lingu hjälper dig när du behöver det",
+      "desc": "Om du inte förstår något under ett röstsamtal kan du be Lingu om hjälp. Lingu kan förklara det kort på ditt modersmål och sedan återgå till att öva på språket du lär dig."
+    },
+    "entry6": {
       "label": "En smidigare upplevelse",
       "desc": "Vi har också rättat mindre fel och förbättrat några detaljer så att det blir ännu roligare att lära sig med FreeLingo varje dag."
     }

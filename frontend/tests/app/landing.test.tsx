@@ -2,6 +2,7 @@ import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, render, screen, within } from '@testing-library/react'
 import type { ReviewPublic, ReviewPublicSummary } from '@/types/api'
+import { SUPPORTED_TARGET_LANGUAGES } from '@/lib/target-languages'
 
 const { mockHas, mockLandingNav, mockReviewsCarousel } = vi.hoisted(() => ({
   mockHas: vi.fn(),
@@ -205,6 +206,13 @@ describe('Landing Home', () => {
     expect(within(main).getByText('journey.practiceDesc')).toBeInTheDocument()
     expect(within(main).getByText('journey.speakDesc')).toBeInTheDocument()
     expect(main.querySelector('.reveal h1')).toBeNull()
+    const languages = within(main).getByRole('region', { name: 'subtitle' })
+    expect(within(languages).getAllByRole('listitem')).toHaveLength(
+      SUPPORTED_TARGET_LANGUAGES.length
+    )
+    for (const language of SUPPORTED_TARGET_LANGUAGES) {
+      expect(within(languages).getByText(language.code)).toBeVisible()
+    }
   })
 
   it.each([
@@ -378,13 +386,27 @@ describe('Landing Home', () => {
     expect(container.querySelector('a[href^="/register"]')).toBeNull()
   })
 
-  it('replaces both landing CTAs and every pricing signup CTA with Sign in when closed', async () => {
+  it('preserves pricing plan selection when closed signup CTAs become Sign in', async () => {
     config = { allow_registration: false, stripe_enabled: true }
     const { container } = render(await Home())
     expect(container.querySelector('a[href^="/register"]')).toBeNull()
     const links = screen.getAllByRole('link', { name: 'signIn' })
     expect(links).toHaveLength(6)
-    links.forEach((link) => expect(link).toHaveAttribute('href', '/login'))
+    const pricing = container.querySelector<HTMLElement>('#pricing')!
+    const pricingLinks = within(pricing).getAllByRole('link', {
+      name: 'signIn',
+    })
+    expect(pricingLinks).toHaveLength(4)
+    const [freePlan, monthlyPlan, yearlyPlan, pricingCta] = pricingLinks
+    expect(freePlan).toHaveAttribute('href', '/login')
+    expect(monthlyPlan).toHaveAttribute('href', '/login?plan=monthly')
+    expect(yearlyPlan).toHaveAttribute('href', '/login?plan=yearly')
+    expect(pricingCta).toHaveAttribute('href', '/login?plan=yearly')
+    const genericLinks = links.filter((link) => !pricing.contains(link))
+    expect(genericLinks).toHaveLength(2)
+    genericLinks.forEach((link) =>
+      expect(link).toHaveAttribute('href', '/login')
+    )
     expect(screen.queryByText('startFree')).not.toBeInTheDocument()
     expect(screen.queryByText('freeNote')).not.toBeInTheDocument()
     expect(screen.queryByText('ctaRegister')).not.toBeInTheDocument()

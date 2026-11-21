@@ -11,7 +11,11 @@ export interface TargetLanguage {
 }
 
 export type TargetLanguageScript =
-  'latin' | 'hiragana-katakana-kanji' | 'hangul' | 'simplified-hanzi'
+  | 'latin'
+  | 'cyrillic'
+  | 'hiragana-katakana-kanji'
+  | 'hangul'
+  | 'simplified-hanzi'
 
 export type TargetLanguageRomanization =
   'romaji' | 'revised-romanization' | 'pinyin'
@@ -37,9 +41,23 @@ export const TARGET_LANGUAGE_CAPABILITIES: Record<
   'en-GB': LATIN_LANGUAGE_CAPABILITY,
   'es-ES': LATIN_LANGUAGE_CAPABILITY,
   'it-IT': LATIN_LANGUAGE_CAPABILITY,
+  'pt-BR': LATIN_LANGUAGE_CAPABILITY,
   'pt-PT': LATIN_LANGUAGE_CAPABILITY,
   'fr-FR': LATIN_LANGUAGE_CAPABILITY,
   'de-DE': LATIN_LANGUAGE_CAPABILITY,
+  'pl-PL': LATIN_LANGUAGE_CAPABILITY,
+  'nl-NL': LATIN_LANGUAGE_CAPABILITY,
+  'sv-SE': LATIN_LANGUAGE_CAPABILITY,
+  'da-DK': LATIN_LANGUAGE_CAPABILITY,
+  'cs-CZ': LATIN_LANGUAGE_CAPABILITY,
+  'hr-HR': LATIN_LANGUAGE_CAPABILITY,
+  'fi-FI': LATIN_LANGUAGE_CAPABILITY,
+  'ro-RO': LATIN_LANGUAGE_CAPABILITY,
+  'ru-RU': {
+    script: 'cyrillic',
+    fontClass: 'font-target-cyrillic',
+    usesWordSpacing: true,
+  },
   'ja-JP': {
     script: 'hiragana-katakana-kanji',
     fontClass: 'font-target-ja',
@@ -100,9 +118,16 @@ export const TARGET_LANGUAGE_CATALOG: TargetLanguage[] = [
     iso639: 'it',
   }),
   withCapabilities({
+    code: 'pt-BR',
+    name: 'Português (Brasil)',
+    nameEn: 'Portuguese (Brazil)',
+    flagPath: '/flags/brazil.jpg',
+    iso639: 'pt',
+  }),
+  withCapabilities({
     code: 'pt-PT',
-    name: 'Português',
-    nameEn: 'Portuguese',
+    name: 'Português (Portugal)',
+    nameEn: 'Portuguese (Portugal)',
     flagPath: '/flags/portugal.jpg',
     iso639: 'pt',
   }),
@@ -119,6 +144,69 @@ export const TARGET_LANGUAGE_CATALOG: TargetLanguage[] = [
     nameEn: 'German',
     flagPath: '/flags/germany.jpg',
     iso639: 'de',
+  }),
+  withCapabilities({
+    code: 'pl-PL',
+    name: 'Polski',
+    nameEn: 'Polish',
+    flagPath: '/flags/poland.jpg',
+    iso639: 'pl',
+  }),
+  withCapabilities({
+    code: 'nl-NL',
+    name: 'Nederlands',
+    nameEn: 'Dutch (Netherlands)',
+    flagPath: '/flags/netherlands.jpg',
+    iso639: 'nl',
+  }),
+  withCapabilities({
+    code: 'ru-RU',
+    name: 'Русский',
+    nameEn: 'Russian',
+    flagPath: '/flags/russia.jpg',
+    iso639: 'ru',
+  }),
+  withCapabilities({
+    code: 'sv-SE',
+    name: 'Svenska',
+    nameEn: 'Swedish',
+    flagPath: '/flags/sweden.jpg',
+    iso639: 'sv',
+  }),
+  withCapabilities({
+    code: 'da-DK',
+    name: 'Dansk',
+    nameEn: 'Danish',
+    flagPath: '/flags/denmark.jpg',
+    iso639: 'da',
+  }),
+  withCapabilities({
+    code: 'cs-CZ',
+    name: 'Čeština',
+    nameEn: 'Czech',
+    flagPath: '/flags/czech_republic.jpg',
+    iso639: 'cs',
+  }),
+  withCapabilities({
+    code: 'hr-HR',
+    name: 'Hrvatski',
+    nameEn: 'Croatian',
+    flagPath: '/flags/croatia.jpg',
+    iso639: 'hr',
+  }),
+  withCapabilities({
+    code: 'fi-FI',
+    name: 'Suomi',
+    nameEn: 'Finnish',
+    flagPath: '/flags/finland.jpg',
+    iso639: 'fi',
+  }),
+  withCapabilities({
+    code: 'ro-RO',
+    name: 'Română',
+    nameEn: 'Romanian (Romania)',
+    flagPath: '/flags/romania.jpg',
+    iso639: 'ro',
   }),
   withCapabilities({
     code: 'ja-JP',
@@ -154,12 +242,15 @@ export function getLanguageByCode(code: string): TargetLanguage | undefined {
 export function getTargetLanguageCapability(
   code: string
 ): TargetLanguageCapability {
-  return TARGET_LANGUAGE_CAPABILITIES[code] ?? LATIN_LANGUAGE_CAPABILITY
+  const canonicalCode = getLanguageByCode(code)?.code ?? code
+  return (
+    TARGET_LANGUAGE_CAPABILITIES[canonicalCode] ?? LATIN_LANGUAGE_CAPABILITY
+  )
 }
 
 export function getTargetLanguageTextClass(code: string): string {
   const capability = getTargetLanguageCapability(code)
-  if (capability.script === 'latin') {
+  if (capability.script === 'latin' || capability.script === 'cyrillic') {
     return `${capability.fontClass} text-base leading-relaxed tracking-normal normal-case`
   }
   return `${capability.fontClass} text-base leading-loose tracking-normal normal-case`

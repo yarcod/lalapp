@@ -11,23 +11,31 @@ import { useTranslations } from 'next-intl'
 import { apiFetch } from '@/lib/api'
 import type { ExerciseContext } from '@/lib/exercise-generation'
 import { useExerciseGeneration } from '@/hooks/useExerciseGeneration'
+import { useTrialStatus } from '@/hooks/useTrialStatus'
 import { useExerciseAnalytics } from '@/hooks/useExerciseAnalytics'
 import { useLanguageStore, waitForLanguageSwitch } from '@/store/language'
 import { FreemiumQuotaBanner } from '@/components/billing/FreemiumQuotaBanner'
 import { PaywallBanner } from '@/components/billing/PaywallBanner'
+import { PremiumResultOffer } from '@/components/billing/PremiumResultOffer'
 import { MaintenanceGate } from '@/components/billing/MaintenanceBanner'
 import { type ReadingExercise } from '@/types/api'
 import { WordTooltip, useWordSave } from '@/components/ui/WordTooltip'
 import { PageLoading } from '@/components/ui/page-loading'
+import NoPlanBanner from '@/components/plan/NoPlanBanner'
 import { ExerciseGenerationLoading } from '@/components/ui/exercise-generation-loading'
 import { Pagination } from '@/components/ui/pagination'
 import { TargetLanguageText } from '@/components/TargetLanguageText'
+import { QuestionExplanation } from '@/components/comprehension/QuestionExplanation'
 import {
   ReviewPrompt,
   getReviewPromptDismissal,
 } from '@/components/reviews/ReviewPrompt'
 import { shouldShowExerciseReviewPrompt } from '@/lib/review-prompt-triggers'
 import { useFreemiumStore } from '@/store/freemium'
+import {
+  getFreemiumAccessFailure,
+  useFreemiumAccessRecovery,
+} from '@/lib/freemium-access'
 import { useConfigStore } from '@/store/config'
 import { useAuthStore, isSubscribed, isFreemiumTrialActive } from '@/store/auth'
 
@@ -41,6 +49,7 @@ interface CorrectAnswer {
 }
 
 interface SubmitResult {
+  attempt_id: number
   score: number
   xp_earned: number
   correct_answers: CorrectAnswer[]
@@ -57,7 +66,13 @@ interface AttemptItem {
 }
 
 type PageState =
-  'loading' | 'idle' | 'generating' | 'exercise' | 'results' | 'history'
+  | 'loading'
+  | 'idle'
+  | 'generating'
+  | 'exercise'
+  | 'results'
+  | 'history'
+  | 'no-plan'
 
 const HISTORY_PAGE_SIZE = 10
 
@@ -97,11 +112,35 @@ function ReadingPage() {
     null
   )
   const [answers, setAnswers] = useState<Record<string, string>>({})
-  const [result, setResult] = useState<SubmitResult | null>(null)
+  const [result, setResult] = useState<
+    (SubmitResult & { sessionVersion: number }) | null
+  >(null)
   const [history, setHistory] = useState<AttemptItem[]>([])
   const [historyTotal, setHistoryTotal] = useState(0)
   const [historyPage, setHistoryPage] = useState(0)
   const [historyLoading, setHistoryLoading] = useState(false)
+  const [historyFailure, setHistoryFailure] = useState<
+    'exhausted' | 'unavailable' | 'failed' | null
+  >(null)
+  const historyRequest = useRef<AbortController | null>(null)
+  useLayoutEffect(() => {
+    setHistory([])
+    setHistoryContext(null)
+    setHistoryTotal(0)
+    setHistoryPage(0)
+    setHistoryFailure(null)
+    setHistoryLoading(false)
+    return () => {
+      historyRequest.current?.abort()
+      historyRequest.current = null
+    }
+  }, [
+    activeLanguage?.code,
+    activePlan?.id,
+    activePlan?.cefr_level,
+    needsRefresh,
+    sessionVersion,
+  ])
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [reviewPromptOpen, setReviewPromptOpen] = useState(false)
@@ -135,12 +174,16 @@ function ReadingPage() {
   const fetchFreemium = useFreemiumStore((s) => s.fetchStatus)
   const decrementFreemium = useFreemiumStore((s) => s.decrement)
   const freemiumStatus = useFreemiumStore((s) => s.status)
+  const { accessDenied, reportAccessDenied } =
+    useFreemiumAccessRecovery('reading')
+  const { freemiumTrialActive } = useTrialStatus()
   const freemiumExhausted =
-    stripeEnabled &&
-    !isSubscribed(user, stripeEnabled) &&
-    !isFreemiumTrialActive(user, stripeEnabled) &&
-    freemiumStatus &&
-    freemiumStatus.reading_remaining <= 0
+    accessDenied ||
+    (stripeEnabled &&
+      !isSubscribed(user, stripeEnabled) &&
+      !freemiumTrialActive &&
+      freemiumStatus &&
+      freemiumStatus.reading_remaining <= 0)
 
   useEffect(() => {
     if (stripeEnabled && !isSubscribed(user, stripeEnabled)) {
@@ -186,6 +229,7 @@ function ReadingPage() {
     setPageState,
     setError,
     dismissTooltip,
+    onAccessDenied: reportAccessDenied,
   })
 
   async function handleSubmit() {
@@ -237,15 +281,22 @@ function ReadingPage() {
       })
       if (!res.ok) {
         if (res.status >= 500 || res.status === 408) reconcileQuota()
-        const d = (await res.json().catch(() => ({}))) as { detail?: string }
+        const d = (await res.json().catch(() => ({}))) as { detail?: unknown }
         await waitForLanguageSwitch(controller.signal)
         if (!current()) return
+        const access = getFreemiumAccessFailure(res.status, d, 'reading')
+        if (access === 'exhausted') {
+          reportAccessDenied()
+          return
+        }
         setError(
-          d.detail === 'study_context_changed'
-            ? tGeneration('contextChanged')
-            : d.detail === 'already_attempted'
-              ? t('alreadyAttempted')
-              : t('errorSubmit')
+          access === 'unavailable'
+            ? tGeneration('unavailable')
+            : d.detail === 'study_context_changed'
+              ? tGeneration('contextChanged')
+              : d.detail === 'already_attempted'
+                ? t('alreadyAttempted')
+                : t('errorSubmit')
         )
         return
       }
@@ -259,7 +310,7 @@ function ReadingPage() {
       const data = (await res.json()) as SubmitResult
       await waitForLanguageSwitch(controller.signal)
       if (!current()) return
-      setResult(data)
+      setResult({ ...data, sessionVersion })
       dismissTooltip()
       setPageState('results')
       if (
@@ -280,41 +331,78 @@ function ReadingPage() {
   }
 
   async function loadHistory(pageIndex = 0) {
+    historyRequest.current?.abort()
+    const controller = new AbortController()
+    historyRequest.current = controller
+    const current = () => {
+      const context = useLanguageStore.getState()
+      const plan = context.userLanguages.find((item) => item.is_active)?.plan
+      return (
+        !controller.signal.aborted &&
+        historyRequest.current === controller &&
+        useAuthStore.getState().sessionVersion === sessionVersion &&
+        context.activeLanguage?.code === activeLanguage?.code &&
+        plan?.id === activePlan?.id &&
+        plan?.cefr_level === activePlan?.cefr_level &&
+        !context.isSwitching &&
+        !context.needsRefresh
+      )
+    }
+    if (!current()) return
     setPageState('history')
     setHistoryPage(pageIndex)
     setHistoryLoading(true)
+    setHistoryFailure(null)
     try {
       const params = new URLSearchParams({
         skip: String(pageIndex * HISTORY_PAGE_SIZE),
         limit: String(HISTORY_PAGE_SIZE),
       })
-      const res = await apiFetch(`/api/reading/history?${params.toString()}`)
-      if (res.ok) {
-        const data = (await res.json()) as {
-          context: ExerciseContext
-          items: AttemptItem[]
-          total: number
-        }
-        setHistory(data.items)
-        setHistoryContext(data.context)
-        setHistoryTotal(data.total)
+      const res = await apiFetch(`/api/reading/history?${params.toString()}`, {
+        signal: AbortSignal.any([
+          controller.signal,
+          AbortSignal.timeout(20_000),
+        ]),
+      })
+      if (!res.ok) {
+        const body: unknown = await res.json().catch(() => null)
+        await waitForLanguageSwitch(controller.signal)
+        if (!current()) return
+        const access = getFreemiumAccessFailure(res.status, body, 'reading')
+        setHistoryFailure(access ?? 'failed')
+        if (access === 'exhausted') reportAccessDenied()
+        return
       }
+      const data = (await res.json()) as {
+        context: ExerciseContext
+        items: AttemptItem[]
+        total: number
+      }
+      await waitForLanguageSwitch(controller.signal)
+      if (!current()) return
+      setHistory(data.items)
+      setHistoryContext(data.context)
+      setHistoryTotal(data.total)
     } catch {
-      setError(t('errorLoading'))
+      await waitForLanguageSwitch(controller.signal)
+      if (current()) setHistoryFailure('failed')
     } finally {
-      setHistoryLoading(false)
+      if (current()) setHistoryLoading(false)
+      if (historyRequest.current === controller) historyRequest.current = null
     }
   }
 
   const allAnswered = exercise
     ? Object.keys(answers).length === exercise.questions.length
     : false
-  const targetLanguageCode = activeLanguage?.code ?? 'en-GB'
+  const targetLanguageCode = exercise?.target_language ?? 'en-GB'
 
   // ── Loading ──────────────────────────────────────────────────────────────
   if (pageState === 'loading') {
     return <PageLoading />
   }
+
+  if (pageState === 'no-plan') return <NoPlanBanner />
 
   // ── Generating (long-poll) ────────────────────────────────────────────────
   if (pageState === 'generating') {
@@ -343,8 +431,26 @@ function ReadingPage() {
           </button>
         </div>
 
-        {historyLoading && history.length === 0 ? (
+        {historyLoading ? (
           <PageLoading fullScreen={false} className="block p-5" />
+        ) : historyFailure ? (
+          <div className="space-y-4">
+            {historyFailure === 'exhausted' ? (
+              accessDenied && <PaywallBanner feature="reading" compact />
+            ) : (
+              <p role="alert" className="text-fl-error-fg text-sm">
+                {historyFailure === 'unavailable'
+                  ? tGeneration('unavailable')
+                  : t('errorLoading')}
+              </p>
+            )}
+            <button
+              onClick={() => loadHistory(historyPage)}
+              className="border-fl-border text-fl-fg border px-4 py-2 text-sm"
+            >
+              {tCommon('retry')}
+            </button>
+          </div>
         ) : history.length === 0 ? (
           <div className="border-fl-border bg-fl-surface border p-6 text-center">
             <p className="text-fl-muted-3 font-mono text-xs tracking-wide">
@@ -402,15 +508,17 @@ function ReadingPage() {
           </div>
         )}
 
-        <Pagination
-          page={historyPage}
-          totalPages={Math.ceil(historyTotal / HISTORY_PAGE_SIZE)}
-          loading={historyLoading}
-          onPageChange={loadHistory}
-          prevLabel={`← ${tCommon('back')}`}
-          nextLabel={`${tCommon('next')} →`}
-          className="mt-4"
-        />
+        {!historyFailure && (
+          <Pagination
+            page={historyPage}
+            totalPages={Math.ceil(historyTotal / HISTORY_PAGE_SIZE)}
+            loading={historyLoading}
+            onPageChange={loadHistory}
+            prevLabel={`← ${tCommon('back')}`}
+            nextLabel={`${tCommon('next')} →`}
+            className="mt-4"
+          />
+        )}
       </div>
     )
   }
@@ -444,6 +552,21 @@ function ReadingPage() {
                 </p>
               )}
             </div>
+          </div>
+        </div>
+
+        <div>
+          <p className="text-fl-label text-fl-muted-3 mb-2 font-mono tracking-widest uppercase">
+            {t('textLabel')}
+          </p>
+          <div className="border-fl-border bg-fl-surface border p-5">
+            <TargetLanguageText
+              as="p"
+              languageCode={exercise.target_language}
+              className="reading-text text-fl-fg max-w-[70ch] whitespace-pre-wrap select-text"
+            >
+              {exercise.text}
+            </TargetLanguageText>
           </div>
         </div>
 
@@ -495,6 +618,16 @@ function ReadingPage() {
                     </div>
                   ))}
                 </div>
+                {exerciseContext && (
+                  <QuestionExplanation
+                    feature="reading"
+                    attemptId={result.attempt_id}
+                    questionIndex={q.index}
+                    sourceText={exercise.text}
+                    context={exerciseContext}
+                    sessionVersion={result.sessionVersion}
+                  />
+                )}
               </div>
             )
           })}
@@ -504,7 +637,8 @@ function ReadingPage() {
         <div className="flex gap-3 pt-1">
           <button
             onClick={loadNext}
-            className="border-fl-border bg-fl-surface text-fl-fg hover:bg-fl-surface-2 flex-1 border py-3 font-mono text-sm tracking-widest uppercase transition-colors"
+            disabled={!!freemiumExhausted}
+            className="border-fl-border bg-fl-surface text-fl-fg hover:bg-fl-surface-2 flex-1 border py-3 font-mono text-sm tracking-widest uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-50"
           >
             {t('nextExercise')}
           </button>
@@ -515,6 +649,16 @@ function ReadingPage() {
             {t('viewHistory')}
           </button>
         </div>
+        {!isReplay && result.sessionVersion === sessionVersion && (
+          <PremiumResultOffer
+            feature="reading"
+            blocked={reviewPromptOpen}
+            accessExhausted={!!freemiumExhausted}
+          />
+        )}
+        {isReplay && freemiumExhausted && (
+          <PaywallBanner feature="reading" compact />
+        )}
         <ReviewPrompt
           open={reviewPromptOpen}
           onClose={() => setReviewPromptOpen(false)}
@@ -591,134 +735,125 @@ function ReadingPage() {
 
       <FreemiumQuotaBanner feature="reading" className="mb-4" />
 
-      {freemiumExhausted ? (
-        <PaywallBanner feature="reading" compact />
-      ) : (
-        <>
-          {/* Two-column on desktop, stacked on mobile */}
-          <div className="flex flex-col gap-5 md:grid md:grid-cols-[55fr_45fr] md:gap-6">
-            {/* Left: reading text */}
-            <div>
-              <p className="text-fl-label text-fl-muted-3 mb-2 font-mono tracking-widest uppercase">
-                {t('textLabel')}
-              </p>
-              <div className="border-fl-border bg-fl-surface relative border p-5">
-                <div
-                  ref={textRef}
-                  onPointerUp={() =>
-                    handleTextSelection(
-                      exercise?.text ?? '',
-                      exercise?.level ?? 'B1'
-                    )
-                  }
-                >
-                  <TargetLanguageText
-                    as="p"
-                    languageCode={exercise.target_language}
-                    className="reading-text text-fl-fg word-selectable max-w-[70ch] cursor-text whitespace-pre-wrap select-text"
-                  >
-                    {exercise.text}
-                  </TargetLanguageText>
-                </div>
-              </div>
-              <p className="text-fl-caption text-fl-muted-1 mt-2 text-center font-sans leading-relaxed">
-                {t('selectWordHint')}
-              </p>
-            </div>
-
-            {/* Right: questions */}
-            <div>
-              <p className="text-fl-label text-fl-muted-3 mb-2 font-mono tracking-widest uppercase">
-                {t('questionsLabel')}
-              </p>
-              <div className="space-y-4">
-                {exercise.questions.map((q) => (
-                  <div
-                    key={q.index}
-                    className="border-fl-border bg-fl-surface border p-4"
-                  >
-                    <TargetLanguageText
-                      as="p"
-                      languageCode={exercise.target_language}
-                      onPointerUp={() =>
-                        handleTextSelection(q.question, exercise.level)
-                      }
-                      className="text-fl-fg word-selectable mb-3 cursor-text select-text"
-                    >
-                      {q.index + 1}. {q.question}
-                    </TargetLanguageText>
-                    <div className="space-y-2">
-                      {Object.entries(q.options).map(([k, v]) => {
-                        const selected = answers[String(q.index)] === k
-                        return (
-                          <button
-                            key={k}
-                            onClick={() => {
-                              startAnalytics(
-                                exercise.id,
-                                exerciseContext,
-                                isReplay
-                              )
-                              setAnswers((prev) => ({
-                                ...prev,
-                                [String(q.index)]: k,
-                              }))
-                            }}
-                            className={`w-full border px-3 py-2 text-left transition-colors ${
-                              selected
-                                ? 'border-fl-accent text-fl-fg bg-fl-surface-2'
-                                : 'border-fl-border text-fl-muted-1 hover:border-fl-muted-2 hover:text-fl-fg'
-                            }`}
-                          >
-                            <span className="text-fl-label font-mono font-bold">
-                              {k}.
-                            </span>{' '}
-                            <TargetLanguageText
-                              languageCode={exercise.target_language}
-                            >
-                              {v}
-                            </TargetLanguageText>
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {error && (
-                <p className="text-fl-caption text-fl-error-fg mt-3 font-mono">
-                  {error}
-                </p>
-              )}
-
-              <button
-                onClick={handleSubmit}
-                disabled={!allAnswered || submitting}
-                className="border-fl-border bg-fl-fg text-fl-bg hover:bg-fl-fg/90 focus-visible:outline-fl-fg mt-4 w-full border py-3 font-mono text-sm font-bold tracking-widest uppercase transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
+      {freemiumExhausted && <PaywallBanner feature="reading" compact />}
+      {/* Two-column on desktop, stacked on mobile */}
+      <div className="flex flex-col gap-5 md:grid md:grid-cols-[55fr_45fr] md:gap-6">
+        {/* Left: reading text */}
+        <div>
+          <p className="text-fl-label text-fl-muted-3 mb-2 font-mono tracking-widest uppercase">
+            {t('textLabel')}
+          </p>
+          <div className="border-fl-border bg-fl-surface relative border p-5">
+            <div
+              ref={textRef}
+              onPointerUp={() =>
+                handleTextSelection(
+                  exercise?.text ?? '',
+                  exercise?.level ?? 'B1'
+                )
+              }
+            >
+              <TargetLanguageText
+                as="p"
+                languageCode={exercise.target_language}
+                className="reading-text text-fl-fg word-selectable max-w-[70ch] cursor-text whitespace-pre-wrap select-text"
               >
-                {submitting ? '...' : t('submit')}
-              </button>
+                {exercise.text}
+              </TargetLanguageText>
             </div>
           </div>
+          <p className="text-fl-caption text-fl-muted-1 mt-2 text-center font-sans leading-relaxed">
+            {t('selectWordHint')}
+          </p>
+        </div>
 
-          {/* Word-save tooltip */}
-          {selectedWord && (
-            <WordTooltip
-              word={selectedWord}
-              pos={tooltipPos}
-              saveState={saveState}
-              onSave={() => handleSaveWord()}
-              onDismiss={dismissTooltip}
-              labels={{
-                saveWord: tCommon('saveWord'),
-                wordSaved: tCommon('wordSaved'),
-                wordAlreadySaved: tCommon('wordAlreadySaved'),
-                wordSaveError: tCommon('wordSaveError'),
-              }}
-            />
+        {/* Right: questions */}
+        <div>
+          <p className="text-fl-label text-fl-muted-3 mb-2 font-mono tracking-widest uppercase">
+            {t('questionsLabel')}
+          </p>
+          <div className="space-y-4">
+            {exercise.questions.map((q) => (
+              <div
+                key={q.index}
+                className="border-fl-border bg-fl-surface border p-4"
+              >
+                <TargetLanguageText
+                  as="p"
+                  languageCode={exercise.target_language}
+                  onPointerUp={() =>
+                    handleTextSelection(q.question, exercise.level)
+                  }
+                  className="text-fl-fg word-selectable mb-3 cursor-text select-text"
+                >
+                  {q.index + 1}. {q.question}
+                </TargetLanguageText>
+                <div className="space-y-2">
+                  {Object.entries(q.options).map(([k, v]) => {
+                    const selected = answers[String(q.index)] === k
+                    return (
+                      <button
+                        key={k}
+                        onClick={() => {
+                          startAnalytics(exercise.id, exerciseContext, isReplay)
+                          setAnswers((prev) => ({
+                            ...prev,
+                            [String(q.index)]: k,
+                          }))
+                        }}
+                        className={`w-full border px-3 py-2 text-left transition-colors ${
+                          selected
+                            ? 'border-fl-accent text-fl-fg bg-fl-surface-2'
+                            : 'border-fl-border text-fl-muted-1 hover:border-fl-muted-2 hover:text-fl-fg'
+                        }`}
+                      >
+                        <span className="text-fl-label font-mono font-bold">
+                          {k}.
+                        </span>{' '}
+                        <TargetLanguageText
+                          languageCode={exercise.target_language}
+                        >
+                          {v}
+                        </TargetLanguageText>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {error && (
+            <p className="text-fl-caption text-fl-error-fg mt-3 font-mono">
+              {error}
+            </p>
           )}
-        </>
+
+          <button
+            onClick={handleSubmit}
+            disabled={!allAnswered || submitting || !!freemiumExhausted}
+            className="border-fl-border bg-fl-fg text-fl-bg hover:bg-fl-fg/90 focus-visible:outline-fl-fg mt-4 w-full border py-3 font-mono text-sm font-bold tracking-widest uppercase transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {submitting ? '...' : t('submit')}
+          </button>
+        </div>
+      </div>
+
+      {/* Word-save tooltip */}
+      {selectedWord && (
+        <WordTooltip
+          word={selectedWord}
+          pos={tooltipPos}
+          saveState={saveState}
+          onSave={() => handleSaveWord()}
+          onDismiss={dismissTooltip}
+          labels={{
+            saveWord: tCommon('saveWord'),
+            wordSaved: tCommon('wordSaved'),
+            wordAlreadySaved: tCommon('wordAlreadySaved'),
+            wordSaveError: tCommon('wordSaveError'),
+          }}
+        />
       )}
     </div>
   )

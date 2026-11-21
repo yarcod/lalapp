@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import {
+  act,
+  fireEvent,
+  render,
+  renderHook,
+  screen,
+  waitFor,
+} from '@testing-library/react'
 
 const mocks = vi.hoisted(() => ({ apiFetch: vi.fn() }))
 
@@ -9,7 +16,7 @@ vi.mock('next-intl', () => ({
 vi.mock('@/lib/api', () => ({ apiFetch: mocks.apiFetch }))
 
 import { ChildProfileToggle } from '@/home/components/ChildProfileToggle'
-import { useHomeProfileStore } from '@/home/store/profile'
+import { useEnsureHomeProfile, useHomeProfileStore } from '@/home/store/profile'
 import { useAuthStore } from '@/store/auth'
 import { useLanguageStore } from '@/store/language'
 
@@ -136,5 +143,25 @@ describe('home profile store session handling', () => {
       expect(useHomeProfileStore.getState().taggedLanguages).toEqual(['en-GB'])
     )
     expect(mocks.apiFetch).toHaveBeenCalledTimes(2)
+  })
+
+  it('loads only once the layout enables it', async () => {
+    mocks.apiFetch.mockResolvedValueOnce(
+      json({ is_child: true, tagged_languages: [] })
+    )
+    const { rerender } = renderHook(
+      ({ enabled }) => useEnsureHomeProfile(enabled),
+      { initialProps: { enabled: false } }
+    )
+    await act(async () => {
+      await Promise.resolve()
+    })
+    expect(mocks.apiFetch).not.toHaveBeenCalled()
+
+    rerender({ enabled: true })
+    await waitFor(() =>
+      expect(useHomeProfileStore.getState().isChild).toBe(true)
+    )
+    expect(mocks.apiFetch).toHaveBeenCalledTimes(1)
   })
 })

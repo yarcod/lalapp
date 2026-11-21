@@ -32,7 +32,7 @@ from app.schemas.admin import (
     MaintenanceModeUpdate,
     PaginatedAdminUsersResponse,
 )
-from app.services import email_service
+from app.services import email_service, revenuecat_service
 from app.services.subscription_service import apply_subscription_quotas
 from app.utils.pagination import paginate
 
@@ -355,7 +355,12 @@ async def update_user(
     admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    user = await db.get(User, user_id)
+    user = await db.scalar(
+        select(User)
+        .where(User.id == user_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
@@ -372,14 +377,6 @@ async def update_user(
         user.is_active = data.is_active
     if data.is_verified is not None:
         user.is_verified = data.is_verified
-    if data.conversation_weekly_sessions is not None:
-        user.conversation_weekly_sessions = data.conversation_weekly_sessions
-    if data.conversation_daily_minutes is not None:
-        user.conversation_daily_minutes = data.conversation_daily_minutes
-    if data.conversation_weekly_minutes is not None:
-        user.conversation_weekly_minutes = data.conversation_weekly_minutes
-    if data.monthly_tokens_limit is not None:
-        user.monthly_tokens_limit = data.monthly_tokens_limit
     if data.subscription_status is not None:
         old_status = user.subscription_status
         user.subscription_status = data.subscription_status
@@ -392,12 +389,24 @@ async def update_user(
             "active",
             "trialing",
         ):
-            await apply_subscription_quotas(user, db)
+            await apply_subscription_quotas(user, db, commit=False)
     elif data.subscription_ends_at is not None:
         user.subscription_ends_at = data.subscription_ends_at
 
+    if data.conversation_weekly_sessions is not None:
+        user.conversation_weekly_sessions = data.conversation_weekly_sessions
+    if data.conversation_daily_minutes is not None:
+        user.conversation_daily_minutes = data.conversation_daily_minutes
+    if data.conversation_weekly_minutes is not None:
+        user.conversation_weekly_minutes = data.conversation_weekly_minutes
+    if data.monthly_tokens_limit is not None:
+        user.monthly_tokens_limit = data.monthly_tokens_limit
+
     await db.commit()
     await db.refresh(user)
+    if data.display_name is not None and revenuecat_service.revenuecat_enabled():
+        await revenuecat_service.sync_customer_attributes(db, user.id)
+        await db.commit()
     return user
 
 
@@ -441,6 +450,10 @@ async def delete_user(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot delete yourself"
         )
+
+    from app.services.account_deletion_service import require_canceled_billing  # noqa: PLC0415
+
+    user = await require_canceled_billing(db, user_id)
 
     # Invalidate all active refresh tokens for this user in Redis
     uid_str = str(user_id)

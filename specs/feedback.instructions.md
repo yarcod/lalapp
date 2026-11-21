@@ -186,13 +186,16 @@ There is no community search control even though the API supports `q`. The detai
 selected list item and loads comments separately rather than requesting the detail endpoint.
 
 The frontend has no dedicated Feedback store. It uses authenticated `apiFetch` and component-local
-state. There is no request identity or cancellation between filter loads, so a late older response
-can replace newer list state. Some mutations are optimistically reflected without consistently
-checking non-success responses.
+state. Community and administrative list loads are cancellable and reject obsolete responses,
+including errors and completion callbacks. Filter changes reset pagination within the same update
+rather than issuing competing initial reads. Same-query refreshes keep the existing list visible
+with local activity feedback; changing query or session clears obsolete rows. Initial loading is
+distinct from a successful empty result. Some mutations are
+optimistically reflected without consistently checking non-success responses.
 
 Feedback UI, status/read labels, and administrator author badges use the active interface locale.
-Croatian comment counts use ICU plural categories, including the singular form for counts such as
-21 and 31 and the appropriate forms for `few` and `other`.
+Comment counts use the localized `comment` label for one and `comments` with a `count` parameter
+otherwise. Locale catalogs can express the required plural categories through ICU messages.
 The vote HTML tooltip remains a fixed label.
 
 ## Related specifications

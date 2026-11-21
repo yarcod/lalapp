@@ -1,87 +1,84 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
+import { Loader2 } from 'lucide-react'
 import { SUPPORTED_TARGET_LANGUAGES } from '@/lib/target-languages'
 import LinguAvatar from '@/components/lingu/LinguAvatar'
+import { TargetLanguageText } from '@/components/TargetLanguageText'
 
-function circlePosition(index: number, total: number, radius: number) {
-  const angle = (index / total) * 2 * Math.PI - Math.PI / 2
-  const x = Math.cos(angle) * radius
-  const y = Math.sin(angle) * radius
-  return { x, y }
-}
+const HERO_GREETINGS = [
+  { code: 'en-GB', position: 'top-5 left-0 sm:top-8' },
+  { code: 'ja-JP', position: 'top-12 -right-3 sm:top-16 sm:-right-6' },
+  { code: 'de-DE', position: 'top-1/2 left-0 -translate-y-1/2' },
+  { code: 'it-IT', position: 'top-1/2 right-0 -translate-y-1/2' },
+  { code: 'es-ES', position: 'bottom-12 left-0 sm:bottom-16' },
+  { code: 'fr-FR', position: 'right-0 bottom-5 sm:bottom-8' },
+]
 
 export function LanguageBubbles() {
   const t = useTranslations('landing')
+  const tCommon = useTranslations('common')
   const tTarget = useTranslations('targetLanguages')
   const [ready, setReady] = useState(false)
   const onReady = useCallback(() => setReady(true), [])
-  const positions = useMemo(
-    () =>
-      SUPPORTED_TARGET_LANGUAGES.map((_, i) =>
-        circlePosition(i, SUPPORTED_TARGET_LANGUAGES.length, 135)
-      ),
-    []
-  )
 
   return (
-    <div
-      aria-hidden={!ready}
-      className={`relative h-[360px] w-full transition-opacity duration-300 motion-reduce:transition-none sm:h-[380px] ${ready ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
-    >
+    <div className="relative mx-auto h-[260px] w-full max-w-[360px] sm:h-[360px] sm:max-w-[420px]">
+      {!ready && (
+        <div
+          role="status"
+          aria-label={tCommon('loading')}
+          className="pointer-events-none absolute inset-0 flex items-center justify-center"
+        >
+          <Loader2
+            aria-hidden="true"
+            className="text-fl-muted-2 size-6 motion-safe:animate-spin"
+          />
+        </div>
+      )}
       <div
-        className="absolute top-1/2 left-1/2 z-[1] h-[140px] w-[140px] -translate-x-1/2 -translate-y-1/2"
-        role="img"
-        aria-label="FreeLingo"
+        aria-hidden={!ready}
+        className={`relative flex h-full items-center justify-center transition-opacity duration-300 motion-reduce:transition-none ${ready ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
       >
-        <LinguAvatar
-          animation="saludo"
-          loop
-          onReady={onReady}
-          className="h-full w-full"
-        />
-      </div>
+        <div className="flex justify-center" role="img" aria-label="FreeLingo">
+          <LinguAvatar
+            animation="saludo"
+            loop
+            onReady={onReady}
+            className="h-[220px] w-[220px] sm:h-[300px] sm:w-[300px]"
+          />
+        </div>
 
-      {SUPPORTED_TARGET_LANGUAGES.map((lang, i) => {
-        const { x, y } = positions[i]
-        const greeting = t(`languageGreetings.${lang.code}`) ?? lang.name
-        const delay = i * 0.35
-        return (
-          <div
-            key={lang.code}
-            className="absolute z-0 w-max"
-            style={{
-              left: `calc(50% + ${x}px)`,
-              top: `calc(50% + ${y}px)`,
-              transform: 'translate(-50%, -50%)',
-            }}
-          >
+        {HERO_GREETINGS.map(({ code, position }) => {
+          const lang = SUPPORTED_TARGET_LANGUAGES.find(
+            (language) => language.code === code
+          )
+          if (!lang) return null
+
+          return (
             <div
-              className="animate-float w-max motion-reduce:animate-none"
-              style={{
-                animationDelay: `${delay}s`,
-                animationDuration: '3.4s',
-                animationPlayState: ready ? 'running' : 'paused',
-              }}
+              key={lang.code}
+              className={`border-fl-border bg-fl-surface absolute flex items-center gap-2 rounded-2xl border px-3 py-2 shadow-sm sm:px-4 sm:py-2.5 ${position}`}
             >
-              <div className="border-fl-border bg-fl-surface flex items-center gap-1.5 rounded-full border px-2.5 py-1 shadow-sm transition-shadow hover:shadow-md">
-                <Image
-                  src={lang.flagPath}
-                  alt={tTarget(lang.code)}
-                  width={14}
-                  height={10}
-                  className="h-[10px] w-[14px] shrink-0 rounded-[2px] object-cover"
-                />
-                <span className="text-fl-fg font-sans text-[11px] font-medium whitespace-nowrap">
-                  {greeting}
-                </span>
-              </div>
+              <Image
+                src={lang.flagPath}
+                alt={tTarget(lang.code)}
+                width={18}
+                height={13}
+                className="h-[13px] w-[18px] shrink-0 rounded-[2px] object-cover"
+              />
+              <TargetLanguageText
+                languageCode={lang.code}
+                className="text-fl-fg text-sm font-medium whitespace-nowrap sm:text-base"
+              >
+                {t(`languageGreetings.${lang.code}`)}
+              </TargetLanguageText>
             </div>
-          </div>
-        )
-      })}
+          )
+        })}
+      </div>
     </div>
   )
 }

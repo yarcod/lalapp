@@ -2,6 +2,53 @@
 
 from __future__ import annotations
 
+from collections import Counter, defaultdict
+
+import pytest
+
+
+@pytest.mark.parametrize(
+    "language",
+    [
+        "fr-FR",
+        "it-IT",
+        "pt-BR",
+        "pt-PT",
+        "pl-PL",
+        "nl-NL",
+        "ja-JP",
+        "ko-KR",
+        "ru-RU",
+        "sv-SE",
+        "da-DK",
+        "cs-CZ",
+        "hr-HR",
+        "fi-FI",
+        "ro-RO",
+    ],
+)
+def test_reviewed_banks_have_valid_answers_references_and_balanced_positions(language):
+    from app.data.assessment_bank import get_assessment_bank
+    from app.data.grammar import get_grammar_topics
+
+    bank = get_assessment_bank(language)
+    slugs = {topic.slug for topic in get_grammar_topics(language)}
+    positions = defaultdict(Counter)
+    assert len({question.id for question in bank}) == len(bank)
+
+    for question in bank:
+        assert len(question.options) == len(set(question.options)) == 4, question.id
+        assert question.options.count(question.correct) == 1, question.id
+        if question.grammar_slug:
+            assert question.grammar_slug in slugs, question.id
+        positions[question.difficulty, question.skill][
+            question.options.index(question.correct)
+        ] += 1
+
+    for group, counts in positions.items():
+        totals = [counts[index] for index in range(4)]
+        assert max(totals) - min(totals) <= 1, (language, group, counts)
+
 
 class TestGetAssessmentBank:
     def test_english_returns_non_empty(self):
@@ -76,6 +123,14 @@ class TestGetAssessmentBank:
         assert isinstance(bank, list)
         assert len(bank) == 180
         assert any(q.id == "zh-g-a1-001" for q in bank)
+
+    def test_polish_returns_non_empty(self):
+        from app.data.assessment_bank import get_assessment_bank
+
+        bank = get_assessment_bank("pl-PL")
+        assert isinstance(bank, list)
+        assert len(bank) == 124
+        assert any(q.id == "pl-g-a1-001" for q in bank)
 
     def test_unknown_language_falls_back_to_en_gb(self):
         from app.data.assessment_bank import get_assessment_bank

@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+import { ArrowRight, Check, Circle } from 'lucide-react'
 import { PageLoading } from '@/components/ui/page-loading'
+import { TargetLanguageText } from '@/components/TargetLanguageText'
 import { apiFetch } from '@/lib/api'
 import { getCurriculumUnits, type CurriculumUnit } from '@/data/curriculum'
 import { useLanguageStore } from '@/store/language'
@@ -40,6 +42,13 @@ interface TodayLesson {
   is_completed?: boolean
 }
 
+interface TodayResponse {
+  plan_id: number
+  progress_day: number
+  lessons: TodayLesson[]
+  completion?: CompletionState
+}
+
 type LessonAction = 'start' | 'continue' | 'review'
 
 interface Lesson {
@@ -58,7 +67,7 @@ interface StudyPlan {
   cefr_level: string
   duration_weeks: number
   days_per_week: number
-  current_unit: string
+  progress_day: number
   completion_test_taken: boolean
   completion_test_score: number | null
   completion_test_recommendation: string | null
@@ -73,10 +82,6 @@ interface StudyPlan {
       }[]
     }[]
   }
-}
-
-interface CompetencyMap {
-  [unitId: string]: number // 0–1
 }
 
 interface CompletionState {
@@ -185,12 +190,11 @@ function PlanContent({ language }: { language: TargetLanguage }) {
   const [plan, setPlan] = useState<StudyPlan | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [competencies, setCompetencies] = useState<CompetencyMap>({})
   const [activeDrawer, setActiveDrawer] = useState<CurriculumUnit | null>(null)
-  const [activeLessonId, setActiveLessonId] = useState<number | null>(null)
+  const [todayProgressDay, setTodayProgressDay] = useState<number | null>(null)
   const [pendingLessons, setPendingLessons] = useState<PendingLesson[]>([])
   const [lessonStates, setLessonStates] = useState<
-    Record<string, Pick<Lesson, 'id' | 'completed' | 'action'>>
+    Record<string, Pick<Lesson, 'id' | 'completed'>>
   >({})
   const [completion, setCompletion] = useState<CompletionState | null>(null)
   const [units, setUnits] = useState<CurriculumUnit[]>([])
@@ -220,25 +224,22 @@ function PlanContent({ language }: { language: TargetLanguage }) {
       setLoading(true)
       setError('')
       setCompletion(null)
-      setActiveLessonId(null)
+      setTodayProgressDay(null)
+      setLessonStates({})
+      setPendingLessons([])
+      setActiveDrawer(null)
       // /today can generate a lesson. Its transport lifetime belongs to this
       // context, but it must not consume the read-only plan's 20-second budget.
       const todayRequest = apiFetch('/api/study-plan/today', {
         signal: controller.signal,
       })
         .then(async (res) =>
-          res.ok
-            ? ((await res.json()) as {
-                lessons: TodayLesson[]
-                completion?: CompletionState
-              })
-            : null
+          res.ok ? ((await res.json()) as TodayResponse) : null
         )
         .catch(() => null)
       try {
-        const [planRes, compRes, pendingRes, lessonsRes] = await Promise.all([
+        const [planRes, pendingRes, lessonsRes] = await Promise.all([
           apiFetch('/api/study-plan/current', { signal }),
-          apiFetch('/api/progress/competencies', { signal }).catch(() => null),
           apiFetch('/api/study-plan/pending-lessons', { signal }).catch(
             () => null
           ),
@@ -261,42 +262,21 @@ function PlanContent({ language }: { language: TargetLanguage }) {
         setPlan(planData)
         if (!planData) return
 
-        if (compRes?.ok) {
-          const compData = await compRes.json()
-          if (obsolete()) return
-          signal.throwIfAborted()
-          // Backend returns [{unit_id, score}, ...] or Record<string, number>
-          if (Array.isArray(compData)) {
-            const map: CompetencyMap = {}
-            for (const item of compData as {
-              unit_id: string
-              score: number
-            }[]) {
-              map[item.unit_id] = item.score
-            }
-            setCompetencies(map)
-          } else {
-            setCompetencies(compData as CompetencyMap)
-          }
+        if (!lessonsRes?.ok) {
+          throw new Error('Failed to load lesson progress')
         }
 
-        const states: Record<
-          string,
-          Pick<Lesson, 'id' | 'completed' | 'action'>
-        > = {}
+        const states: Record<string, Pick<Lesson, 'id' | 'completed'>> = {}
 
-        if (lessonsRes?.ok) {
-          const generatedLessons = (await lessonsRes.json()) as PlanLesson[]
-          if (obsolete()) return
-          signal.throwIfAborted()
-          for (const lesson of generatedLessons) {
-            states[
-              lessonKey(lesson.week_number, lesson.day_number, lesson.title)
-            ] = {
-              id: lesson.id,
-              completed: lesson.is_completed,
-              action: lesson.is_completed ? 'review' : undefined,
-            }
+        const generatedLessons = (await lessonsRes.json()) as PlanLesson[]
+        if (obsolete()) return
+        signal.throwIfAborted()
+        for (const lesson of generatedLessons) {
+          states[
+            lessonKey(lesson.week_number, lesson.day_number, lesson.title)
+          ] = {
+            id: lesson.id,
+            completed: lesson.is_completed,
           }
         }
 
@@ -304,14 +284,26 @@ function PlanContent({ language }: { language: TargetLanguage }) {
           const pendingData = (await pendingRes.json()) as PendingLesson[]
           if (obsolete()) return
           signal.throwIfAborted()
-          setPendingLessons(pendingData)
+          setPendingLessons(
+            pendingData.filter(
+              (lesson) =>
+                !states[
+                  lessonKey(lesson.week_number, lesson.day_number, lesson.title)
+                ]?.completed
+            )
+          )
           for (const lesson of pendingData) {
+            const key = lessonKey(
+              lesson.week_number,
+              lesson.day_number,
+              lesson.title
+            )
+            if (states[key]?.completed) continue
             states[
               lessonKey(lesson.week_number, lesson.day_number, lesson.title)
             ] = {
               id: lesson.id,
               completed: false,
-              action: 'continue',
             }
           }
         }
@@ -319,22 +311,43 @@ function PlanContent({ language }: { language: TargetLanguage }) {
         setLessonStates(states)
         void todayRequest
           .then((todayData) => {
-            if (obsolete() || !todayData) return
-            setCompletion(todayData.completion ?? null)
-            const nextLesson = todayData.lessons.find(
-              (l) => l.id != null && !l.is_completed
+            if (
+              obsolete() ||
+              !todayData ||
+              todayData.plan_id !== planData.id ||
+              todayData.progress_day < planData.progress_day
             )
-            setActiveLessonId(nextLesson?.id ?? null)
+              return
+            setTodayProgressDay(todayData.progress_day)
+            setCompletion(todayData.completion ?? null)
             const todayStates: typeof states = {}
             for (const lesson of todayData.lessons) {
               if (lesson.id == null) continue
               todayStates[lessonKey(lesson.week, lesson.day, lesson.title)] = {
                 id: lesson.id,
                 completed: lesson.is_completed ?? false,
-                action: lesson.is_completed ? 'review' : 'start',
               }
             }
-            setLessonStates((previous) => ({ ...previous, ...todayStates }))
+            setLessonStates((previous) => {
+              const merged = { ...previous }
+              for (const [key, state] of Object.entries(todayStates)) {
+                // Completion is irreversible; parallel reads can be older than /lessons.
+                if (!merged[key]?.completed) merged[key] = state
+              }
+              return merged
+            })
+            setPendingLessons((previous) =>
+              previous.filter(
+                (lesson) =>
+                  !todayStates[
+                    lessonKey(
+                      lesson.week_number,
+                      lesson.day_number,
+                      lesson.title
+                    )
+                  ]?.completed
+              )
+            )
           })
           .catch(() => {
             // An unavailable supplementary response must not hide the loaded plan.
@@ -385,62 +398,161 @@ function PlanContent({ language }: { language: TargetLanguage }) {
   }
 
   const level = plan.cefr_level as CEFRLevel
-  const allLessons = flattenLessons(plan).map((lesson) => ({
-    ...lesson,
-    ...lessonStates[lessonKey(lesson.week, lesson.day, lesson.title)],
-  }))
+  const progressDay = todayProgressDay ?? plan.progress_day
+  const dayIndex = (lesson: Lesson) =>
+    (lesson.week - 1) * plan.days_per_week + lesson.day - 1
+  const allLessons = flattenLessons(plan).map((lesson): Lesson => {
+    const state = lessonStates[lessonKey(lesson.week, lesson.day, lesson.title)]
+    return {
+      ...lesson,
+      ...state,
+      action:
+        state?.id != null
+          ? state.completed
+            ? 'review'
+            : dayIndex(lesson) === progressDay
+              ? 'start'
+              : 'continue'
+          : undefined,
+    }
+  })
   const byUnit = lessonsByUnit(allLessons)
-  const currentUnitId = plan.current_unit
+  // The persisted current_unit is only an initial value, not a progress cursor.
+  const currentUnitId = allLessons.find(
+    (lesson) => dayIndex(lesson) === progressDay
+  )?.unit_id
+  const completedUnits = new Set(
+    Object.entries(byUnit)
+      .filter(
+        ([, lessons]) =>
+          lessons.length > 0 && lessons.every((lesson) => lesson.completed)
+      )
+      .map(([unitId]) => unitId)
+  )
 
   // The real level test unlocks when the learner reaches the plan's final
   // position, as reported by the backend completion contract.
   const levelTestReady = completion?.state === 'ready'
+  const teachingLessons = allLessons.filter(
+    (lesson) =>
+      lesson.unit_id !== 'completion-test' && lesson.unit_id !== 'level-test'
+  )
+  const completedLessonCount = teachingLessons.filter(
+    (lesson) => lesson.completed
+  ).length
+  const progressPercent = teachingLessons.length
+    ? Math.round((completedLessonCount / teachingLessons.length) * 100)
+    : 0
+  const progressSummary = t('progressSummary', {
+    completed: completedLessonCount,
+    total: teachingLessons.length,
+  })
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 px-4 py-8">
+    <div className="mx-auto max-w-4xl space-y-8 px-4 py-8 sm:px-6">
       {/* ── Header ── */}
-      <div className="border-fl-border bg-fl-surface border">
-        <div className="border-fl-border flex items-center gap-2 border-b px-6 py-4">
-          <span className="text-fl-label text-fl-muted-3">●</span>
-          <span className="text-fl-label text-fl-muted-2 font-mono tracking-widest uppercase">
-            {t('learningRoadmap')}
-          </span>
-        </div>
-        <div className="flex flex-wrap items-center gap-4 px-6 py-4">
-          <div>
-            <p className="text-fl-hint text-fl-muted-3 font-mono tracking-widest uppercase">
-              {langName ? `${langName} — ${t('level')}` : t('level')}
+      <header className="space-y-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="space-y-2">
+            <p className="text-fl-accent text-xs font-medium tracking-widest uppercase">
+              {t('learningRoadmap')}
             </p>
-            <p className="text-fl-fg font-mono text-2xl font-bold tracking-widest">
-              {level}
-            </p>
+            <h1 className="text-fl-fg text-3xl font-semibold">{t('title')}</h1>
           </div>
-          <div className="bg-fl-border h-8 w-px" />
-          <div>
-            <p className="text-fl-hint text-fl-muted-3 font-mono tracking-widest uppercase">
-              {t('duration')}
-            </p>
-            <p className="text-fl-body text-fl-muted-1 font-mono">
+          <div className="border-fl-border bg-fl-surface flex items-center gap-3 border px-4 py-3">
+            <span className="text-fl-muted-1 text-sm">{langName}</span>
+            <span className="text-fl-fg font-code text-lg font-semibold">
+              <span className="sr-only">{t('level')} </span>
+              {level}
+            </span>
+          </div>
+        </div>
+        <div className="border-fl-border bg-fl-surface space-y-4 border p-5 sm:p-6">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <p className="text-fl-fg text-sm font-medium">{progressSummary}</p>
+            <span
+              className="text-fl-accent font-code text-sm"
+              aria-hidden="true"
+            >
+              {progressPercent}%
+            </span>
+          </div>
+          <div
+            role="progressbar"
+            aria-label={progressSummary}
+            aria-valuemin={0}
+            aria-valuemax={teachingLessons.length || 1}
+            aria-valuenow={completedLessonCount}
+            className="bg-fl-border h-1.5 overflow-hidden"
+          >
+            <div
+              className="bg-fl-accent h-full transition-[width] duration-300 motion-reduce:transition-none"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+          <div className="text-fl-muted-1 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <p>
               {t('durationDetail', {
                 weeks: plan.duration_weeks,
                 days: plan.days_per_week,
               })}
             </p>
-          </div>
-          <div className="bg-fl-border h-8 w-px" />
-          <div>
-            <p className="text-fl-hint text-fl-muted-3 font-mono tracking-widest uppercase">
-              {t('unitsLabel')}
-            </p>
-            <p className="text-fl-body text-fl-muted-1 font-mono">
-              {unitsLoading || unitsError ? '—' : units.length}
+            <p>
+              <span>{t('unitsLabel')}</span>{' '}
+              <span className="font-code">
+                {unitsLoading || unitsError ? '—' : units.length}
+              </span>
             </p>
           </div>
         </div>
-      </div>
+      </header>
+
+      {/* ── Pending lessons ── */}
+      {pendingLessons.length > 0 && (
+        <details className="border-fl-border bg-fl-surface border">
+          <summary className="focus-visible:outline-fl-fg cursor-pointer px-5 py-4 text-sm focus-visible:outline-2 focus-visible:outline-offset-2">
+            <span className="text-fl-fg font-medium">
+              {pendingLessons.length} {t('pendingLessons')}
+            </span>
+            <span className="text-fl-muted-1 mt-1 block text-xs">
+              {t('pendingReassurance')}
+            </span>
+          </summary>
+          <div className="divide-fl-border border-fl-border divide-y border-t">
+            {pendingLessons.map((lesson) => (
+              <div
+                key={lesson.id}
+                className="flex flex-wrap items-center justify-between gap-3 px-5 py-4"
+              >
+                <div className="min-w-0 flex-1">
+                  <TargetLanguageText
+                    as="p"
+                    languageCode={language.code}
+                    className="text-fl-fg text-sm break-words"
+                  >
+                    {lesson.title}
+                  </TargetLanguageText>
+                  <p className="text-fl-muted-1 mt-1 text-xs">
+                    {t('weekDay', {
+                      week: lesson.week_number,
+                      day: lesson.day_number,
+                    })}
+                  </p>
+                </div>
+                <button
+                  onClick={() => router.push(`/lesson/${lesson.id}`)}
+                  className="border-fl-border text-fl-fg hover:bg-fl-surface-2 focus-visible:outline-fl-fg shrink-0 border px-4 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+                >
+                  {t('resume')}
+                </button>
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
 
       {/* ── Unit list ── */}
-      <div className="space-y-2">
+      <div>
         {unitsLoading ? (
           <PageLoading fullScreen={false} />
         ) : unitsError ? (
@@ -470,112 +582,160 @@ function PlanContent({ language }: { language: TargetLanguage }) {
             </div>
           )
         )}
-        {units.map((unit, i) => {
-          const unitLessons = byUnit[unit.id] ?? []
-          const completedLessons = unitLessons.filter((l) => l.completed).length
-          const isActive = unit.id === currentUnitId
-          const unitComp = competencies[unit.id] ?? 0
-          const isCompleted =
-            unitComp >= 0.8 ||
-            (completedLessons > 0 && completedLessons === unitLessons.length)
+        <ol aria-label={t('learningRoadmap')}>
+          {units.map((unit, i) => {
+            const unitLessons = byUnit[unit.id] ?? []
+            const completedLessons = unitLessons.filter(
+              (l) => l.completed
+            ).length
+            const isCompleted = completedUnits.has(unit.id)
+            const isActive = unit.id === currentUnitId && !isCompleted
+            const activeLesson = unitLessons.find(
+              (lesson) =>
+                lesson.id != null &&
+                !lesson.completed &&
+                dayIndex(lesson) === progressDay
+            )
 
-          // A unit is locked if its prerequisite is not completed
-          const prereqUnit = unit.prerequisite_unit
-          const prereqCompleted = prereqUnit
-            ? (competencies[prereqUnit] ?? 0) >= 0.8
-            : true
-          const isLocked =
-            !isActive && !isCompleted && !prereqCompleted && i > 0
+            // Reached units and generated lessons stay accessible even after a skipped day.
+            const isReached = unitLessons.some(
+              (lesson) => dayIndex(lesson) <= progressDay
+            )
+            const hasGeneratedLessons = unitLessons.some(
+              (lesson) => lesson.id != null
+            )
+            const prereqUnit = unit.prerequisite_unit
+            const prereqCompleted = prereqUnit
+              ? completedUnits.has(prereqUnit)
+              : true
+            const isLocked =
+              !isReached &&
+              !hasGeneratedLessons &&
+              !isCompleted &&
+              !prereqCompleted &&
+              i > 0
 
-          return (
-            <UnitCard
-              key={unit.id}
-              title={unit.title}
-              index={i}
-              lessonCount={unitLessons.length || unit.lesson_types.length}
-              grammarCount={unit.grammar_points.length}
-              competency={unitComp}
-              status={{
-                completed: isCompleted,
-                active: isActive,
-                locked: isLocked,
-                isLevelTest: false,
-              }}
-              onClick={() => setActiveDrawer(unit)}
-              onStartLesson={
-                isActive && activeLessonId != null
-                  ? () => router.push(`/lesson/${activeLessonId}`)
-                  : undefined
-              }
-            />
-          )
-        })}
-
-        {/* Level test pseudo-unit */}
-        {units.length > 0 && (
-          <UnitCard
-            title={t('completionTestTitle', { level })}
-            index={units.length}
-            lessonCount={1}
-            grammarCount={0}
-            competency={
-              plan.completion_test_score != null
-                ? plan.completion_test_score
-                : 0
-            }
-            status={{
-              completed: plan.completion_test_taken,
-              active: levelTestReady && !plan.completion_test_taken,
-              locked: !levelTestReady && !plan.completion_test_taken,
-              isLevelTest: true,
-            }}
-            onClick={() => {
-              if (levelTestReady && !plan.completion_test_taken) {
-                router.push(`/assessment/level-test?plan=${plan.id}`)
-              }
-            }}
-          />
-        )}
-      </div>
-
-      {/* ── Pending lessons ── */}
-      {pendingLessons.length > 0 && (
-        <div className="border-fl-border bg-fl-surface border">
-          <div className="border-fl-border space-y-2 border-b px-6 py-4">
-            <div className="flex items-center gap-2">
-              <span className="text-fl-label text-fl-muted-3">●</span>
-              <span className="text-fl-label text-fl-muted-2 font-mono tracking-widest uppercase">
-                {pendingLessons.length} {t('pendingLessons')}
-              </span>
-            </div>
-            <p className="text-fl-caption text-fl-muted-1 font-mono">
-              {t('pendingReassurance')}
-            </p>
-          </div>
-          <div className="divide-fl-border divide-y">
-            {pendingLessons.map((lesson) => (
-              <div
-                key={lesson.id}
-                className="flex flex-wrap items-center justify-between gap-3 px-6 py-3"
-              >
-                <div>
-                  <p className="text-fl-fg font-mono text-xs">{lesson.title}</p>
-                  <p className="text-fl-hint text-fl-muted-3 mt-0.5 font-mono tracking-widest uppercase">
-                    W{lesson.week_number} D{lesson.day_number} ·{' '}
-                    {lesson.lesson_type}
-                  </p>
-                </div>
-                <button
-                  onClick={() => router.push(`/lesson/${lesson.id}`)}
-                  className="text-fl-bg bg-fl-fg hover:bg-fl-fg/90 focus-visible:outline-fl-fg px-3 py-1 font-mono text-sm tracking-widest uppercase transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+            return (
+              <li key={unit.id} className="relative pb-5 pl-12 sm:pl-14">
+                <span
+                  aria-hidden="true"
+                  className="bg-fl-border absolute top-9 -bottom-9 left-[18px] w-px"
+                />
+                <UnitCard
+                  title={unit.title}
+                  languageCode={language.code}
+                  index={i}
+                  lessonCount={unitLessons.length || unit.lesson_types.length}
+                  grammarCount={unit.grammar_points.length}
+                  progress={
+                    unitLessons.length > 0
+                      ? completedLessons / unitLessons.length
+                      : 0
+                  }
+                  status={{
+                    completed: isCompleted,
+                    active: isActive,
+                    locked: isLocked,
+                    isLevelTest: false,
+                  }}
+                  onClick={() => setActiveDrawer(unit)}
+                  onStartLesson={
+                    isActive && activeLesson?.id != null
+                      ? () => router.push(`/lesson/${activeLesson.id}`)
+                      : undefined
+                  }
                 >
-                  {t('resume')}
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+                  {isActive && (
+                    <ol
+                      aria-label={t('lessonsHeader', {
+                        count: unitLessons.length,
+                      })}
+                      className="border-fl-border space-y-1 border-t px-4 py-3 sm:px-5"
+                    >
+                      {unitLessons.map((lesson) => {
+                        const isCurrent =
+                          dayIndex(lesson) === progressDay && !lesson.completed
+                        const Icon = lesson.completed
+                          ? Check
+                          : isCurrent
+                            ? ArrowRight
+                            : Circle
+                        return (
+                          <li
+                            key={lessonKey(
+                              lesson.week,
+                              lesson.day,
+                              lesson.title
+                            )}
+                            className={`flex items-start gap-3 py-2 ${isCurrent ? 'text-fl-fg' : 'text-fl-muted-1'}`}
+                          >
+                            <Icon
+                              aria-hidden="true"
+                              className={`mt-1 size-4 shrink-0 ${isCurrent ? 'text-fl-accent' : ''}`}
+                            />
+                            <div className="min-w-0">
+                              <span className="sr-only">
+                                {t(
+                                  lesson.completed
+                                    ? 'completed'
+                                    : isCurrent
+                                      ? 'currentLesson'
+                                      : 'lessonPending'
+                                )}
+                                {': '}
+                              </span>
+                              <TargetLanguageText
+                                languageCode={language.code}
+                                className="block text-sm break-words"
+                              >
+                                {lesson.title}
+                              </TargetLanguageText>
+                              <span className="text-fl-muted-1 mt-1 block text-xs">
+                                {t('weekDay', {
+                                  week: lesson.week,
+                                  day: lesson.day,
+                                })}
+                              </span>
+                            </div>
+                          </li>
+                        )
+                      })}
+                    </ol>
+                  )}
+                </UnitCard>
+              </li>
+            )
+          })}
+
+          {/* Level test pseudo-unit */}
+          {units.length > 0 && (
+            <li className="relative pl-12 sm:pl-14">
+              <UnitCard
+                title={t('completionTestTitle', { level })}
+                index={units.length}
+                lessonCount={1}
+                grammarCount={0}
+                progress={
+                  plan.completion_test_score != null
+                    ? plan.completion_test_score
+                    : 0
+                }
+                status={{
+                  completed: plan.completion_test_taken,
+                  active: levelTestReady && !plan.completion_test_taken,
+                  locked: !levelTestReady && !plan.completion_test_taken,
+                  isLevelTest: true,
+                }}
+                onClick={() => {
+                  if (levelTestReady && !plan.completion_test_taken) {
+                    router.push(`/assessment/level-test?plan=${plan.id}`)
+                  }
+                }}
+              />
+            </li>
+          )}
+        </ol>
+      </div>
 
       {/* ── Level test banner ── */}
       {levelTestReady && !plan.completion_test_taken && (
@@ -608,6 +768,7 @@ function PlanContent({ language }: { language: TargetLanguage }) {
       {activeDrawer && (
         <UnitDrawer
           unit={activeDrawer}
+          languageCode={language.code}
           lessons={(byUnit[activeDrawer.id] ?? []).map((l) => ({
             ...l,
             completed: l.completed ?? false,

@@ -40,6 +40,7 @@ from app.routers import (
     freemium,
     games,
     grammar,
+    grammar_practice,
     languages,
     lessons,
     listening,
@@ -48,6 +49,7 @@ from app.routers import (
     progress,
     reading,
     reviews,
+    situations,
     stt,
     study_plan,
     tts,
@@ -55,6 +57,7 @@ from app.routers import (
 )
 from app.routers import config as config_router
 from app.routers import health as health_router
+from app.services.gemini_tts_service import GeminiTTSService
 from app.services.stt_service import OpenAISTTService, WhisperSTTService
 from app.services.tts_service import KokoroTTSService, OpenAITTSService
 
@@ -76,6 +79,7 @@ async def lifespan(app: FastAPI):  # noqa: ANN201
             "Set a random value of at least 32 characters in your .env file."
         )
 
+    settings.validate_revenuecat()
     await asyncio.to_thread(_run_migrations)
 
     # Ensure the avatars directory exists on startup (persisted via Docker volume)
@@ -90,7 +94,18 @@ async def lifespan(app: FastAPI):  # noqa: ANN201
             api_key=settings.OPENAI_API_KEY,
             model=settings.OPENAI_TTS_MODEL,
             voice=settings.OPENAI_TTS_VOICE,
+            female_voice=settings.OPENAI_TTS_FEMALE_VOICE,
+            male_voice=settings.OPENAI_TTS_MALE_VOICE,
             speed=settings.OPENAI_TTS_SPEED,
+        )
+    elif settings.TTS_PROVIDER == "gemini":
+        app.state.tts_service = GeminiTTSService(
+            api_key=settings.GEMINI_API_KEY,
+            model=settings.GEMINI_TTS_MODEL,
+            voice=settings.GEMINI_TTS_VOICE,
+            female_voice=settings.GEMINI_TTS_FEMALE_VOICE,
+            male_voice=settings.GEMINI_TTS_MALE_VOICE,
+            timeout=settings.GEMINI_TTS_TIMEOUT_SECONDS,
         )
     else:
         app.state.tts_service = KokoroTTSService(settings.TTS_BASE_URL, settings.TTS_VOICE)
@@ -161,6 +176,8 @@ app.include_router(dashboard_banner.router)
 app.include_router(feedback.router)
 app.include_router(freemium.router)
 app.include_router(games.router)
+app.include_router(grammar_practice.router)
+app.include_router(situations.router)
 app.include_router(memories.router)
 app.include_router(phrasebook.router)
 app.include_router(languages.router)
@@ -176,3 +193,8 @@ if settings.STRIPE_ENABLED:
 
     _stripe.api_key = settings.STRIPE_SECRET_KEY
     app.include_router(billing_router.router)
+
+    if settings.REVENUECAT_ENABLED:
+        from app.routers import revenuecat as revenuecat_router
+
+        app.include_router(revenuecat_router.router)

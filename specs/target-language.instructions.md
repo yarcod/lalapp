@@ -17,17 +17,22 @@ Active-language lifecycle, plan isolation, and language deletion belong to
 
 ## Supported codes
 
-The application recognizes `en-GB`, `en-US`, `de-DE`, `es-ES`, `fr-FR`, `it-IT`, `pt-PT`, `ja-JP`,
-`ko-KR`, and `zh-CN`.
+The application recognizes 20 study languages, counting each regional variant separately:
+`en-GB`, `en-US`, `cs-CZ`, `da-DK`, `de-DE`, `es-ES`, `fi-FI`, `fr-FR`, `hr-HR`, `it-IT`, `nl-NL`,
+`pl-PL`, `pt-BR`, `pt-PT`, `ja-JP`, `ko-KR`, `ro-RO`, `ru-RU`, `sv-SE`, and `zh-CN`.
 
 Backend `SUPPORTED_TARGET_LANGUAGES` and the frontend catalog must represent the same canonical set.
 Validated account flows compare exact canonical strings; there is no general backend BCP-47 parser or
 canonicalizer.
 
-`AVAILABLE_TARGET_LANGUAGES` is the operator-enabled subset. Language-management and onboarding
-surfaces expose the intersection of configured available codes and supported implementation.
+`AVAILABLE_TARGET_LANGUAGES` in `backend/app/core/config.py`, overridden by environment/Compose,
+is the operator-enabled subset. Language-management and onboarding surfaces expose the intersection
+of configured available codes and supported implementation.
 Registration schema validation uses the supported set, while authenticated add/switch operations use
-the available set.
+the available set. Assessment completion and explicit study-plan generation also validate their
+resolved language against the available set before curriculum dispatch or persistence, including
+session, active-language and profile fallbacks. Unknown,
+noncanonical, empty, and disabled codes return `422`.
 
 ## Default and fallback
 
@@ -96,15 +101,100 @@ New code must not infer a plan-owned operation's language from the compatibility
 ## Regional and writing-system behavior
 
 Prompt builders receive an explicit target-language name and shared overlay. Current overlays specify
-British/American English, Spanish from Spain, European Portuguese, French from France, German from
-Germany, standard Italian, Japanese kanji/kana, South Korean Hangul, and Mainland Mandarin with
-simplified characters.
+British/American English, Spanish from Spain, Brazilian and European Portuguese, French from France, German from
+Germany, standard Italian, standard Dutch from the Netherlands, standard Polish, contemporary Russian in Cyrillic, Japanese kanji/kana, South Korean Hangul, and Mainland
+Mandarin with simplified characters, standard Swedish from Sweden, standard Danish from Denmark,
+standard Czech from Czechia, standard Croatian from Croatia, standard Finnish from Finland, and
+standard Romanian from Romania.
 
 Chat, voice, assessment, lessons, flashcards, Listening, and Reading consume these instructions where
 their prompt builders require them. There is no legacy `american`/`british` conversion contract.
 
+`pt-BR` resolves before the `pt` prefix in every static dispatcher and speech instruction lookup.
+The short `pt` alias continues to identify Portugal where regional guidance is needed. Both Portuguese
+variants map to ISO `pt` for recognition, but retain distinct BCP-47 learning, pool, and audio-cache keys.
+Regional overlay content lives in the prompt builders; curriculum and reference content live in the
+language packages. Their common authoring requirements belong to `learning-resources.instructions.md`.
+Every package follows the canonical [per-level coverage bounds](learning-resources.instructions.md#per-level-coverage-bounds)
+for curriculum units, grammar topics, vocabulary entries, phrases and placement questions. Minimums
+apply independently to A1-C2; upper values trigger editorial review rather than automatic truncation.
+Regional packages are counted separately and retain their own syllabus and progression.
+
+`nl-NL` resolves to the independent `backend/app/data/nl/` package; `nl` is its internal dispatcher and
+prompt alias, not an accepted account target code. Dutch content uses Netherlands usage while
+recognizing valid standard variants. It uses Latin text, word-based comprehension lengths, ISO `nl`
+recognition, and the Netherlands flag. Shared speech guidance requests Netherlands pronunciation.
+
+`ru-RU` resolves to the independent `backend/app/data/ru/` package; `ru` is its internal dispatcher,
+capability and prompt alias, not an accepted account target code. Russian uses Cyrillic, visible word
+spacing, word-based comprehension lengths, ISO `ru` recognition and the Russian flag. Romanization is
+not required. Its curriculum introduces Cyrillic and pronunciation before progressing through cases,
+aspect, motion verbs and advanced discourse. Generated content uses contemporary standard Russian,
+preserves appropriate ё spelling and distinguishes contextual alternatives from grammatical errors.
+Shared speech guidance requests Russian lexical stress, vowel reduction and hard/soft consonants.
+
+`sv-SE` resolves to the independent `backend/app/data/sv/` package; `sv` is its internal dispatcher,
+capability and prompt alias, not an accepted account target code. Swedish uses Latin text with å, ä
+and ö, visible word spacing, word-based comprehension lengths, ISO `sv` recognition and the Sweden
+flag. Its curriculum introduces pronunciation and vowel-consonant length, en/ett gender and
+definiteness before subordinate word order, tense perspective and advanced discourse. Generated
+content preserves V2, negation scope, reflexive reference and register without rejecting valid regional
+or conversational alternatives. Shared speech guidance requests Swedish vowel quality, length
+contrasts, pitch accents and natural phrasing. OpenAI speech and Whisper support Swedish.
+
+`da-DK` resolves to the independent `backend/app/data/da/` package; `da` is its internal dispatcher,
+capability and prompt alias, not an accepted account target code. Danish uses Latin text with æ, ø
+and å, visible word spacing, word-based comprehension lengths, ISO `da` recognition and the Denmark
+flag. Its curriculum introduces pronunciation, en/et gender and definiteness before subordinate word
+order and advanced discourse. Generated content distinguishes Danish definiteness from Swedish double
+definiteness and preserves V2, negation scope, reflexive reference and register. Shared speech guidance
+requests Danish vowels, soft d, natural reductions and stød where appropriate without treating regional
+pronunciation as an error. OpenAI TTS, Gemini TTS and Whisper support Danish.
+
+`cs-CZ` resolves to the independent `backend/app/data/cs/` package; `cs` is its internal dispatcher,
+capability and prompt alias, not an accepted account target code. Czech uses Latin text with Czech
+diacritics, visible word spacing, word-based comprehension lengths, ISO `cs` recognition and the Czech
+Republic flag. Its curriculum introduces spelling, vowel length and stress before gender, animacy,
+cases, aspect, motion verbs, clitics and advanced discourse. Generated content preserves Czech
+diacritics and distinguishes standard, common spoken and regional usage without substituting Slovak
+or Polish. Shared speech guidance requests vowel length independently of stress, ř, palatal
+consonants, syllabic r/l and natural voicing assimilation. OpenAI TTS, Gemini TTS and Whisper support
+Czech.
+
+`hr-HR` resolves to the independent `backend/app/data/hr/` package; `hr` is its internal dispatcher,
+capability and prompt alias, not an accepted account target code. Croatian uses Latin text with
+č, ć, đ, š and ž, the digraphs dž, lj and nj, standard ijekavian spelling, visible word spacing,
+word-based comprehension lengths, ISO `hr` recognition and the Croatia flag. Its curriculum develops
+spelling and pronunciation before gender, animacy, cases, aspect, clitics and advanced interaction.
+Generated content distinguishes standard, regional and conversational usage, preserves participants
+and certainty in reformulations, and does not substitute neighbouring language conventions. Shared
+speech guidance requests Croatian consonant contrasts, syllabic r, natural lexical accent, vowel
+length and ijekavian pronunciation. OpenAI TTS, Gemini TTS and Whisper support Croatian.
+
+`fi-FI` resolves to the independent `backend/app/data/fi/` package; `fi` is its internal dispatcher,
+capability and prompt alias, not an accepted account target code. Finnish uses Latin text with ä and ö,
+visible word spacing, word-based comprehension lengths, ISO `fi` recognition and the Finland flag.
+Its curriculum develops vowel and consonant length, vowel harmony and consonant gradation before
+extended case, object, verb and discourse contrasts. Generated content distinguishes standard written,
+spoken and regional Finnish, preserves participants and scope, and teaches partitive versus total
+objects through context rather than English tense equivalents. Shared speech guidance requests native
+vowel quality, meaningful vowel and consonant length and initial word stress. OpenAI TTS, Gemini
+`gemini-3.8-flash-tts` and Whisper support Finnish; Gemini `gemini-3.8-flash-lite-tts` does not list
+Finnish support.
+
+`ro-RO` resolves to the independent `backend/app/data/ro/` package; `ro` is its internal dispatcher,
+capability and prompt alias, not an accepted account target code. Romanian uses Latin text with
+ă, â, î, ș and ț, comma-below ș/ț, visible word spacing, word-based comprehension lengths, ISO `ro`
+recognition and the Romania flag. Its curriculum develops spelling, pronunciation, gender, agreement
+and suffixed definite articles before extended case, tense, conjunctive, conditional and clitic
+contrasts, then advanced interaction and discourse. Generated content uses contemporary Romanian
+from Romania, distinguishes standard, regional and conversational usage, and preserves participants,
+scope and certainty in reformulations. Shared speech guidance requests Romanian vowel distinctions,
+native r and lexical stress. OpenAI TTS, Gemini `gemini-3.8-flash-tts` and
+`gemini-3.8-flash-lite-tts`, and Whisper list Romanian support.
+
 Comprehension length guidance uses characters for Japanese and Mainland Chinese and words for the
-other current languages.
+other current languages, including Croatian, Czech, Danish, Finnish, Polish, Romanian, Russian and Swedish.
 
 ## Speech recognition
 
@@ -120,13 +210,22 @@ native regional pronunciation instructions; without context, instructions reques
 without imposing a regional accent. Legacy/unknown OpenAI models and Kokoro ignore this argument.
 Model and voice selection remain configured independently of the target language. Provider and
 resource-owned language contracts are defined in `speech-services.instructions.md`.
+The deployed provider/model/voice settings come from `backend/app/core/config.py` with
+environment/Compose overrides. Kokoro language support depends on `TTS_VOICE`, not the BCP-47
+argument; an English-only voice cannot serve a non-English language. Verify compatibility for the
+deployed `OPENAI_TTS_MODEL` or `GEMINI_TTS_MODEL` and voice selection rather than assuming a model
+mentioned in a capability rule is the configured model.
 
 ## Validation boundaries
 
 - Registration and profile update validate supported target languages.
 - Add and switch validate operator-enabled target languages.
+- Both plan-creation endpoints validate the resolved operator-enabled code before any curriculum
+  lookup or mutation. An explicit empty code is invalid, not an omitted selection.
 - Several static-resource language queries rely on dispatcher fallback instead of allow-list rejection.
-- Voice WebSocket language input is not uniformly validated and can use fallback plan resolution.
+- Free voice sessions validate the resolved language against the canonical supported set. They only
+  associate an owned active plan in that language; resolution and no-plan behavior are defined in
+  `voice-conversation.instructions.md`.
 - Exact regional variants remain distinct pool/cache keys where features scope by BCP-47 code.
 
 ## Related specifications

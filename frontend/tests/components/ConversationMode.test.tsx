@@ -26,6 +26,8 @@ const mocks = vi.hoisted(() => ({
   closeAudio: vi.fn(),
   onAudioIdle: null as (() => void) | null,
   starters: [] as string[],
+  push: vi.fn(),
+  vadError: false as false | string,
 }))
 
 vi.mock('@ricky0123/vad-react', () => ({
@@ -33,7 +35,7 @@ vi.mock('@ricky0123/vad-react', () => ({
     mocks.options = options
     return {
       loading: false,
-      errored: false,
+      errored: mocks.vadError,
       start: mocks.start,
       pause: mocks.pause,
     }
@@ -52,8 +54,13 @@ vi.mock('next-intl', async (importOriginal) => {
     useLocale: () => 'en',
     useTranslations: () =>
       Object.assign(
-        (key: string, values?: { seconds?: number }) => {
+        (
+          key: string,
+          values?: { seconds?: number; remaining?: number; limit?: number }
+        ) => {
           if (key === 'warningTimeout') return `${key}:${values?.seconds}`
+          if (key === 'freemiumVoiceRemaining')
+            return `${key}:${values?.remaining}/${values?.limit}`
           return key
         },
         {
@@ -63,7 +70,7 @@ vi.mock('next-intl', async (importOriginal) => {
       ),
   }
 })
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }))
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: mocks.push }) }))
 vi.mock('@/lib/api', () => ({ apiFetch: mocks.apiFetch }))
 vi.mock('@/lib/audio', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/audio')>()),
@@ -75,6 +82,11 @@ vi.mock('@/lib/audio', async (importOriginal) => ({
 vi.mock('@/components/reviews/ReviewPrompt', () => ({
   ReviewPrompt: () => null,
   getReviewPromptDismissal: () => null,
+}))
+vi.mock('@/components/billing/PaywallBanner', () => ({
+  PaywallBanner: ({ feature }: { feature: string }) => (
+    <div data-testid="voice-paywall" data-feature={feature} />
+  ),
 }))
 vi.mock('@/lib/review-prompt-triggers', () => ({
   shouldShowVoiceReviewPrompt: () => false,
@@ -96,7 +108,10 @@ vi.mock('@/components/conversation/StatusIndicator', async (importOriginal) => {
 
 import ConversationMode from '@/components/conversation/ConversationMode'
 import { useAuthStore } from '@/store/auth'
+import { useConfigStore } from '@/store/config'
+import { useFreemiumStore } from '@/store/freemium'
 import { mapUser } from '@/lib/mappers'
+import { float32ToWav } from '@/lib/audio'
 
 class MockWebSocket {
   static OPEN = 1
@@ -127,6 +142,16 @@ function microphone() {
     stream: { getTracks: () => [{ stop }] } as unknown as MediaStream,
     stop,
   }
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  let reject!: (error: Error) => void
+  const promise = new Promise<T>((done, fail) => {
+    resolve = done
+    reject = fail
+  })
+  return { promise, resolve, reject }
 }
 
 function deferWarmup(ignoreAbort = false) {
@@ -175,9 +200,15 @@ function speak(audio = new Float32Array(24000).fill(0.05)) {
 }
 
 beforeEach(() => {
+  useConfigStore.setState(
+    { ...useConfigStore.getInitialState(), loaded: true },
+    true
+  )
+  localStorage.clear()
   vi.clearAllMocks()
   MockWebSocket.instances = []
   mocks.starters = []
+  mocks.vadError = false
   mocks.onAudioIdle = null
   mocks.getUserMedia.mockReset().mockResolvedValue(microphone().stream)
   mocks.start.mockImplementation(async () => {
@@ -200,6 +231,7 @@ beforeEach(() => {
   })
   Element.prototype.scrollIntoView = vi.fn()
   useAuthStore.setState({ accessToken: 'token', user: null })
+  useFreemiumStore.setState(useFreemiumStore.getInitialState(), true)
 })
 
 afterEach(() => {
@@ -209,7 +241,1196 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+describe('ConversationMode freemium reconciliation', () => {
+  const status = {
+    trial_active: false,
+    trial_ends_at: null,
+    chat_remaining: 5,
+    chat_limit: 5,
+    lessons_remaining: 3,
+    lessons_limit: 3,
+    listening_remaining: 3,
+    listening_limit: 3,
+    reading_remaining: 3,
+    reading_limit: 3,
+    games_remaining: 3,
+    games_limit: 3,
+    voice_remaining_seconds: 120,
+    voice_limit_seconds: 300,
+  }
+
+  beforeEach(() => useConfigStore.setState({ stripeEnabled: true }))
+
+  it('refreshes situation usage after admission and first pipeline activity without ending the last allowed session', async () => {
+    const fetchStatus = vi
+      .spyOn(useFreemiumStore.getState(), 'fetchStatus')
+      .mockResolvedValue(undefined)
+    useFreemiumStore.setState({
+      status: { ...status, situations_remaining: 1, situations_limit: 3 },
+      loaded: true,
+      lastFetch: Date.now(),
+    })
+    render(
+      <ConversationMode
+        situationId="hotel_problem"
+        situationStudyPlanId={7}
+        freemiumVoiceRemaining={2}
+        freemiumVoiceLimit={5}
+      />
+    )
+    const ws = await start()
+    expect(fetchStatus).not.toHaveBeenCalled()
+    act(() => ws.message({ type: 'situation_started' }))
+    expect(fetchStatus).not.toHaveBeenCalled()
+    act(() =>
+      ws.message({
+        type: 'transcript',
+        role: 'assistant',
+        final: true,
+        text: 'Welcome to the hotel.',
+      })
+    )
+    expect(fetchStatus).toHaveBeenCalledTimes(1)
+    expect(fetchStatus).toHaveBeenCalledWith(true)
+    act(() => {
+      ws.message({ type: 'situation_started' })
+      ws.message({ type: 'status', value: 'listening' })
+      useFreemiumStore.setState({
+        status: { ...status, situations_remaining: 0, situations_limit: 3 },
+        lastFetch: Date.now(),
+      })
+    })
+    expect(fetchStatus).toHaveBeenCalledTimes(1)
+    expect(ws.close).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'stop' })).toBeEnabled()
+    expect(screen.queryByTestId('voice-paywall')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'stop' }))
+    expect(screen.getByTestId('voice-paywall')).toHaveAttribute(
+      'data-feature',
+      'situations'
+    )
+    expect(screen.queryByRole('button', { name: 'startNew' })).toBeNull()
+    expect(screen.getByText('Welcome to the hotel.')).toBeInTheDocument()
+    expect(screen.getByText('freemiumVoiceRemaining:2/5')).not.toHaveClass(
+      'text-red-500'
+    )
+  })
+
+  it.each(['freemium_exhausted', 'freemium_unavailable'] as const)(
+    'handles a situation-specific %s denial without inferring voice exhaustion',
+    async (reason) => {
+      vi.spyOn(useFreemiumStore.getState(), 'fetchStatus').mockResolvedValue(
+        undefined
+      )
+      render(
+        <ConversationMode
+          situationId="hotel_problem"
+          situationStudyPlanId={7}
+        />
+      )
+      const ws = await start()
+      act(() =>
+        ws.message({
+          type: 'error',
+          code: 'subscription_required',
+          feature: 'situations',
+          reason,
+        })
+      )
+      expect(ws.close).toHaveBeenCalledOnce()
+      if (reason === 'freemium_exhausted') {
+        expect(screen.getByTestId('voice-paywall')).toHaveAttribute(
+          'data-feature',
+          'situations'
+        )
+        expect(screen.queryByRole('button', { name: 'startNew' })).toBeNull()
+        act(() =>
+          useFreemiumStore.setState({
+            status: { ...status, situations_remaining: 2, situations_limit: 3 },
+            lastFetch: Date.now(),
+          })
+        )
+        expect(screen.queryByTestId('voice-paywall')).toBeNull()
+        expect(screen.getByRole('button', { name: 'startNew' })).toBeEnabled()
+        expect(mocks.getUserMedia).toHaveBeenCalledTimes(1)
+      } else {
+        expect(screen.queryByTestId('voice-paywall')).toBeNull()
+        expect(screen.getByText('✕ errorMessage')).toBeInTheDocument()
+      }
+    }
+  )
+
+  it.each([
+    { ending: 'manual', consumed: false },
+    { ending: 'server', consumed: false },
+    { ending: 'manual', consumed: true },
+    { ending: 'server', consumed: true },
+  ])(
+    'uses confirmed demo consumption after $ending closure and ordinary quota exhaustion (consumed: $consumed)',
+    async ({ ending, consumed }) => {
+      const profile = {
+        id: 1,
+        username: 'learner',
+        role: 'user',
+        subscription_status: 'none',
+        assessment_voice_trial_used: false,
+      }
+      useAuthStore.getState().setUser(mapUser(profile))
+      useFreemiumStore.setState({ status, loaded: true, lastFetch: Date.now() })
+      const confirmation = deferred<unknown>()
+      mocks.apiFetch.mockImplementation(async (url: string) => ({
+        ok: true,
+        json: async () => url === '/api/auth/me' ? confirmation.promise : null,
+      }))
+      render(<ConversationMode trialMode voiceTrialToken="unused-demo" />)
+      const ws = await start()
+      act(() => {
+        useFreemiumStore.setState({
+          status: { ...status, voice_remaining_seconds: 0 },
+          lastFetch: Date.now(),
+        })
+        if (ending === 'manual') fireEvent.click(screen.getByRole('button', { name: 'stop' }))
+        else ws.message({ type: 'session_end', reason: 'max_duration' })
+      })
+      expect(screen.queryByText('trialCtaDesc')).not.toBeInTheDocument()
+      await act(async () => confirmation.resolve({
+        ...profile, assessment_voice_trial_used: consumed,
+      }))
+      if (consumed) {
+        expect(screen.getByText('trialCtaDesc')).toBeInTheDocument()
+        expect(screen.queryByRole('button', { name: 'startNew' })).not.toBeInTheDocument()
+      } else {
+        expect(screen.queryByText('trialCtaDesc')).not.toBeInTheDocument()
+        expect(screen.queryByTestId('voice-paywall')).not.toBeInTheDocument()
+        expect(screen.getByRole('button', { name: 'startNew' })).toBeEnabled()
+        await start('startNew')
+        const warmups = mocks.apiFetch.mock.calls.filter(([url]) => url === '/api/conversation/warmup')
+        expect(warmups).toHaveLength(2)
+        expect(JSON.parse(warmups[1][1].body)).toEqual({ trial_token: 'unused-demo' })
+      }
+    }
+  )
+
+  it.each(['no-card-trial', 'subscription', 'voice-quota'] as const)(
+    'allows restarting a completed demo with %s access',
+    async (access) => {
+      const trialEndsAt = new Date(Date.now() + 86_400_000).toISOString()
+      const profile = {
+        id: 1,
+        username: 'learner',
+        role: 'user',
+        subscription_status: access === 'subscription' ? 'active' : 'none',
+        freemium_trial_ends_at:
+          access === 'no-card-trial' ? trialEndsAt : null,
+      }
+      const quota = {
+        ...status,
+        trial_active: access === 'no-card-trial',
+        trial_ends_at: profile.freemium_trial_ends_at,
+        voice_remaining_seconds: access === 'voice-quota' ? 120 : 0,
+      }
+      useConfigStore.setState({ freemiumTrialEnabled: true })
+      useAuthStore.getState().setUser(mapUser(profile))
+      const sessionVersion = useAuthStore.getState().sessionVersion
+      useFreemiumStore.setState({
+        status: quota,
+        loaded: true,
+        lastFetch: Date.now(),
+      })
+      mocks.apiFetch.mockImplementation(async (url: string) => ({
+        ok: true,
+        json: async () =>
+          url === '/api/auth/me'
+            ? profile
+            : url === '/api/freemium/status'
+              ? quota
+              : null,
+      }))
+      render(<ConversationMode trialMode voiceTrialToken="demo-token" />)
+      const ws = await start()
+      act(() => {
+        ws.message({
+          type: 'transcript',
+          role: 'user',
+          text: 'I would like a cup of tea.',
+          turn_id: 1,
+        })
+        ws.message({
+          type: 'transcript',
+          role: 'assistant',
+          text: 'Of course. Would you like milk?',
+          final: true,
+          turn_id: 1,
+        })
+        ws.message({ type: 'turn_complete', turn_id: 1 })
+      })
+      await act(async () =>
+        fireEvent.click(screen.getByRole('button', { name: 'stop' }))
+      )
+      expect(ws.close).toHaveBeenCalledOnce()
+      expect(screen.getByText('I would like a cup of tea.')).toBeInTheDocument()
+      expect(
+        screen.getByText('Of course. Would you like milk?')
+      ).toBeInTheDocument()
+      expect(screen.queryByTestId('voice-paywall')).toBeNull()
+      expect(screen.queryByText('trialCtaDesc')).toBeNull()
+      expect(screen.queryByText('planMonthly')).toBeNull()
+      expect(screen.getByRole('button', { name: 'startNew' })).toBeEnabled()
+
+      const next = await start('startNew')
+      expect(MockWebSocket.instances).toHaveLength(2)
+      expect(next.close).not.toHaveBeenCalled()
+      expect(screen.getByRole('button', { name: 'stop' })).toBeEnabled()
+      expect(screen.queryByText('I would like a cup of tea.')).toBeNull()
+      expect(screen.queryByText('Of course. Would you like milk?')).toBeNull()
+      expect(useAuthStore.getState().sessionVersion).toBe(sessionVersion)
+    }
+  )
+
+  it.each(['manual', 'server'] as const)(
+    'preserves a completed voice result when quota is exhausted after %s closure',
+    async (ending) => {
+      const user = mapUser({
+        id: 1,
+        username: 'learner',
+        role: 'user',
+        subscription_status: 'none',
+      })
+      useAuthStore.getState().setUser(user)
+      useFreemiumStore.setState({
+        status,
+        loaded: true,
+        lastFetch: Date.now(),
+      })
+      render(<ConversationMode />)
+      const ws = await start()
+      act(() => {
+        ws.message({
+          type: 'transcript',
+          role: 'user',
+          text: 'I would like a cup of tea.',
+          turn_id: 1,
+        })
+        ws.message({
+          type: 'transcript',
+          role: 'assistant',
+          text: 'Of course. Would you like milk?',
+          final: true,
+          turn_id: 1,
+        })
+        ws.message({ type: 'turn_complete', turn_id: 1 })
+        useFreemiumStore.setState({
+          status: { ...status, voice_remaining_seconds: 0 },
+          lastFetch: Date.now(),
+        })
+      })
+      expect(ws.close).not.toHaveBeenCalled()
+      expect(screen.getByRole('button', { name: 'stop' })).toBeEnabled()
+      expect(
+        screen.queryByRole('complementary', { name: 'resultTitle' })
+      ).toBeNull()
+
+      act(() => {
+        if (ending === 'manual') {
+          fireEvent.click(screen.getByRole('button', { name: 'stop' }))
+        } else {
+          ws.message({ type: 'session_end', reason: 'max_duration' })
+        }
+      })
+      expect(ws.close).toHaveBeenCalledOnce()
+      expect(screen.getByText('I would like a cup of tea.')).toBeInTheDocument()
+      expect(
+        screen.getByText('Of course. Would you like milk?')
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('complementary', { name: 'resultTitle' })
+      ).toHaveTextContent('exhaustedTitle')
+      const transcriptScroller = screen.getByText('I would like a cup of tea.').closest('.overflow-y-auto')
+      expect(transcriptScroller).not.toBeNull()
+      expect(transcriptScroller).toContainElement(
+        screen.getByRole('complementary', { name: 'resultTitle' })
+      )
+      expect(
+        screen.getByRole('link', { name: 'continuePremium' })
+      ).toHaveAttribute('href', '/settings#plan')
+      expect(screen.queryByTestId('voice-paywall')).toBeNull()
+      expect(screen.queryByRole('button', { name: 'startNew' })).toBeNull()
+
+      act(() => {
+        useAuthStore.getState().startSession('replacement-token')
+        useAuthStore.getState().setUser(user)
+      })
+      expect(screen.queryByText('I would like a cup of tea.')).toBeNull()
+      expect(screen.queryByText('Of course. Would you like milk?')).toBeNull()
+      expect(
+        screen.queryByRole('complementary', { name: 'resultTitle' })
+      ).toBeNull()
+    }
+  )
+
+  it.each(['manual', 'server', 'transport'] as const)(
+    'reconciles delayed persisted usage after %s closure without polling indefinitely',
+    async (ending) => {
+      let persisted = false
+      const activity = vi.fn()
+      mocks.apiFetch.mockImplementation(async (url: string) => ({
+        ok: true,
+        json: async () =>
+          url === '/api/freemium/status'
+            ? { ...status, voice_remaining_seconds: persisted ? 0 : 120 }
+            : null,
+      }))
+      render(<ConversationMode onSessionActiveChange={activity} />)
+      const ws = await start()
+      expect(activity).toHaveBeenLastCalledWith(true)
+      vi.useFakeTimers()
+      mocks.apiFetch.mockClear()
+      act(() => {
+        if (ending === 'manual')
+          fireEvent.click(screen.getByRole('button', { name: 'stop' }))
+        else if (ending === 'server')
+          ws.message({ type: 'session_end', reason: 'max_duration' })
+        else ws.onclose?.({ code: 1006, reason: '' })
+      })
+      expect(activity).toHaveBeenLastCalledWith(false)
+      expect(mocks.apiFetch).not.toHaveBeenCalled()
+      await act(async () => vi.advanceTimersByTimeAsync(1500))
+      expect(useFreemiumStore.getState().status?.voice_remaining_seconds).toBe(
+        120
+      )
+      persisted = true
+      await act(async () => vi.advanceTimersByTimeAsync(3500))
+      expect(useFreemiumStore.getState().status?.voice_remaining_seconds).toBe(
+        0
+      )
+      await act(async () => vi.advanceTimersByTimeAsync(60_000))
+      expect(
+        mocks.apiFetch.mock.calls.filter(
+          ([url]) => url === '/api/freemium/status'
+        )
+      ).toHaveLength(2)
+      expect(
+        mocks.apiFetch.mock.calls.filter(([url]) => url === '/api/auth/quota')
+      ).toHaveLength(2)
+    }
+  )
+
+  it.each(['unmount', 'session', 'restart'] as const)(
+    'discards pending reconciliation after %s',
+    async (change) => {
+      const view = render(<ConversationMode />)
+      await start()
+      vi.useFakeTimers()
+      fireEvent.click(screen.getByRole('button', { name: 'stop' }))
+      if (change === 'unmount') view.unmount()
+      else if (change === 'session')
+        act(() => useAuthStore.getState().startSession('new-session'))
+      else {
+        await act(async () =>
+          fireEvent.click(screen.getByRole('button', { name: 'startNew' }))
+        )
+      }
+      await act(async () => vi.advanceTimersByTimeAsync(10_000))
+      expect(
+        mocks.apiFetch.mock.calls.filter(
+          ([url]) => url === '/api/freemium/status'
+        )
+      ).toHaveLength(0)
+    }
+  )
+
+  it.each([
+    ['freemium_exhausted', undefined, false],
+    ['freemium_exhausted', 7, false],
+    ['freemium_exhausted', undefined, true],
+    ['freemium_unavailable', undefined, false],
+    ['freemium_unavailable', 7, false],
+    ['freemium_unavailable', undefined, true],
+    ['subscription_required', undefined, false],
+  ] as const)(
+    'handles %s in warmup (lesson: %s, demo: %s) without mislabelling access as a connection failure',
+    async (reason, lessonId, trialMode) => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      const mic = microphone()
+      mocks.getUserMedia.mockResolvedValue(mic.stream)
+      mocks.apiFetch.mockImplementation(async (url: string) =>
+        url === '/api/conversation/warmup'
+          ? new Response(
+              JSON.stringify({
+                detail: 'subscription_required',
+                message: 'Untranslated access failure',
+                ...(reason === 'subscription_required'
+                  ? {}
+                  : { reason, feature: 'voice', remaining: 0, limit: 300 }),
+              }),
+              { status: 402 }
+            )
+          : { ok: false }
+      )
+      render(
+        <ConversationMode
+          lessonId={lessonId}
+          trialMode={trialMode}
+          voiceTrialToken={trialMode ? 'demo-token' : undefined}
+          freemiumVoiceRemaining={2}
+          freemiumVoiceLimit={5}
+        />
+      )
+      await act(async () =>
+        fireEvent.click(screen.getByRole('button', { name: 'start' }))
+      )
+      expect(MockWebSocket.instances).toHaveLength(0)
+      expect(mic.stop).toHaveBeenCalledOnce()
+      expect(screen.queryByText(/errorConnection/)).toBeNull()
+      expect(screen.queryByText(/Untranslated access failure/)).toBeNull()
+      expect(mocks.apiFetch).toHaveBeenCalledWith('/api/freemium/status')
+      if (reason === 'freemium_exhausted') {
+        expect(screen.getByTestId('voice-paywall')).toBeInTheDocument()
+        expect(screen.queryByRole('button', { name: 'startNew' })).toBeNull()
+      } else {
+        expect(screen.queryByTestId('voice-paywall')).toBeNull()
+        expect(screen.getByText('✕ errorMessage')).toBeInTheDocument()
+        expect(
+          screen.getByRole('button', { name: 'startNew' })
+        ).toBeInTheDocument()
+      }
+    }
+  )
+
+  it('ignores an old 402 body after the next attempt starts', async () => {
+    const body = deferred<unknown>()
+    const decode = vi.fn(() => body.promise)
+    mocks.apiFetch.mockImplementation(async (url: string) =>
+      url === '/api/conversation/warmup'
+        ? { ok: false, status: 402, json: decode }
+        : { ok: true, json: async () => null }
+    )
+    render(<ConversationMode />)
+    await act(async () =>
+      fireEvent.click(screen.getByRole('button', { name: 'start' }))
+    )
+    expect(decode).toHaveBeenCalledOnce()
+    fireEvent.click(screen.getByRole('button', { name: 'stop' }))
+    mocks.apiFetch.mockResolvedValue({ ok: true, json: async () => null })
+    const ws = await start('startNew')
+    await act(async () =>
+      body.resolve({
+        detail: 'subscription_required',
+        reason: 'freemium_exhausted',
+        feature: 'voice',
+      })
+    )
+    expect(ws.close).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('voice-paywall')).toBeNull()
+    expect(
+      mocks.apiFetch.mock.calls.filter(
+        ([url]) => url === '/api/freemium/status'
+      )
+    ).toHaveLength(0)
+  })
+
+  it('does not infer exhaustion from a bare legacy string response', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    mocks.apiFetch.mockImplementation(async (url: string) =>
+      url === '/api/conversation/warmup'
+        ? new Response(JSON.stringify('subscription_required'), { status: 402 })
+        : { ok: false }
+    )
+    render(<ConversationMode />)
+    await act(async () =>
+      fireEvent.click(screen.getByRole('button', { name: 'start' }))
+    )
+    expect(screen.getByText('✕ errorMessage')).toBeInTheDocument()
+    expect(screen.queryByTestId('voice-paywall')).toBeNull()
+    expect(screen.queryByText(/subscription_required/)).toBeNull()
+  })
+
+  it.each([undefined, 'freemium_exhausted', 'freemium_unavailable'] as const)(
+    'handles subscription_required WebSocket denial with reason %s',
+    async (reason) => {
+      render(<ConversationMode />)
+      const ws = await start()
+      await act(async () =>
+        ws.message({
+          type: 'error',
+          code: 'subscription_required',
+          message: 'Untranslated access failure',
+          ...(reason ? { reason, feature: 'voice' } : {}),
+        })
+      )
+      expect(mocks.apiFetch).toHaveBeenCalledWith('/api/freemium/status')
+      expect(screen.queryByText(/Untranslated access failure/)).toBeNull()
+      if (reason === 'freemium_exhausted') {
+        expect(screen.getByTestId('voice-paywall')).toBeInTheDocument()
+        expect(screen.queryByText('✕ errorMessage')).toBeNull()
+      } else {
+        expect(screen.getByText('✕ errorMessage')).toBeInTheDocument()
+        expect(screen.queryByTestId('voice-paywall')).toBeNull()
+      }
+      expect(ws.close).toHaveBeenCalledOnce()
+    }
+  )
+
+  it.each(['balance', 'upgrade', 'stripe-disabled'] as const)(
+    'recovers a confirmed denial after %s in the same mounted component',
+    async (recovery) => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      const user = mapUser({
+        id: 1,
+        username: 'learner',
+        role: 'user',
+        subscription_status: 'none',
+      })
+      useAuthStore.setState({ user })
+      useFreemiumStore.setState({
+        status,
+        loaded: true,
+        lastFetch: Date.now(),
+      })
+      mocks.apiFetch.mockImplementation(async (url: string) =>
+        url === '/api/conversation/warmup'
+          ? new Response(
+              JSON.stringify({
+                detail: 'subscription_required',
+                reason: 'freemium_exhausted',
+                feature: 'voice',
+                remaining: 0,
+                limit: 300,
+              }),
+              { status: 402 }
+            )
+          : { ok: false }
+      )
+      render(<ConversationMode />)
+      await act(async () =>
+        fireEvent.click(screen.getByRole('button', { name: 'start' }))
+      )
+      expect(screen.getByTestId('voice-paywall')).toBeInTheDocument()
+      act(() => useAuthStore.getState().setUser({ ...user, displayName: 'New' }))
+      expect(screen.queryByRole('button', { name: 'startNew' })).toBeNull()
+      act(() => {
+        if (recovery === 'balance') {
+          useFreemiumStore.setState({
+            status: { ...status },
+            lastFetch: Date.now(),
+          })
+        } else if (recovery === 'upgrade') {
+          useAuthStore.getState().setUser({
+            ...user,
+            subscription_status: 'active',
+          })
+        } else {
+          useConfigStore.setState({ stripeEnabled: false })
+        }
+      })
+      expect(screen.queryByTestId('voice-paywall')).toBeNull()
+      mocks.apiFetch.mockResolvedValue({ ok: true, json: async () => null })
+      const ws = await start('startNew')
+      act(() =>
+        useFreemiumStore.setState({
+          status: { ...status, voice_remaining_seconds: 0 },
+          lastFetch: Date.now(),
+        })
+      )
+      expect(screen.getByRole('button', { name: 'stop' })).toBeInTheDocument()
+      expect(ws.close).not.toHaveBeenCalled()
+    }
+  )
+
+  it.each(['session', 'unmount'] as const)(
+    'discards a delayed general-quota body after %s',
+    async (change) => {
+      const body = deferred<unknown>()
+      const decode = vi.fn(() => body.promise)
+      mocks.apiFetch.mockResolvedValueOnce({ ok: true, json: decode })
+      const view = render(<ConversationMode />)
+      await waitFor(() => expect(decode).toHaveBeenCalledOnce())
+      const signal = mocks.apiFetch.mock.calls[0][1].signal as AbortSignal
+      if (change === 'unmount') view.unmount()
+      else act(() => useAuthStore.getState().startSession('new-session'))
+      expect(signal.aborted).toBe(true)
+      await act(async () =>
+        body.resolve({
+          sessions_unlimited: true,
+          time_unlimited: true,
+          tokens_unlimited: true,
+        })
+      )
+      expect(screen.queryByText('● ∞')).toBeNull()
+    }
+  )
+})
+
 describe('ConversationMode session lifecycle', () => {
+  it.each([
+    ['ONNX runtime initialization failed: internal path /vad/model', 'errorVadInit'],
+    ['NotAllowedError: Permission denied by browser', 'errorMic'],
+  ])('localizes VAD initialization failure %s', (failure, key) => {
+    mocks.vadError = failure
+    render(<ConversationMode />)
+    expect(screen.getByText(`✕ ${key}`)).toBeInTheDocument()
+    expect(screen.queryByText(new RegExp(failure))).toBeNull()
+  })
+
+  describe('authentication ownership', () => {
+    const originalUser = mapUser({
+      id: 1,
+      username: 'voice-test',
+      display_name: 'Voice Test',
+      role: 'user',
+    })
+
+    beforeEach(() => useAuthStore.setState({ user: originalUser }))
+
+    function replaceIdentity(change: 'session' | 'user' | 'logout') {
+      if (change === 'session') {
+        useAuthStore.getState().startSession('next-token')
+        useAuthStore.getState().setUser(originalUser)
+      } else if (change === 'user') {
+        useAuthStore.getState().setUser({ ...originalUser, id: 2 })
+      } else {
+        useAuthStore.getState().logout()
+      }
+    }
+
+    describe.each(['resume', 'microphone', 'vad', 'config', 'warmup'] as const)(
+      'pending %s',
+      (stage) => {
+        it.each(['session', 'user'] as const)(
+          'invalidates immediately on %s replacement without disturbing the next attempt',
+          async (change) => {
+            const oldMic = microphone()
+            const nextMic = microphone()
+            const pending = deferred<void>()
+            const permission = deferred<MediaStream>()
+            const response = deferred<Response>()
+            const configFetch = vi.fn().mockReturnValue(response.promise)
+            let warmupSignal: AbortSignal | undefined
+            mocks.getUserMedia.mockResolvedValue(nextMic.stream)
+            if (stage !== 'resume')
+              mocks.getUserMedia.mockResolvedValueOnce(oldMic.stream)
+            if (stage === 'resume') {
+              const resume = vi.fn().mockResolvedValue(undefined)
+              resume.mockReturnValueOnce(pending.promise)
+              vi.stubGlobal(
+                'AudioContext',
+                class {
+                  state = 'suspended'
+                  close = mocks.closeAudio
+                  resume = resume
+                }
+              )
+            }
+            if (stage === 'microphone') {
+              mocks.getUserMedia
+                .mockReset()
+                .mockResolvedValue(nextMic.stream)
+                .mockReturnValueOnce(permission.promise)
+            }
+            if (stage === 'vad')
+              mocks.start.mockReturnValueOnce(pending.promise)
+            if (stage === 'config') {
+              useConfigStore.setState({ loaded: false })
+              vi.stubGlobal('fetch', configFetch)
+            }
+            if (stage === 'warmup') {
+              mocks.apiFetch.mockImplementation((url, options) => {
+                if (url === '/api/conversation/warmup') {
+                  warmupSignal = options.signal
+                  return response.promise
+                }
+                return Promise.resolve({ ok: true, json: async () => null })
+              })
+            }
+            render(<ConversationMode />)
+            await act(async () => {
+              fireEvent.click(screen.getByRole('button', { name: 'start' }))
+            })
+            expect(MockWebSocket.instances).toHaveLength(0)
+            if (stage === 'config')
+              expect(configFetch).toHaveBeenCalledTimes(1)
+            if (stage === 'warmup') expect(warmupSignal).toBeDefined()
+            if (stage === 'vad') expect(mocks.start).toHaveBeenCalledTimes(1)
+
+            act(() => {
+              replaceIdentity(change)
+              // Resource invalidation is synchronous at the auth-store boundary.
+              expect(mocks.closeAudio).toHaveBeenCalledTimes(1)
+              if (stage === 'vad' || stage === 'config' || stage === 'warmup')
+                expect(oldMic.stop).toHaveBeenCalledTimes(1)
+              if (warmupSignal) expect(warmupSignal.aborted).toBe(true)
+            })
+            mocks.apiFetch.mockResolvedValue({
+              ok: true,
+              json: async () => null,
+            })
+            await act(async () => {
+              fireEvent.click(screen.getByRole('button', { name: 'start' }))
+            })
+            // VAD operations remain serialized; both config consumers share one load.
+            expect(MockWebSocket.instances).toHaveLength(
+              stage === 'vad' || stage === 'config' ? 0 : 1
+            )
+            await act(async () => {
+              pending.resolve()
+              permission.resolve(oldMic.stream)
+              response.resolve(
+                new Response(JSON.stringify({ tts_provider: 'gemini' }))
+              )
+            })
+            await waitFor(() =>
+              expect(MockWebSocket.instances).toHaveLength(1)
+            )
+            const current = MockWebSocket.instances[0]
+            act(() => current.onopen?.())
+            expect(JSON.parse(current.send.mock.calls[0][0]).token).toBe(
+              change === 'session' ? 'next-token' : 'token'
+            )
+            expect(mocks.closeAudio).toHaveBeenCalledTimes(1)
+            expect(nextMic.stop).not.toHaveBeenCalled()
+            expect(current.close).not.toHaveBeenCalled()
+            expect(oldMic.stop).toHaveBeenCalledTimes(
+              stage === 'resume' ? 0 : 1
+            )
+            expect(screen.queryByText(/errorConnection|errorMic/)).toBeNull()
+            if (stage === 'config') {
+              expect(configFetch).toHaveBeenCalledTimes(1)
+              expect(configFetch.mock.calls[0][1].signal.aborted).toBe(false)
+            }
+            if (stage === 'vad') {
+              expect(mocks.pause).toHaveBeenCalledTimes(1)
+              expect(mocks.start).toHaveBeenCalledTimes(2)
+              expect(mocks.pause.mock.invocationCallOrder[0]).toBeLessThan(
+                mocks.start.mock.invocationCallOrder[1]
+              )
+            }
+          }
+        )
+      }
+    )
+
+    it.each(['resume', 'microphone', 'vad', 'warmup'] as const)(
+      'ignores an obsolete %s rejection after a replacement attempt starts',
+      async (stage) => {
+        const pending = deferred<void>()
+        const nextMic = microphone()
+        mocks.getUserMedia.mockResolvedValue(nextMic.stream)
+        if (stage === 'vad' || stage === 'warmup')
+          mocks.getUserMedia.mockResolvedValueOnce(microphone().stream)
+        if (stage === 'resume') {
+          const resume = vi.fn().mockResolvedValue(undefined)
+          resume.mockReturnValueOnce(pending.promise)
+          vi.stubGlobal(
+            'AudioContext',
+            class {
+              state = 'suspended'
+              close = mocks.closeAudio
+              resume = resume
+            }
+          )
+        }
+        if (stage === 'microphone')
+          mocks.getUserMedia.mockReturnValueOnce(pending.promise)
+        if (stage === 'vad') mocks.start.mockReturnValueOnce(pending.promise)
+        if (stage === 'warmup') {
+          mocks.apiFetch.mockImplementation((url) =>
+            url === '/api/conversation/warmup'
+              ? pending.promise
+              : Promise.resolve({ ok: true, json: async () => null })
+          )
+        }
+        render(<ConversationMode />)
+        await act(async () => {
+          fireEvent.click(screen.getByRole('button', { name: 'start' }))
+        })
+        act(() => replaceIdentity('session'))
+        mocks.apiFetch.mockResolvedValue({ ok: true, json: async () => null })
+        await act(async () => {
+          fireEvent.click(screen.getByRole('button', { name: 'start' }))
+        })
+        await act(async () => pending.reject(new Error('Obsolete failure')))
+        await waitFor(() => expect(MockWebSocket.instances).toHaveLength(1))
+        expect(MockWebSocket.instances[0].close).not.toHaveBeenCalled()
+        expect(mocks.closeAudio).toHaveBeenCalledTimes(1)
+        expect(nextMic.stop).not.toHaveBeenCalled()
+        expect(screen.queryByText(/errorConnection|errorMic/)).toBeNull()
+      }
+    )
+
+    describe.each(['connecting', 'live'] as const)('%s WebSocket', (stage) => {
+      it.each(['session', 'user', 'logout'] as const)(
+        'closes on %s replacement and ignores stale socket/audio callbacks',
+        async (change) => {
+          const mic = microphone()
+          mocks.getUserMedia.mockResolvedValueOnce(mic.stream)
+          render(<ConversationMode />)
+          fireEvent.click(screen.getByRole('button', { name: 'start' }))
+          await waitFor(() => expect(MockWebSocket.instances).toHaveLength(1))
+          const old = MockWebSocket.instances[0]
+          const oldOpen = old.onopen!
+          const oldMessage = old.onmessage!
+          const oldError = old.onerror!
+          const oldClose = old.onclose!
+          const oldIdle = mocks.onAudioIdle!
+          const decoded = deferred<ArrayBuffer>()
+          const playback = deferred<void>()
+          if (stage === 'live') {
+            act(() => oldOpen())
+            const blob = new Blob()
+            blob.arrayBuffer = vi.fn(() => decoded.promise)
+            mocks.enqueue.mockReturnValueOnce(playback.promise)
+            act(() => {
+              old.message({
+                type: 'transcript',
+                role: 'assistant',
+                final: true,
+                text: 'Private previous transcript',
+              })
+              oldMessage({ data: blob })
+              oldMessage({ data: new ArrayBuffer(8) })
+            })
+          } else {
+            old.readyState = 0
+          }
+          act(() => {
+            replaceIdentity(change)
+            expect(old.close).toHaveBeenCalledTimes(1)
+            expect(mic.stop).toHaveBeenCalledTimes(1)
+            expect(mocks.cancel).toHaveBeenCalledTimes(1)
+            expect(mocks.closeAudio).toHaveBeenCalledTimes(1)
+          })
+          expect(old.onopen).toBeNull()
+          expect(old.onmessage).toBeNull()
+          expect(old.onerror).toBeNull()
+          expect(old.onclose).toBeNull()
+          expect(screen.queryByText('Private previous transcript')).toBeNull()
+          const oldSendCount = old.send.mock.calls.length
+          act(() => {
+            speak()
+            mocks.options.onVADMisfire?.()
+          })
+          expect(old.send).toHaveBeenCalledTimes(oldSendCount)
+          expect(screen.getByTestId('speaking')).toHaveTextContent('false')
+          if (change === 'logout') {
+            act(() => {
+              useAuthStore.getState().startSession('next-token')
+              useAuthStore.getState().setUser(originalUser)
+            })
+          }
+          const current = await start()
+          mocks.enqueue.mockClear()
+          act(() => current.onmessage?.({ data: new ArrayBuffer(8) }))
+          expect(screen.getByText('statusSpeaking')).toBeInTheDocument()
+          await act(async () => {
+            oldOpen()
+            oldMessage({ data: new ArrayBuffer(8) })
+            oldMessage({
+              data: JSON.stringify({
+                type: 'session_end',
+                reason: 'inactivity',
+              }),
+            })
+            oldError()
+            oldClose({ code: 1006, reason: '' })
+            oldIdle()
+            if (stage === 'live') {
+              decoded.resolve(new ArrayBuffer(8))
+              playback.reject(new Error('Obsolete playback'))
+            }
+          })
+          expect(old.send).toHaveBeenCalledTimes(oldSendCount)
+          expect(mocks.enqueue).toHaveBeenCalledTimes(1)
+          expect(current.close).not.toHaveBeenCalled()
+          expect(mocks.closeAudio).toHaveBeenCalledTimes(1)
+          expect(screen.getByText('statusSpeaking')).toBeInTheDocument()
+          expect(screen.queryByText(/errorConnection|sessionEnded/)).toBeNull()
+        }
+      )
+    })
+
+    it('does not auto-start the previous chat context after authentication changes', async () => {
+      const mic = microphone()
+      const permission = deferred<MediaStream>()
+      mocks.getUserMedia.mockReturnValueOnce(permission.promise)
+      render(
+        <ConversationMode
+          autoStart
+          initialContext={[{ role: 'user', content: 'Previous account context' }]}
+        />
+      )
+      await waitFor(() => expect(mocks.getUserMedia).toHaveBeenCalledTimes(1))
+      act(() => replaceIdentity('session'))
+      await act(async () => permission.resolve(mic.stream))
+      expect(mic.stop).toHaveBeenCalledTimes(1)
+      expect(mocks.getUserMedia).toHaveBeenCalledTimes(1)
+      expect(mocks.start).not.toHaveBeenCalled()
+      expect(MockWebSocket.instances).toHaveLength(0)
+      expect(screen.getByRole('button', { name: 'start' })).toBeEnabled()
+    })
+
+    it('preserves pending startup and live playback during token rotation and same-user updates', async () => {
+      const mic = microphone()
+      mocks.getUserMedia.mockResolvedValueOnce(mic.stream)
+      const pending = deferWarmup()
+      render(<ConversationMode />)
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'start' }))
+      })
+      act(() => {
+        useAuthStore.getState().setTokens('rotated-token')
+        useAuthStore.getState().setUser({
+          ...originalUser,
+          displayName: 'Updated',
+        })
+      })
+      expect(pending.signal.aborted).toBe(false)
+      await act(async () => pending.resolve({ ok: true }))
+      const ws = MockWebSocket.instances[0]
+      act(() => ws.onopen?.())
+      expect(JSON.parse(ws.send.mock.calls[0][0]).token).toBe('rotated-token')
+      act(() => ws.onmessage?.({ data: new ArrayBuffer(8) }))
+      act(() => {
+        useAuthStore.getState().setTokens('rotated-again')
+        useAuthStore.getState().setUser({
+          ...originalUser,
+          displayName: 'Again',
+        })
+      })
+      expect(screen.getByText('statusSpeaking')).toBeInTheDocument()
+      expect(ws.close).not.toHaveBeenCalled()
+      expect(mic.stop).not.toHaveBeenCalled()
+      expect(mocks.cancel).not.toHaveBeenCalled()
+      expect(mocks.closeAudio).not.toHaveBeenCalled()
+    })
+  })
+
+  it('resolves delayed provider configuration before opening the trial WebSocket', async () => {
+    useConfigStore.setState({ loaded: false, ttsProvider: 'local' })
+    localStorage.setItem('tts_voice', 'female')
+    localStorage.setItem('gemini_tts_voice', 'male')
+    let finish!: (response: Response) => void
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockReturnValueOnce(
+        new Promise((resolve) => {
+          finish = resolve
+        })
+      )
+    )
+    render(<ConversationMode trialMode voiceTrialToken="trial-token" />)
+    fireEvent.click(screen.getByRole('button', { name: 'start' }))
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith('/api/config', {
+        signal: expect.any(AbortSignal),
+      })
+    )
+    expect(MockWebSocket.instances).toHaveLength(0)
+    expect(
+      mocks.apiFetch.mock.calls.some(
+        ([url]) => url === '/api/conversation/warmup'
+      )
+    ).toBe(false)
+    await act(async () =>
+      finish(new Response(JSON.stringify({ tts_provider: 'gemini' })))
+    )
+    await waitFor(() => expect(MockWebSocket.instances).toHaveLength(1))
+    const ws = MockWebSocket.instances[0]
+    act(() => ws.onopen?.())
+    expect(JSON.parse(ws.send.mock.calls[0][0])).toEqual({
+      type: 'auth',
+      token: 'token',
+      voice: 'male',
+      voice_trial_token: 'trial-token',
+    })
+  })
+
+  it.each(['success', 'timeout'] as const)(
+    'preserves the full warmup budget after delayed configuration (%s)',
+    async (outcome) => {
+      vi.useFakeTimers()
+      useConfigStore.setState({ loaded: false })
+      localStorage.setItem('gemini_tts_voice', 'male')
+      const config = deferred<Response>()
+      vi.stubGlobal('fetch', vi.fn().mockReturnValue(config.promise))
+      const warmup = deferWarmup()
+      render(<ConversationMode />)
+      await act(async () =>
+        fireEvent.click(screen.getByRole('button', { name: 'start' }))
+      )
+      expect(fetch).toHaveBeenCalledTimes(1)
+      await act(async () => vi.advanceTimersByTimeAsync(18_000))
+      await act(async () =>
+        config.resolve(new Response(JSON.stringify({ tts_provider: 'gemini' })))
+      )
+      expect(warmup.signal).toBeDefined()
+      await act(async () => vi.advanceTimersByTimeAsync(58_000))
+      expect(warmup.signal.aborted).toBe(false)
+      expect(screen.queryByText(/errorConnection/)).not.toBeInTheDocument()
+      expect(MockWebSocket.instances).toHaveLength(0)
+
+      if (outcome === 'success') {
+        await act(async () => warmup.resolve({ ok: true }))
+        expect(MockWebSocket.instances).toHaveLength(1)
+        const ws = MockWebSocket.instances[0]
+        act(() => ws.onopen?.())
+        expect(JSON.parse(ws.send.mock.calls[0][0])).toMatchObject({
+          voice: 'male',
+        })
+      } else {
+        await act(async () => vi.advanceTimersByTimeAsync(17_000))
+        expect(warmup.signal.aborted).toBe(true)
+        expect(screen.getByText(/errorConnection/)).toBeVisible()
+        expect(MockWebSocket.instances).toHaveLength(0)
+      }
+    }
+  )
+
+  it.each(['unmount', 'timeout', 'failure'])(
+    'does not open a WebSocket after config %s',
+    async (outcome) => {
+      useConfigStore.setState({ loaded: false })
+      if (outcome === 'timeout') vi.useFakeTimers()
+      let finish!: (response: Response) => void
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockReturnValueOnce(
+          new Promise((resolve) => {
+            finish = resolve
+          })
+        )
+      )
+      const { unmount } = render(<ConversationMode />)
+      await act(async () =>
+        fireEvent.click(screen.getByRole('button', { name: 'start' }))
+      )
+      expect(fetch).toHaveBeenCalledTimes(1)
+      if (outcome === 'unmount') unmount()
+      if (outcome === 'timeout') {
+        await act(async () => vi.advanceTimersByTimeAsync(75_000))
+      }
+      await act(async () =>
+        finish(
+          outcome === 'failure'
+            ? new Response('', { status: 503 })
+            : new Response(JSON.stringify({ tts_provider: 'gemini' }))
+        )
+      )
+      expect(MockWebSocket.instances).toHaveLength(0)
+      expect(
+        mocks.apiFetch.mock.calls.some(
+          ([url]) => url === '/api/conversation/warmup'
+        )
+      ).toBe(false)
+      if (outcome !== 'unmount')
+        expect(screen.getByText(/errorConnection/)).toBeVisible()
+    }
+  )
+  it.each([
+    ['gemini', 'male', false],
+    ['gemini', 'male', true],
+    ['openai', 'female', false],
+    ['openai', 'female', true],
+  ] as const)(
+    'authenticates %s with voice %s (trial: %s) and accepts WAV frames',
+    async (provider, voice, trial) => {
+      useConfigStore.setState({ ttsProvider: provider })
+      localStorage.setItem('tts_voice', 'female')
+      localStorage.setItem('gemini_tts_voice', 'male')
+      render(
+        <ConversationMode
+          targetLanguage="fr-FR"
+          voiceTrialToken={trial ? 'assessment-trial' : undefined}
+          trialMode={trial}
+        />
+      )
+      fireEvent.click(screen.getByRole('button', { name: 'start' }))
+      await waitFor(() => expect(MockWebSocket.instances).toHaveLength(1))
+      const ws = MockWebSocket.instances[0]
+      act(() => ws.onopen?.())
+
+      expect(JSON.parse(ws.send.mock.calls[0][0])).toEqual({
+        type: 'auth',
+        token: 'token',
+        voice,
+        target_language: 'fr-FR',
+        ...(trial ? { voice_trial_token: 'assessment-trial' } : {}),
+      })
+      const wav = float32ToWav(new Float32Array([0.5]), 24000)
+      act(() => ws.onmessage?.({ data: wav }))
+      expect(mocks.enqueue).toHaveBeenCalledWith(wav)
+    }
+  )
+
+  it.each(['current', 'replace-session', 'unmount'])(
+    'handles a completed demo checkout conflict for %s',
+    async (action) => {
+      const profile = {
+        id: 1,
+        username: 'learner',
+        display_name: 'Learner',
+        role: 'user',
+        subscription_status: 'none',
+        assessment_voice_trial_used: true,
+      }
+      useConfigStore.setState({ stripeEnabled: true })
+      useAuthStore.getState().setUser(mapUser({
+        ...profile, assessment_voice_trial_used: false,
+      }))
+      mocks.apiFetch.mockImplementation(async (url: string) => ({
+        ok: true,
+        json: async () => (url === '/api/auth/me' ? profile : null),
+      }))
+      const view = render(<ConversationMode trialMode />)
+      const ws = await start()
+      act(() => {
+        ws.message({ type: 'transcript', role: 'user', text: 'My practice' })
+        ws.message({
+          type: 'transcript',
+          role: 'assistant',
+          text: 'Your feedback',
+          final: true,
+        })
+      })
+      fireEvent.click(screen.getByRole('button', { name: 'stop' }))
+      await waitFor(() =>
+        expect(useAuthStore.getState().user?.assessment_voice_trial_used).toBe(true)
+      )
+      let finish!: (body: unknown) => void
+      const body = new Promise((resolve) => {
+        finish = resolve
+      })
+      const decode = vi.fn(() => body)
+      mocks.apiFetch
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 409,
+          json: async () => ({ detail: 'subscription_already_active' }),
+        })
+        .mockResolvedValueOnce({ ok: true, json: decode })
+      fireEvent.click(screen.getByText('planMonthly'))
+      await waitFor(() => expect(decode).toHaveBeenCalledOnce())
+      if (action === 'unmount') view.unmount()
+      else if (action === 'replace-session')
+        act(() => useAuthStore.getState().startSession('new-account'))
+      await act(async () =>
+        finish({ ...profile, subscription_status: 'active' })
+      )
+      if (action === 'current') {
+        expect(useAuthStore.getState().user?.subscription_status).toBe('active')
+        expect(mocks.push).not.toHaveBeenCalled()
+        expect(screen.getByText('Your feedback')).toBeInTheDocument()
+        expect(screen.queryByText('planMonthly')).not.toBeInTheDocument()
+        expect(screen.getByRole('button', { name: 'startNew' })).toBeEnabled()
+      } else {
+        expect(useAuthStore.getState().user?.subscription_status).not.toBe(
+          'active'
+        )
+        expect(mocks.push).not.toHaveBeenCalled()
+      }
+      expect(screen.queryByText('checkoutError')).toBeNull()
+    }
+  )
+
   it.each([
     'automatic-start',
     'manual-start',
@@ -715,7 +1936,11 @@ describe('ConversationMode session lifecycle', () => {
           pending.reject(new TypeError('Failed to fetch'))
         else pending.resolve({ ok: false, status: failure as number })
       })
-      expect(screen.getByText('✕ errorConnection')).toBeInTheDocument()
+      expect(
+        screen.getByText(
+          failure === 402 ? '✕ errorMessage' : '✕ errorConnection'
+        )
+      ).toBeInTheDocument()
       expect(log).toHaveBeenCalledWith(
         expect.stringContaining(
           failure === 'network' ? 'Failed to fetch' : `"status":${failure}`
@@ -770,6 +1995,43 @@ describe('ConversationMode session lifecycle', () => {
     await waitFor(() => expect(ws.close).toHaveBeenCalledTimes(1))
   })
 
+  it('passes a grammar session through the same warmup and voice handshake', async () => {
+    const id = '4b8fa402-fb9c-4bba-b658-583824dd1bb1'
+    render(
+      <ConversationMode
+        grammarPracticeSessionId={id}
+        lessonTitle="Passé composé"
+        targetLanguage="fr-FR"
+      />
+    )
+    expect(screen.queryByText('startersHint')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'start' }))
+    await waitFor(() => expect(MockWebSocket.instances).toHaveLength(1))
+    const ws = MockWebSocket.instances[0]
+    act(() => ws.onopen?.())
+    expect(JSON.parse(ws.send.mock.calls[0][0])).toEqual({
+      type: 'auth',
+      token: 'token',
+      grammar_practice_session_id: id,
+      target_language: 'fr-FR',
+    })
+    expect(mocks.apiFetch).toHaveBeenCalledWith(
+      '/api/conversation/warmup',
+      expect.any(Object)
+    )
+    act(() =>
+      ws.message({
+        type: 'transcript',
+        role: 'assistant',
+        final: true,
+        text: 'Très bien.',
+      })
+    )
+    expect(ws.close).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'stop' }))
+    await waitFor(() => expect(ws.close).toHaveBeenCalledTimes(1))
+  })
+
   it('does not add lesson context to ordinary voice sessions', async () => {
     render(<ConversationMode />)
     fireEvent.click(screen.getByRole('button', { name: 'start' }))
@@ -780,6 +2042,43 @@ describe('ConversationMode session lifecycle', () => {
       type: 'auth',
       token: 'token',
     })
+  })
+
+  it('sends only the captured situation source through the existing voice handshake', async () => {
+    render(
+      <ConversationMode
+        situationId="hotel_problem"
+        situationStudyPlanId={7}
+        lessonTitle="A hotel problem"
+        targetLanguage="fr-FR"
+        initialContext={[{ role: 'user', content: 'Unrelated chat context' }]}
+      />
+    )
+    expect(screen.getByText('A hotel problem')).toHaveAttribute('lang', 'en')
+    expect(screen.queryByText('startersHint')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'start' }))
+    await waitFor(() => expect(MockWebSocket.instances).toHaveLength(1))
+    const ws = MockWebSocket.instances[0]
+    act(() => ws.onopen?.())
+    expect(JSON.parse(ws.send.mock.calls[0][0])).toEqual({
+      type: 'auth',
+      token: 'token',
+      situation_id: 'hotel_problem',
+      situation_study_plan_id: 7,
+      target_language: 'fr-FR',
+    })
+    expect(mocks.apiFetch).toHaveBeenCalledWith(
+      '/api/conversation/warmup',
+      expect.any(Object)
+    )
+    act(() =>
+      ws.message({
+        type: 'error',
+        code: 'situation_unavailable',
+      })
+    )
+    expect(screen.getByText('✕ unavailable')).toBeInTheDocument()
+    expect(ws.close).toHaveBeenCalledOnce()
   })
 
   it('retries denied permission without poisoning VAD', async () => {
@@ -883,6 +2182,7 @@ describe('ConversationMode session lifecycle', () => {
     ['tts_failed', 'errorSpeech'],
     ['auth_failed', 'errorUnauthorized'],
     ['services_disabled', 'errorServicesDisabled'],
+    ['maintenance_mode', 'description'],
     ['quota_exceeded_sessions', 'quotaExceededSessions'],
     ['quota_exceeded_time', 'quotaExceededTime'],
     ['quota_exceeded_tokens', 'quotaExceededTokens'],

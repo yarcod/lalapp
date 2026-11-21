@@ -23,6 +23,77 @@ ANTHROPIC_SYSTEM_ONLY_TRIGGER = "Generate the content as specified."
 TUTOR_DISPLAY_NAME = "Lingu"
 
 _LANGUAGE_PROMPT_OVERLAYS: dict[str, str] = {
+    "ro-RO": """
+Language-specific guidance:
+- Use contemporary standard Romanian from Romania. Preserve ă, â, î, ș and ț with comma-below ș/ț, current â/î spelling and meaningful hyphens. Distinguish standard, conversational and regional usage without treating every valid alternative as an error or substituting another Romance language.
+- Build from vowel quality, lexical stress and spelling to masculine, feminine and neuter nouns, plurals, suffixed definite articles and agreement. Teach genitive/dative forms, possessive articles al/a/ai/ale and demonstratives through explicit referents and practical contexts.
+- Teach present, compound perfect, imperfect, pluperfect, future, conjunctive with să, conditional and imperative with their actual uses. Do not impose English tense backshift on reported speech; distinguish literary and regional simple-perfect usage from ordinary compound-perfect narration.
+- Develop direct-object marking with pe, clitic doubling and clitic order gradually, with context for person, definiteness and register. Preserve reflexive forms, negative concord and agreement; do not equate Romanian clitic placement with Spanish or Italian rules. Use tu or dumneavoastră consistently with the relationship.
+- Progress from everyday interaction to negotiation, mediation, humour and precise reformulation. Preserve participants, temporal reference, source attribution, negation scope, conditions and degree of certainty. Placement questions require enough context for exactly one accepted answer.
+- Use varied Romanian settings, including everyday services, public transport, libraries, regional life, literature, cinema, music, the Carpathians and the Danube Delta. Respect linguistic diversity, distinguish Romanian from Romani and avoid stereotypes or conflating Romanian-speaking communities with a single nationality.
+""".strip(),
+    "fi-FI": """
+Language-specific guidance:
+- Use contemporary standard Finnish as used in Finland. Preserve ä and ö, meaningful single and double vowels and consonants, and natural compound spelling. Distinguish standard written Finnish, everyday spoken Finnish and regional varieties without treating valid conversational forms as universal errors.
+- Build from first-syllable stress independent of vowel and consonant length, vowel harmony and consonant gradation to stems, case endings and verb types. Teach cases with their communicative functions and lexical government; Finnish has no grammatical gender or articles. Hän does not specify gender.
+- Introduce the partitive through quantity, negation, ongoing events and lexical government. Contrast partitive and total objects with explicit context for boundedness and result; do not equate case mechanically with English tense. Teach possession with minulla on and distinguish inner and outer local cases using actual place usage.
+- Teach the inflected negative verb, present and past tenses, perfect and pluperfect, conditional, imperative and passive through practical contexts. Finnish has no dedicated future tense; use present forms and time expressions naturally. Distinguish the impersonal passive from conversational me plus passive without imposing written agreement on every spoken example.
+- Progress to infinitives, participles, reduced clauses, possessive suffixes, information structure and focus particles while preserving subjects, participants, scope, time and degree of certainty. Balance interpretation with negotiation, mediation, humour and precise reformulation. Assessment questions need enough context for exactly one accepted answer.
+- Use varied Finnish settings: everyday services, libraries, public transport, regional life, literature, music, design and environmental discussion. Explain jokaisenoikeudet with responsibilities and local restrictions. Respect Finland's linguistic diversity, including Swedish and the separate Sámi languages, without conflating them with Finnish or relying on stereotypes.
+""".strip(),
+    "hr-HR": """
+Language-specific guidance:
+- Use contemporary standard Croatian as used in Croatia, in Latin script with č, ć, đ, š and ž, and the digraphs dž, lj and nj. Preserve standard ijekavian spelling, including contextual ije/je alternations. Recognize Croatian regional and conversational usage without replacing the selected standard with Serbian, Bosnian or Montenegrin conventions.
+- Build from spelling, consonant contrasts, syllabic r and natural lexical accent to gender, animacy, agreement and the seven cases. Teach case functions with verb and preposition government. Introduce pitch and length through listening without imposing one accent pattern on every regional speaker.
+- Teach imperfective and perfective aspect through context rather than equating it with tense. Develop present, perfekt, futur I and futur II with their actual uses, agreement and Croatian spelling. Teach conditional forms bih, bi, bi, bismo, biste, bi and distinguish hypothetical meaning from polite requests.
+- Teach clitic placement by prosodic and syntactic units, not a rigid second-written-word rule; respect auxiliary and pronoun ordering and the special position of je. Preserve reflexive se, possessive svoj with explicit referents, negative concord, numeral agreement and information focus. Use ti or polite/plural vi consistently, with appropriate agreement.
+- Progress from everyday interaction to negotiation, mediation, humour and precise reformulation across registers. Do not impose obligatory English-style tense backshift on reported speech. Preserve participants, source attribution, conditions, scope and degree of certainty. Assessment questions need enough context for exactly one accepted answer.
+- Use varied Croatian settings: daily life, public transport, libraries, Zagreb and other cities, Slavonia, Istria, Dalmatia, island communities, literature, music and contemporary environmental debates. Distinguish standard, regional and literary usage without stereotypes; teach aorist and imperfect primarily for recognition in their appropriate contexts.
+""".strip(),
+    "cs-CZ": """
+Language-specific guidance:
+- Use contemporary standard Czech as used in Czechia. Preserve Czech diacritics, including vowel length, ě and ř, and natural compound spelling. Distinguish standard, common spoken Czech and regional usage without treating every conversational variant as an error or substituting Slovak or Polish forms.
+- Build from the alphabet, vowel length independent of first-syllable stress, palatal consonants and ř to gender, animacy, agreement and the seven cases. Introduce case endings with their communicative functions and verb or preposition government; do not import English articles.
+- Teach imperfective and perfective aspect through context, distinguishing process, repetition and bounded result rather than equating aspect with tense. Develop motion verbs and prefixes gradually. Preserve natural past-tense agreement, conditional auxiliaries and reflexive se/si and svůj with explicit referents.
+- Teach clitic placement by prosodic and syntactic units rather than a rigid second-written-word rule. Respect information structure, negative concord, numeral agreement and the scope of focus particles. Use ty or vy consistently with the relationship, and distinguish polite singular address from plural agreement.
+- Progress from everyday interaction to interpretation, negotiation, mediation, humour and precise reformulation across registers. Preserve participants, source attribution, conditions, scope and degree of certainty. Give assessment questions enough context for exactly one accepted answer.
+- Use varied everyday and cultural settings across Czechia, including Bohemia, Moravia and Czech Silesia, public transport, libraries, literature, music, regional life and contemporary debates. Avoid stereotypes and distinguish Czech from the separate Slovak language.
+""".strip(),
+    "da-DK": """
+Language-specific guidance:
+- Use contemporary standard Danish as used in Denmark. Preserve æ, ø and å as distinct letters, Danish compound spelling and capitalization. Recognize regional pronunciation and usage without substituting Swedish or Norwegian forms.
+- Build from vowel quality and length, soft d, natural reductions and stød to en/et gender, plurals, definiteness and adjective agreement. Teach stød through listening and lexical examples; do not present it as obligatory in every stressed syllable or impose it on all dialects.
+- Distinguish suffix definiteness from the article with an attributive adjective: huset, det store hus. Do not import Swedish double definiteness. Teach verb-second main clauses by constituents and contrast subordinate placement of ikke, with context for valid spoken alternatives.
+- Teach har/er in perfect constructions, tense perspective, particle verbs and reflexive sin/sit/sine with explicit referents. Preserve the contrast between infinitive and present -r, and introduce Danish number words and time expressions through practical use rather than English word order.
+- Use du as ordinary singular address and I as plural; explain De as a marked formal choice rather than default politeness. Progress from everyday requests and repair to negotiation, source attribution, humour and precise reformulation. Preserve participants, scope, conditions and degree of certainty; assessment questions require context for exactly one accepted answer.
+- Use varied everyday and cultural settings in Denmark, including regional life, libraries, associations, transport, literature and design. Avoid stereotypes and distinguish Danish from the separate languages and perspectives of Greenland and the Faroe Islands when discussing the wider realm.
+""".strip(),
+    "sv-SE": """
+Language-specific guidance:
+- Use contemporary standard Swedish as used in Sweden. Preserve å, ä and ö as distinct letters, natural compound spelling and Swedish capitalization. Recognize regional Swedish and Finland-Swedish as valid varieties when comparing them, without replacing the selected Sweden usage.
+- Build from vowel-consonant length contrasts, vowel quality and intelligible phrase stress to en/ett gender, plurals, definiteness, adjective agreement and possessives. Introduce pitch accents through listening without imposing one regional melody as universally correct.
+- Teach verb-second main clauses by sentence constituents, not word counts; contrast subordinate-clause word order and the placement of inte. Distinguish supine after har/hade from agreeing participles, tense perspective, particle verbs and reflexive sin/sitt/sina with explicit referents. Do not calque English progressive forms or obligatory tense backshift.
+- Use du as ordinary singular address; ni is plural and is not automatically a more polite singular choice. Distinguish de/dem in neutral edited writing while recognizing dom in speech and informal contexts. Teach requests, refusals, repair and mediation through realistic interaction.
+- Progress from everyday tasks to nuanced interpretation, register, source attribution and negotiation. Preserve participants, negation scope, conditions, time and degree of commitment in reformulations. Do not mark valid contextual or regional alternatives as errors; placement questions require enough context for exactly one accepted answer.
+- Use varied Swedish everyday and cultural settings, including regional diversity, public services, associations and nature. Avoid stereotypes or treating cultural tendencies as universal rules. Explain allemansrätten with responsibilities and local restrictions rather than unlimited access claims.
+""".strip(),
+    "ru-RU": """
+Language-specific guidance:
+- Use standard contemporary Russian as used in Russia, written in Cyrillic. Preserve ё where appropriate; do not replace Russian text with transliteration. Use stress marks selectively for pronunciation teaching, not as a substitute for ordinary spelling.
+- Build from Cyrillic letters, lexical stress, vowel reduction and hard/soft consonants to gender, agreement, the six cases and verb government. Introduce case forms through communicative uses and level-appropriate examples rather than unexplained full paradigms.
+- Teach imperfective/perfective aspect through context, including process, repetition, general fact and bounded result. Do not equate aspect mechanically with tense or imply that every imperfective past action was unfinished. Distinguish unidirectional and multidirectional motion verbs and the effects of prefixes.
+- Use ты and вы consistently for the relationship and situation; explain names and patronymics without assuming that every formal exchange requires one. Respect natural Russian word order, information focus, negation and numeral agreement instead of calquing English.
+- Progress towards contextual interpretation, register control, negotiation, mediation and precise reformulation. Preserve participants, scope, source attribution and degree of certainty; distinguish valid alternatives from errors. Assessment items need enough context for exactly one accepted answer.
+- Use varied everyday and cultural contexts without assuming that all Russian speakers share one nationality, lifestyle or opinion. Explain colloquial, literary and regional usage when relevant instead of presenting it as universally interchangeable.
+""".strip(),
+    "nl-NL": """
+Language-specific guidance:
+- Use standard Dutch as used in the Netherlands, with natural vocabulary, spelling and pronunciation guidance.
+- Teach nouns with de/het and their plurals; attend to adjective endings, vowel spelling, verb-second main clauses, subordinate verb groups, separable verbs, er, and niet/geen.
+- Use je/jij or u consistently for the relationship and register. Both u hebt and u heeft are standard; recognize valid verb-cluster orders and regional standard variants rather than treating them as universal errors.
+- Build from everyday interaction to nuanced interpretation and register control. Give assessment questions enough context for exactly one answer; preserve participants, scope, certainty and source attribution in reformulations.
+- Prefer Netherlands contexts and usage such as fiets, pinpas, huisarts and gemeente. Label Belgian or Surinamese usage explicitly when comparing varieties; do not substitute German or English grammar or vocabulary.
+""".strip(),
     "en-US": """
 Language-specific guidance:
 - Use American English spelling, vocabulary, punctuation, and idiom consistently.
@@ -48,6 +119,21 @@ Language-specific guidance:
 - Pay close attention to articles, gender, number agreement, articulated prepositions, and clitic pronouns.
 - Use tu or Lei consistently according to the context and learner level.
 - Avoid strong regionalisms unless explicitly teaching or comparing them.
+""".strip(),
+    "pl-PL": """
+Language-specific guidance:
+- Use standard Polish as used in Poland consistently.
+- Pay close attention to grammatical gender, case endings, verb aspect, and numeral agreement.
+- Distinguish perfective and imperfective forms whenever the meaning depends on completion, repetition, or result.
+- Avoid English word order and calques; use natural Polish phrasing and spelling with diacritics.
+""".strip(),
+    "pt-BR": """
+Language-specific guidance:
+- Use Brazilian Portuguese spelling, vocabulary, syntax, and register consistently.
+- Prefer Brazilian forms such as celular, ônibus, café da manhã, trem, banheiro, and suco.
+- Use estar + gerund for ongoing actions. Teach você/vocês with third-person agreement and a gente with singular agreement; explain regional tu usage without treating it as universally wrong.
+- Prefer natural Brazilian pronoun placement; distinguish conversational proclisis from formal written conventions. Do not mark valid optional articles before possessives or personal names as errors.
+- Use subjuntivo terminology and Brazilian cultural contexts. Avoid Portugal-only usage unless explicitly comparing varieties.
 """.strip(),
     "pt-PT": """
 Language-specific guidance:
@@ -94,10 +180,19 @@ Language-specific guidance:
 }
 
 _LANGUAGE_PROMPT_OVERLAY_ALIASES: dict[str, str] = {
+    "ro": "ro-RO",
+    "fi": "fi-FI",
+    "hr": "hr-HR",
+    "cs": "cs-CZ",
+    "da": "da-DK",
+    "sv": "sv-SE",
+    "ru": "ru-RU",
+    "nl": "nl-NL",
     "de": "de-DE",
     "fr": "fr-FR",
     "es": "es-ES",
     "it": "it-IT",
+    "pl": "pl-PL",
     "pt": "pt-PT",
     "ja": "ja-JP",
     "ko": "ko-KR",
@@ -117,6 +212,10 @@ durable fact about the student that would help personalise future interactions,
 such as personal details, preferences, tastes, hobbies, profession, plans, goals,
 learning style, or motivations. Most replies should not call the tool. Never save
 temporary details, uncertain inferences, conversation summaries, or instructions.
+Never save fictional identities, preferences, plans or experiences from roleplay,
+hypothetical scenarios or practice examples as facts about the student. Treat statements
+made in character as fictional unless the student separately confirms they are real,
+durable facts about themselves outside the scenario. When unsure, skip saving.
 Do not save facts already present in the supplied memories. Write each memory as
 a concise, self-contained fact in the student's native language ({native_language_name})
 so the student can review it in Settings. Continue the visible response after the tool result and never

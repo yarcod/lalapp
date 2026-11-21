@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import {
@@ -10,12 +10,27 @@ import {
   MessageSquare,
   Mic,
 } from 'lucide-react'
-import { apiFetch } from '@/lib/api'
-import { splitYearlyCta, type BillingInterval } from '@/lib/billing-copy'
+import { useBillingPortal } from '@/hooks/useBillingPortal'
+import { createCheckout } from '@/lib/billing'
+import {
+  hasTwoMonthsFree,
+  splitYearlyCta,
+  type BillingInterval,
+} from '@/lib/billing-copy'
 import { useConfigStore } from '@/store/config'
 import { useAuthStore, isSubscribed, needsPaymentRecovery } from '@/store/auth'
 
 const PAYWALL_CONTEXT = {
+  situations: {
+    icon: MessageSquare,
+    title: 'paywallSituationsTitle',
+    desc: 'paywallSituationsDesc',
+  },
+  grammar_practice: {
+    icon: GraduationCap,
+    title: 'paywallGrammarPracticeTitle',
+    desc: 'paywallGrammarPracticeDesc',
+  },
   games: {
     icon: GraduationCap,
     title: 'paywallGamesTitle',
@@ -65,66 +80,66 @@ export function PaywallBanner({
   const user = useAuthStore((s) => s.user)
   const stripeEnabled = useConfigStore((s) => s.stripeEnabled)
   const trialDays = useConfigStore((s) => s.stripeTrialDays)
+  const configLoaded = useConfigStore((s) => s.loaded)
   const priceMonthly = useConfigStore((s) => s.priceMonthly)
   const priceYearly = useConfigStore((s) => s.priceYearly)
   const [loading, setLoading] = useState<BillingInterval | null>(null)
-  const [portalLoading, setPortalLoading] = useState(false)
+  const {
+    openPortal,
+    loading: portalLoading,
+    error: portalError,
+  } = useBillingPortal()
   const [error, setError] = useState<string | null>(null)
+  const checkoutRequest = useRef<AbortController | null>(null)
+  useEffect(() => () => checkoutRequest.current?.abort(), [])
   const paymentRecovery = needsPaymentRecovery(user)
   const yearlyCta = splitYearlyCta(
     t('planYearly', {
       price: new Intl.NumberFormat(locale).format(priceYearly),
-    })
+    }),
+    hasTwoMonthsFree(priceMonthly, priceYearly)
   )
 
   if (!stripeEnabled || isSubscribed(user, stripeEnabled)) return null
 
   const context = PAYWALL_CONTEXT[feature] ?? PAYWALL_CONTEXT.chat
   const Icon = context.icon
-  const trialEligible = !user?.trial_used
+  const trialEligible =
+    configLoaded &&
+    Number.isInteger(trialDays) &&
+    trialDays > 0 &&
+    user?.trial_used === false
 
   async function handleCheckout(interval: BillingInterval) {
+    if (loading) return
+    const controller = new AbortController()
+    checkoutRequest.current = controller
+    const { sessionVersion } = useAuthStore.getState()
+    const obsolete = () =>
+      controller.signal.aborted ||
+      useAuthStore.getState().sessionVersion !== sessionVersion
     setLoading(interval)
     setError(null)
     try {
-      const res = await apiFetch('/api/billing/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: interval }),
-      })
-      if (!res.ok) {
-        throw new Error(t('checkoutError'))
-      }
-      const { url } = await res.json()
-      window.location.assign(url)
+      const url = await createCheckout(interval, controller.signal)
+      if (obsolete()) return
+      if (url) window.location.assign(url)
     } catch {
+      if (obsolete()) return
       setError(t('checkoutError'))
-      setLoading(null)
-    }
-  }
-
-  async function handleManageBilling() {
-    setPortalLoading(true)
-    setError(null)
-    try {
-      const res = await apiFetch('/api/billing/portal', { method: 'POST' })
-      if (!res.ok) throw new Error(t('portalError'))
-      const { url } = await res.json()
-      window.location.assign(url)
-    } catch {
-      setError(t('portalError'))
-      setPortalLoading(false)
+    } finally {
+      if (!obsolete()) setLoading(null)
     }
   }
 
   const containerClass = compact
-    ? 'border-fl-border bg-fl-surface w-full border p-5 text-center'
+    ? 'border-fl-border bg-fl-surface w-full min-w-0 border p-4 text-center sm:p-5'
     : 'flex min-h-[60vh] flex-col items-center justify-center px-6 py-16 text-center'
 
   return (
     <div className={containerClass}>
       {compact ? (
-        <div className="border-fl-border bg-fl-surface mx-auto w-full max-w-md border p-8">
+        <div className="mx-auto w-full max-w-md">
           <PaywallContent />
         </div>
       ) : (
@@ -161,7 +176,7 @@ export function PaywallBanner({
 
         {paymentRecovery ? (
           <button
-            onClick={handleManageBilling}
+            onClick={openPortal}
             disabled={portalLoading}
             className="bg-fl-accent text-fl-accent-fg hover:bg-fl-accent/90 w-full px-4 py-3 font-mono text-sm tracking-widest uppercase transition-colors disabled:opacity-50"
           >
@@ -201,8 +216,10 @@ export function PaywallBanner({
           </div>
         )}
 
-        {error && (
-          <p className="text-fl-hint mt-4 font-mono text-red-500">{error}</p>
+        {(paymentRecovery ? portalError : error) && (
+          <p className="text-fl-hint mt-4 font-mono text-red-500">
+            {paymentRecovery ? portalError : error}
+          </p>
         )}
 
         {!paymentRecovery && (

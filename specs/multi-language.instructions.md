@@ -11,36 +11,28 @@ FreeLingo lets one user learn several target languages simultaneously. Each lang
 independent study plan and learning state, while account settings and memories remain global.
 The active language selects the context used by the authenticated application.
 
-This document specifies the current multi-language behavior. Detailed schemas, endpoint payloads,
-study-plan mechanics, and language-addition procedures remain authoritative in their dedicated
-specifications.
+This document owns language membership, active selection, isolation, and client context recovery.
+`platform.instructions.md` owns authentication-session identity. Detailed schemas, endpoint payloads,
+study-plan mechanics, and language-addition procedures remain authoritative in their dedicated specs.
 
 ## Supported and available languages
 
-The application supports these BCP-47 target-language codes:
+`target-language.instructions.md` owns the canonical BCP-47 catalog, defaults, aliases, and metadata.
+The lifecycle and isolation rules here apply equally to every supported code, including regional
+variants and future languages. `en-GB` remains the canonical default.
 
-- `en-GB` — British English
-- `en-US` — American English
-- `de-DE` — German
-- `es-ES` — Spanish (Spain)
-- `fr-FR` — French
-- `it-IT` — Italian
-- `ja-JP` — Japanese
-- `ko-KR` — Korean (South Korea)
-- `pt-PT` — Portuguese (Portugal)
-- `zh-CN` — Chinese (Mainland China)
-
-`en-GB` is the default target language and the general fallback in backend and frontend code.
-`en-US` remains supported but is not a fallback default.
-
-`SUPPORTED_TARGET_LANGUAGES` defines the codes understood by the application.
-`AVAILABLE_TARGET_LANGUAGES` defines the operator-enabled subset exposed by the language-management
+`SUPPORTED_TARGET_LANGUAGES` in `backend/app/schemas/auth.py` defines the codes understood by the application.
+`AVAILABLE_TARGET_LANGUAGES` in `backend/app/core/config.py`, with deployment overrides supplied
+through the environment/Compose, defines the operator-enabled subset exposed by the language-management
 API. Selectable authenticated surfaces use the backend-provided available codes to filter the
 frontend catalog.
 
 Every supported language has backend A1-C2 curriculum, grammar, vocabulary, phrasebook, and
 assessment-bank data. The backend is the canonical source for these resources; the frontend loads
 them through the corresponding APIs.
+
+Regional variants are separate memberships and plans. A shared ISO recognition code does not merge
+progress, resources, or active selection.
 
 ## Domain model
 
@@ -87,6 +79,7 @@ The following data is scoped to a study plan and therefore isolated between targ
 - Listening attempts;
 - Reading attempts;
 - Error Detective, Sentence Order, and Vocabulary Pairs sessions, source content, answers, and game XP.
+- Grammar Practice sessions, immutable topic snapshots, challenges, answers, and answer activity.
 
 `progress`, `flashcards`, `user_competencies`, `listening_attempts`, and `reading_attempts` have a
 required `study_plan_id` with `ON DELETE CASCADE`. Lessons also cascade with their plan.
@@ -138,6 +131,20 @@ its owning plan, while generated explanations capture the profile's native langu
 UI locale is independent. Session reads/answers retain resource ownership after switching languages;
 catalog creation checks the active plan, and history is filtered by target language.
 
+Grammar Practice selections belong to `UserLanguage`, uniquely by grammar slug, and survive plan
+replacement. Its retained historical sessions and statistics stay within that exact language,
+including regional variants. Add/generate requests carry the captured plan and language and reject
+changed active context; saved session operations use their original plan. Topic and learner levels
+are separate snapshots. Generation admissions are global per user/UTC day, independent of Games,
+and survive plan or language deletion.
+
+Completed grammar-session voice practice and selected-word saves carry
+`grammar_practice_session_id`, mutually exclusive with `lesson_id`, and resolve the source's owned
+historical plan. Neither a language switch nor a newer plan changes their language, level, or
+flashcard destination. Unavailable sources fail rather than using the active plan. The source is not
+rehydrated when reopening the resulting conversation from text history. See
+`grammar-practice.instructions.md`.
+
 ## Language lifecycle
 
 ### Initial selection
@@ -145,6 +152,13 @@ catalog creation checks the active plan, and history is filtered by target langu
 Registration accepts a target language, with `en-GB` as the default. The authenticated onboarding
 flow establishes the learner's language context and sends the learner to Dashboard. Assessment is
 the separate next action used to create a plan.
+
+Assessment completion honors the explicit `target_language` captured by the client flow. A stale
+Redis quiz session cannot redirect that completion to another language or replace that language's
+active plan. Clients that omit the field or send null retain the profile-scoped quiz session, legacy
+user session, and profile-language fallbacks, in that order. The resolved language must be supported
+and operator-enabled even when it comes from a session or profile. Invalid or disabled codes return
+`422` before creating a language record or replacing a plan.
 
 ### Adding a language
 
@@ -341,10 +355,9 @@ Prompts for Lingu, lessons, flashcards, assessment, level tests, Listening, Read
 conversation receive the target language explicitly. They must not assume English merely because
 both English variants are supported.
 
-Language metadata and prompt overlays preserve regional and writing-system requirements, including
-British/American English, Spanish from Spain, European Portuguese, and CJK scripts. Comprehension
-length guidance uses characters for Japanese and Mainland Chinese and words for word-spaced
-languages.
+Language metadata and prompt overlays preserve regional and writing-system requirements. Language
+capabilities determine comprehension length guidance and text presentation; their mapping belongs to
+`target-language.instructions.md` and prompt composition to `prompts.instructions.md`.
 
 Learning examples and answer content remain in the target language. Translations, explanations,
 hints, and memory-writing instructions that support the learner use the native language where the

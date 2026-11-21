@@ -7,6 +7,10 @@ applyTo: "backend/app/models/**, backend/alembic/**"
 
 All models use SQLAlchemy 2.0 declarative style with `Mapped[T]` type annotations and async engine (`asyncpg` driver). PostgreSQL JSON columns store structured content for lessons, plans, exercises, and skill scores.
 
+This document owns persisted fields, relationships, constraints, and compatibility requirements.
+Domain specifications own workflows and presentation; API schemas define request validation beyond
+database constraints. Alembic revisions define the deployed schema and its upgrade/downgrade behavior.
+
 ## Games (`game_sessions`, `game_admissions`, `game_requests`)
 
 `GameSession` uses a UUID string primary key as creation idempotency key. Required user and plan
@@ -43,6 +47,32 @@ indexed. The submitted plan ID has no FK so the identity survives learning-data 
 check the stored request parameters, not the mode of a reused session. A null session prevents
 reusing that UUID for a different result. These records do not consume admission quota.
 
+## Grammar Practice (`grammar_practice_topics`, `grammar_practice_sessions`, `grammar_practice_requests`)
+
+`GrammarPracticeTopic` has an integer primary key, indexed required `user_language_id` FK with
+`ON DELETE CASCADE`, `grammar_slug` (`String(200)`), and creation timestamp. The unique
+`(user_language_id, grammar_slug)` constraint preserves one selection across plans in that language.
+
+`GrammarPracticeSession` has a UUID string primary key, equal to its creation request UUID. Required
+topic, user, and study-plan FKs cascade on deletion and are indexed. It stores target/native language,
+separate `topic_level` and `learner_level`, title, full `topic_snapshot` JSON, private `challenges` JSON,
+and submitted `answers` JSON. Counters include `answered_count` and `correct_count`; timestamps include
+`created_at`, generation `deadline`, nullable `last_answered_at`, and nullable `completed_at`. Status
+is `generating`, `ready`, `completed`, `failed`, or `abandoned`, with nullable error code. The partial
+unique `uq_grammar_practice_active` index permits only one generating/ready session per
+`(study_plan_id, topic_id)`.
+
+`GrammarPracticeRequest` combines durable request identity and optional free admission. It stores
+the UUID primary key, user FK with account cascade, nullable indexed session FK with `ON DELETE
+SET NULL`, submitted topic/plan IDs and target language, UTC admission date, deadline, and status
+(`bypassed`, `reserved`, `consumed`, `released`). Topic and plan IDs deliberately have no FKs, so
+learning-data deletion preserves the request identity and consumed allowance. A `(user_id, date)`
+index supports global daily quota lookup. New admissions serialize on the user row.
+
+Responses project private challenges rather than exposing model JSON directly. Answer/activity writes
+share the original plan's transaction. Lifecycle, scoring, and deletion implications are defined in
+`grammar-practice.instructions.md`; conversations do not add a grammar-session foreign key.
+
 ## User (`users`)
 
 Registration, authentication, and user preferences.
@@ -61,21 +91,22 @@ Registration, authentication, and user preferences.
 - `flashcard_back_content` — varchar(20), non-null, default `definition` (ORM and database). Account-wide standard flashcard reverse-side preference: `definition` or `translation`, validated by the preferences API.
 - `is_active` — boolean; `false` means the account is disabled by an admin.
 - `is_verified` — boolean email-verification flag; ORM default `false`.
-- `conversation_max_duration` — integer max voice session duration in seconds. Default comes from `DEFAULT_CONVERSATION_MAX_DURATION` (`1800`).
-- `conversation_inactivity_timeout` — integer seconds of silence before disconnect. Default comes from `DEFAULT_CONVERSATION_INACTIVITY_TIMEOUT` (`180`).
+- `conversation_max_duration` — integer max voice session duration in seconds. Default comes from `DEFAULT_CONVERSATION_MAX_DURATION`.
+- `conversation_inactivity_timeout` — integer seconds of silence before disconnect. Default comes from `DEFAULT_CONVERSATION_INACTIVITY_TIMEOUT`.
 - `conversation_speech_pause` — integer milliseconds of silence that end a spoken turn in voice conversation. Allowed values are `0`, `1000`, `2000`, and `3000`; `0` (the default) means the window is derived from the learner's CEFR level.
-- `conversation_weekly_sessions` — integer weekly session counter. Default comes from `DEFAULT_CONVERSATION_WEEKLY_SESSIONS` (`0`, unlimited).
-- `conversation_daily_minutes` — integer daily voice limit in minutes. Default comes from `DEFAULT_CONVERSATION_DAILY_MINUTES` (`30`).
-- `conversation_weekly_minutes` — integer weekly voice limit in minutes. Default comes from `DEFAULT_CONVERSATION_WEEKLY_MINUTES` (`90`).
-- `monthly_tokens_limit` — integer max LLM tokens per billing period. Default comes from `DEFAULT_MONTHLY_TOKENS_LIMIT` (`1 000 000`; `0` means unlimited).
+- `conversation_weekly_sessions` — integer weekly session limit. Default comes from `DEFAULT_CONVERSATION_WEEKLY_SESSIONS`; `0` means unlimited.
+- `conversation_daily_minutes` — integer daily voice limit in minutes. Default comes from `DEFAULT_CONVERSATION_DAILY_MINUTES`; `0` means unlimited.
+- `conversation_weekly_minutes` — integer weekly voice limit in minutes. Default comes from `DEFAULT_CONVERSATION_WEEKLY_MINUTES`; `0` means unlimited.
+- `monthly_tokens_limit` — integer max LLM tokens per billing period. Default comes from `DEFAULT_MONTHLY_TOKENS_LIMIT`; `0` means unlimited.
 - `stripe_customer_id` — nullable string Stripe customer ID, set when a subscription is created.
 - `stripe_subscription_id` — nullable string current Stripe subscription ID. Used to ignore stale webhook events from older subscriptions for the same customer.
-- `subscription_status` — string subscription state: `none` by default, plus Stripe states `trialing`, `active`, `past_due`, `canceled`, `incomplete`, `incomplete_expired`, `unpaid`, and `paused`.
-- `subscription_ends_at` — nullable datetime for the current subscription period end.
+- `subscription_status` — string shared subscription snapshot: `none` by default, plus Stripe-compatible states `trialing`, `active`, `past_due`, `canceled`, `incomplete`, `incomplete_expired`, `unpaid`, and `paused`. RevenueCat synchronization uses this same field rather than a per-store subscription model.
+- `subscription_ends_at` — nullable datetime for the current subscription period end or RevenueCat entitlement expiry, including its grace period. Verified lifetime entitlements have no expiry.
 - `cancel_at_period_end` — boolean subscription cancellation marker; default `false`.
+- `revenuecat_synced_at` — nullable naive-UTC datetime derived from RevenueCat's `request_date_ms`; null until first synchronization. Older provider snapshots cannot replace newer ones. Stripe-only state updates clear this marker.
 - `trial_used` — boolean; `true` once the user has started or completed a trial, preventing repeated free trials. Default: `false`.
 - `assessment_voice_trial_used` — boolean; `true` once the one-time post-assessment voice conversation demo has been consumed. Default: `false`.
-- `freemium_trial_ends_at` — nullable datetime; when the freemium 7-day trial expires. Set on registration when `STRIPE_ENABLED=true` and `FREEMIUM_TRIAL_ENABLED=true`.
+- `freemium_trial_ends_at` — nullable datetime; when the freemium trial expires. Grant conditions and configurable duration are defined in `subscriptions-freemium.instructions.md`.
 - `freemium_trial_used` — boolean; `true` once the user has ever used a freemium trial, preventing repeated trials. Default: `false`.
 - `avatar` — nullable text cache-busted internal avatar reference, for example `/api/avatars/{uuid}.{ext}?v={ms}`. Files are stored under `/app/avatars` and retrieved through authenticated profile endpoints with private no-store responses, not public static serving. Legacy base64 data URLs may still exist until replaced.
 - `bio` — nullable text profile bio.
@@ -84,8 +115,48 @@ Registration, authentication, and user preferences.
 - `created_at` — datetime set automatically on creation.
 - `last_login` — nullable datetime updated on each successful login.
 
+The `DEFAULT_*` values above come from backend `Settings` in `backend/app/core/config.py`, with
+environment overrides, and initialize ORM fields in `backend/app/models/user.py`. Persisted user
+values can differ through profile/admin updates and subscription activation rules.
+
 Registration, session, billing, and Redis quota behavior is defined in `platform.instructions.md` and
 `subscriptions-freemium.instructions.md`; this document defines only their persisted fields.
+
+## RevenueCatWebhookReceipt (`revenuecat_webhook_receipts`)
+
+- `event_id` — varchar(255) primary key, supplied by RevenueCat and reused for retries.
+- `processed_at` — required naive-UTC processing timestamp.
+
+The receipt commits atomically with all account snapshots affected by the event. A rollback leaves
+the event retryable; a committed ID prevents duplicate processing. Receipts contain no customer IDs,
+foreign keys, or raw webhook payloads, and remain valid after account deletion.
+
+## StripeWebhookReceipt (`stripe_webhook_receipts`)
+
+- `event_id` — varchar(255) primary key, supplied by Stripe and reused for retries.
+- `processed_at` — required naive-UTC processing timestamp.
+
+The receipt commits atomically with account updates and activation quotas. Failed processing rolls
+back the receipt, keeping delivery retryable. Receipts contain no raw payloads or account foreign keys.
+
+## BillingCheckout (`billing_checkouts`)
+
+- `user_id` — primary key and foreign key to `users.id` with `ON DELETE CASCADE`; one current reservation
+  per account, independent of study languages.
+- `idempotency_key` — required varchar(36), a server-generated UUID for the Stripe session request.
+- `parameters` — required JSON containing the frozen Checkout request, including Customer, Price,
+  trial parameters, return URLs, identity metadata, reservation metadata, and fixed `expires_at`.
+- `customer_parameters` — nullable JSON containing frozen email, name, and identity metadata while
+  creating a Customer. In this preliminary reservation, `parameters` has no Customer ID and cannot
+  be sent to Checkout. The preliminary row is deleted atomically with persistence of the Customer ID;
+  subsequent session reservations have null `customer_parameters`.
+- `session_id` — nullable varchar(255), filled when the Stripe session ID is known.
+
+Reservations commit before session creation and survive uncertain provider outcomes. Creation and
+replacement serialize on the owning user row. No session URL, payment credentials, or raw provider
+response is persisted. Billing schema compatibility requires preserving existing account state and
+session reservations; `customer_parameters` is nullable for reservations without Customer request data.
+Workflow rules live in `subscriptions-freemium.instructions.md`.
 
 ## DashboardBanner (`dashboard_banners`)
 
@@ -142,16 +213,8 @@ One active plan per user per language, generated after CEFR assessment.
 
 - Partial unique index `uq_active_plan_per_lang` on `(user_language_id)` WHERE `is_active = true` — enforces one active plan per user per language.
 
-**UI intensity / duration presets:**
-
-- Intensive: 4 weeks × 5 days = 20 slots.
-- Standard: 8 weeks × 5 days = 40 slots.
-- Relaxed (default): 12 weeks × 4 days = 48 slots.
-- Very relaxed: 16 weeks × 3 days = 48 slots.
-
-The final slot is reserved for the level-completion test; the remaining slots schedule teaching
-lessons. These presets are not database constraints. Plan creation validates curriculum capacity as
-defined in `study-plan.instructions.md`.
+Duration presets, curriculum capacity, and the reserved completion-test slot are application rules
+defined in `study-plan.instructions.md`, not additional database constraints.
 
 ## Lesson (`lessons`)
 
@@ -179,7 +242,7 @@ Exercises belong to a lesson (1 lesson → many exercises).
 
 - id — Type: integer; Notes: Primary key
 - lesson_id — Type: integer; Notes: FK → lessons
-- exercise_type — Type: string; Notes: `multiple_choice`, `fill_blank`, `free_write`, `pronunciation`
+- exercise_type — Type: string; Notes: `multiple_choice`, `fill_blank`, `free_write`, `pronunciation`, `listening`. Generation restricts these values; the database column remains a string.
 - question — Type: text; Notes: Exercise prompt
 - options — Type: JSON (nullable); Notes: Array of options for multiple-choice exercises
 - correct_answer — Type: text; Notes: Expected answer
@@ -191,6 +254,11 @@ Exercises belong to a lesson (1 lesson → many exercises).
 - answered_at — Type: datetime (nullable); Notes: Set after answering
 
 Exercise rows do not have a dedicated native-language explanation column. New lesson-generation output may include per-exercise `native_explanation` values inside `lessons.content.exercises[*]`; `GET /api/lessons/{id}` merges that optional JSON text into each exercise response by exercise order. The on-demand endpoint `POST /api/lessons/exercises/{id}/native-explanation` writes missing exercise-level native explanations back into the same JSON array.
+
+Listening source text also lives in `lessons.content.exercises[*].listening_text`, not a new column or
+the separate `listening_exercises` table. `listening_ready` is derived for responses and is not stored.
+Its validation, legacy recovery, and evaluation contract belongs to `study-plan.instructions.md`
+(Listening exercises inside lessons).
 
 ## Flashcard (`flashcards`)
 
@@ -213,8 +281,8 @@ SM-2 spaced repetition cards, per user per language.
 
 Content edits preserve ownership, source and scheduling fields. Suspension retains `next_review`, so
 reactivation immediately restores overdue cards to the review queue. The account's reverse-side
-preference is independent of card ownership and study language. The versioned schema is defined by
-`0056_flashcard_management`, following `0055_sentence_order`; defaults apply to existing rows.
+preference is independent of card ownership and study language. Schema defaults initialize existing
+cards as unsuspended and existing accounts with the `definition` preference when adding these fields.
 
 ## FlashcardReviewReceipt (`flashcard_review_receipts`)
 
@@ -227,8 +295,7 @@ Durable idempotency results for accepted flashcard review attempts.
 
 The owning card controls authorization and plan/user cascade deletion. Receipts commit atomically
 with scheduling and progress, are immutable after acceptance, and remain available after later
-reviews or edits. They support response recovery rather than a session-history interface. The table
-is defined by revision `0057_flashcard_review_receipts`, following `0056_flashcard_management`.
+reviews or edits. They support response recovery rather than a session-history interface.
 
 ## Progress (`progress`)
 
@@ -333,10 +400,10 @@ AI-generated listening comprehension exercises shared across users at the same C
 - exercise_type — Type: string; Notes: E.g. `"story"`, `"dialogue"`, `"news_report"` — varies by level
 - topic — Type: string; Notes: Short topic description
 - text — Type: text; Notes: Full transcript (never returned to client before submission)
-- audio_path — Type: string; Notes: Absolute path to MP3 on disk, e.g. `/data/audio/listening/42.mp3`
+- audio_path — Type: string; Notes: Absolute path to MP3 or WAV on disk, e.g. `/data/audio/listening/42.mp3` or `/data/audio/listening/42.wav`
 - duration_seconds — Type: integer; Notes: Persisted duration field; current generation normally leaves its default `0`
 - questions — Type: JSON; Notes: List of `{index, question, options: {A,B,C,D}, correct}` objects
-- play_count — Type: integer; Notes: How many times this exercise has been served (server default 0)
+- play_count — Type: integer; Notes: Incremented on submitted attempts, including replays (server default 0); not a count of audio playback or exercise delivery
 - created_at — Type: datetime; Notes: Auto-set on creation
 
 Composite index: `ix_listening_exercises_level_lang` on `(level, target_language)`.
@@ -368,8 +435,8 @@ AI-generated reading comprehension exercises shared across users at the same CEF
 - exercise_type — Type: string; Notes: `notice`, `email`, `article`, `news`, `blog_post`, `review`, `essay`
 - topic — Type: string; Notes: Short topic description
 - text — Type: text; Notes: Full passage text — **included in exercise response** (unlike listening)
-- questions — Type: JSON; Notes: List of `{index, question, options: {A,B,C,D}, correct}` objects (5 per exercise)
-- view_count — Type: integer; Notes: How many times this exercise has been served (server default 0)
+- questions — Type: JSON; Notes: Generated question objects with `index`, `question`, `options`, and `correct`; five A-D questions are a prompt requirement, not a database constraint
+- view_count — Type: integer; Notes: Incremented on submitted attempts, including replays (server default 0); not a count of passage views or exercise delivery
 - created_at — Type: datetime; Notes: Auto-set on creation
 
 Composite index: `ix_reading_exercises_level_lang` on `(level, target_language)`.
@@ -461,20 +528,22 @@ One moderated product review per user.
 **Business rules:**
 
 - New reviews start as unapproved and must be approved by an admin before public display.
-- Landing/public queries must show only approved reviews with `rating >= 4`.
+- Public visibility requires approval. The carousel additionally requires `rating >= 4` and a
+  nonempty comment; the public aggregate includes all approved ratings, with or without comments.
+  `reviews.instructions.md` owns publication and moderation behavior.
 - Rating-only reviews are valid; `comment` may be null.
 - Deleting a user cascades and deletes their review.
 
 ## ResourceNativeHelp (`resource_native_helps`)
 
-Global cache for native-language study help generated for static learning resources.
+Global cache for native-language study help and post-attempt comprehension explanations.
 
 - id — Type: integer; Notes: Primary key
-- resource_type — Type: string; Notes: `"grammar"`, `"phrasebook"`, or `"vocabulary"`
+- resource_type — Type: string; Notes: `"grammar"`, `"phrasebook"`, `"vocabulary"`, `"reading_explanation"`, or `"listening_explanation"`
 - resource_key — Type: string; Notes: Stable resource identifier, e.g. grammar topic slug
 - target_language — Type: string; Notes: BCP-47 learning language for the source content
 - native_language — Type: string; Notes: User native-language code used for the generated help
-- source_hash — Type: string; Notes: SHA-256 hash of the source static content used to generate `content`
+- source_hash — Type: string; Notes: SHA-256 hash of the source content used to generate `content`
 - content — Type: JSONB; Notes: Generated native-language help JSON
 - created_at — Type: datetime; Notes: Auto-set on creation
 - updated_at — Type: datetime; Notes: Updated whenever stale cached help is regenerated
@@ -491,6 +560,10 @@ Global cache for native-language study help generated for static learning resour
 - Grammar native help keeps target-language example sentences unchanged while translating explanations, notes, traps, and glossary support into the user's native language.
 - Phrasebook native help keeps target-language phrases unchanged while generating native-language usage tips, register notes, phrase notes, traps, and glossary support.
 - Vocabulary native help keeps target-language words and example phrases unchanged while generating native-language study tips, word notes, traps, glossary support, and practice prompts.
+- Comprehension explanations use `resource_key="{exercise_id}:{question_index}"`; content stores an
+  explanation and literal evidence quote, never a learner's answer. The source hash covers passage,
+  question, level and prompt-contract version. Access and lifecycle belong to `services.instructions.md`
+  (Comprehension review help).
 
 ## Memory (`memories`)
 

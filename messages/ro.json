@@ -1,4 +1,276 @@
 {
+  "situations": {
+    "title": "Exersează situații reale",
+    "description": "Alege un scenariu și exersează vorbirea cu Lingu, care va juca rolul persoanei cu care trebuie să discuți.",
+    "search": "Caută situații",
+    "allCategories": "Toate categoriile",
+    "noResults": "Nicio situație nu corespunde căutării tale.",
+    "loadError": "Situațiile nu au putut fi încărcate.",
+    "retry": "Încearcă din nou",
+    "start": "Începe exercițiul",
+    "unavailable": "Această situație nu este disponibilă. Încearcă din nou.",
+    "back": "Înapoi la situații",
+    "contextChanged": "Contextul tău de studiu s-a schimbat. Reîncarcă pagina și începe din nou exercițiul.",
+    "categories": {
+      "daily_life": "Viața de zi cu zi",
+      "travel": "Călătorii",
+      "shopping_services": "Cumpărături și servicii",
+      "social": "Viața socială",
+      "work": "Muncă"
+    },
+    "items": {
+      "bakery_purchase": {
+        "title": "Cumpără de la brutărie",
+        "description": "Lingu va fi vânzătorul de la brutărie. Cere pâine sau ceva pentru micul dejun, precizează cantitatea și întreabă prețul."
+      },
+      "clothes_shopping": {
+        "title": "Cumpără haine",
+        "description": "Discută cu Lingu în rol de vânzător despre mărime și culoare și întreabă dacă poți proba hainele."
+      },
+      "cafe_order": {
+        "title": "Comandă la cafenea",
+        "description": "Lingu va fi ospătarul de la cafenea. Comandă o băutură și ceva de mâncare."
+      },
+      "haircut_appointment": {
+        "title": "Mergi la frizer",
+        "description": "Lingu va fi frizerul tău. Cere o tunsoare simplă și explică cum ai vrea să îți stea părul."
+      },
+      "supermarket_help": {
+        "title": "Cere ajutor la supermarket",
+        "description": "Întreabă-l pe Lingu, în rol de angajat al supermarketului, unde poți găsi produsele pe care le cauți."
+      },
+      "buy_ticket": {
+        "title": "Cumpără un bilet",
+        "description": "Lingu va lucra la casa de bilete. Spune destinația, întreabă despre ora plecării și preț și cumpără un bilet."
+      },
+      "hotel_check_in": {
+        "title": "Cazează-te la hotel",
+        "description": "Lingu va fi recepționerul. Confirmă rezervarea și cere informațiile de bază despre ședere."
+      },
+      "taxi_ride": {
+        "title": "Comandă un taxi",
+        "description": "Sună-l pe Lingu în rol de dispecer de taxi. Spune de unde să te preia și unde mergi și întreabă când ajunge mașina."
+      },
+      "collect_key": {
+        "title": "Ridică cheia",
+        "description": "Ridică cheia apartamentului de vacanță de la Lingu în rol de gazdă și întreabă cum se intră în locuință."
+      },
+      "local_recommendations": {
+        "title": "Întreabă ce poți vizita",
+        "description": "Lingu va fi un localnic. Spune ce te interesează și cere recomandări de locuri de vizitat."
+      },
+      "congratulate_friend": {
+        "title": "Felicită un prieten",
+        "description": "Lingu va fi un prieten care își sărbătorește ziua de naștere sau are o veste bună. Felicită-l și stați puțin de vorbă."
+      },
+      "hobbies_chat": {
+        "title": "Vorbește despre hobby-uri",
+        "description": "Discută cu Lingu în rol de prieten despre ce vă place să faceți în timpul liber și descoperiți interese comune."
+      },
+      "family_chat": {
+        "title": "Vorbește despre familie",
+        "description": "Lingu va fi o cunoștință. Povestește despre familia ta și întreabă despre familia lui."
+      },
+      "invite_friend": {
+        "title": "Invită un prieten în oraș",
+        "description": "Invită-l pe Lingu în rol de prieten să mâncați sau să beți ceva împreună și stabiliți o oră."
+      },
+      "choose_gift": {
+        "title": "Alege un cadou",
+        "description": "Alege un cadou comun cu Lingu în rol de prieten. Discutați despre gusturile persoanei care îl va primi și decideți împreună."
+      },
+      "late_arrival": {
+        "title": "Anunță că întârzii",
+        "description": "Spune-i lui Lingu în rol de coleg că întârzii și precizează aproximativ când vei ajunge."
+      },
+      "work_update": {
+        "title": "Povestește la ce lucrezi",
+        "description": "Discută cu Lingu în rol de coleg despre o sarcină obișnuită de lucru și spune cum avansezi."
+      },
+      "arrange_meeting": {
+        "title": "Organizează o ședință",
+        "description": "Planifică o ședință cu Lingu în rol de coleg și stabiliți o zi și o oră potrivite pentru amândoi."
+      },
+      "colleague_help": {
+        "title": "Cere ajutor unui coleg",
+        "description": "Lingu va fi colegul tău. Explică la ce ai nevoie de ajutor și cere îndrumări."
+      },
+      "break_chat": {
+        "title": "Stai de vorbă în pauză",
+        "description": "Lingu va fi colegul tău. Purtați o conversație relaxată despre lucruri de zi cu zi în pauza de la muncă."
+      },
+      "recount_day": {
+        "title": "Povestește cum ți-a fost ziua",
+        "description": "Povestește-i lui Lingu în rol de prieten ce ai făcut astăzi și ceva ce ți s-a întâmplat."
+      },
+      "weather_chat": {
+        "title": "Vorbește despre vreme",
+        "description": "Lingu va fi vecinul tău. Discutați despre vreme și despre planurile voastre."
+      },
+      "daily_routine": {
+        "title": "Vorbește despre rutina zilnică",
+        "description": "Lingu va fi o cunoștință. Descrie o zi obișnuită din viața ta și întreabă despre rutina lui."
+      },
+      "household_chores": {
+        "title": "Împărțiți treburile casnice",
+        "description": "Lingu va fi colegul tău de apartament. Stabiliți cine se ocupă de fiecare treabă casnică și când."
+      },
+      "plan_dinner": {
+        "title": "Planificați cina",
+        "description": "Lingu va fi colegul tău de apartament. Decideți ce veți găti și discutați despre ingredientele pe care le aveți și cele care vă lipsesc."
+      },
+      "medical_appointment": {
+        "title": "O programare la medic",
+        "description": "Sună la un cabinet medical. Lingu va fi la recepție: explică motivul vizitei și stabilește o dată."
+      },
+      "neighbour_problem": {
+        "title": "O discuție cu un vecin",
+        "description": "Lingu va fi vecinul tău. Explică ce te deranjează acasă și găsiți împreună o soluție cu respect reciproc."
+      },
+      "flat_viewing": {
+        "title": "Vizionarea unui apartament",
+        "description": "Vizitează un apartament cu Lingu în rol de agent imobiliar. Întreabă despre chirie, cheltuieli și condiții."
+      },
+      "school_meeting": {
+        "title": "O întâlnire la școală",
+        "description": "Lingu va fi profesorul copilului tău. Discutați despre organizarea școlară și stabiliți cum să îi sprijiniți învățarea."
+      },
+      "household_repair": {
+        "title": "Programarea unei reparații",
+        "description": "Descrie o defecțiune din casă lui Lingu, care va fi tehnicianul. Întreabă despre cost și stabilește o vizită."
+      },
+      "change_reservation": {
+        "title": "Modificarea unei rezervări",
+        "description": "Discută cu Lingu de la serviciul de rezervări. Explică ce vrei să modifici și confirmă noile condiții."
+      },
+      "hotel_problem": {
+        "title": "O problemă la hotel",
+        "description": "Lingu va fi la recepție. Explică o problemă cu camera ta și cere o soluție potrivită."
+      },
+      "ask_directions": {
+        "title": "Cere indicații",
+        "description": "Întreabă-l pe Lingu, care va fi un localnic, cum să ajungi la destinație și verifică traseul."
+      },
+      "missed_connection": {
+        "title": "Pierderea unei legături",
+        "description": "Ai pierdut o legătură de transport. Discută cu Lingu de la ghișeu pentru a găsi o altă cale spre destinație."
+      },
+      "lost_luggage": {
+        "title": "Bagaj pierdut",
+        "description": "Valiza ta nu a sosit. Descrie-o lui Lingu de la biroul de bagaje și întreabă cum o poți recupera."
+      },
+      "return_purchase": {
+        "title": "Returnarea unui produs",
+        "description": "Explică-i lui Lingu, în rol de vânzător, de ce vrei să returnezi un produs și întreabă despre rambursare."
+      },
+      "restaurant_order": {
+        "title": "Comandă la restaurant",
+        "description": "Lingu va fi ospătarul tău. Întreabă despre preparate, explică preferințele tale și plasează comanda."
+      },
+      "phone_contract": {
+        "title": "Alege un abonament mobil",
+        "description": "Discută cu Lingu în rol de consultant de telefonie. Compară abonamentele și clarifică prețurile și condițiile înainte de a decide."
+      },
+      "bank_appointment": {
+        "title": "O întâlnire la bancă",
+        "description": "Lingu va fi un angajat al băncii. Explică ce ai de rezolvat și întreabă despre documentele necesare și pașii următori."
+      },
+      "delivery_problem": {
+        "title": "O problemă cu livrarea",
+        "description": "Contactează-l pe Lingu de la relații cu clienții. Explică problema cu coletul tău și stabiliți o soluție."
+      },
+      "meet_someone": {
+        "title": "Cunoaște pe cineva",
+        "description": "Lingu va fi o persoană pe care tocmai ai cunoscut-o la o întâlnire. Prezintă-te și descoperiți interese comune."
+      },
+      "make_plans": {
+        "title": "Faceți planuri",
+        "description": "Organizează o ieșire cu Lingu în rol de prieten. Propune activități și stabiliți unde și când vă întâlniți."
+      },
+      "decline_invitation": {
+        "title": "Refuză o invitație",
+        "description": "Lingu va fi un prieten care te invită în oraș. Refuză politicos și propune să vă vedeți cu altă ocazie."
+      },
+      "resolve_misunderstanding": {
+        "title": "Clarifică o neînțelegere",
+        "description": "Clarifică un mesaj înțeles greșit cu Lingu în rol de prieten și reveniți la o discuție prietenoasă."
+      },
+      "host_visitors": {
+        "title": "Primește musafiri",
+        "description": "Lingu va fi un musafir la tine acasă. Urează-i bun venit, oferă-i ceva de băut și explică planurile."
+      },
+      "introduce_yourself": {
+        "title": "Prezintă-te echipei",
+        "description": "Lingu va fi un coleg nou. Prezintă-te, explică rolul tău și pune întrebări despre echipă."
+      },
+      "explain_task": {
+        "title": "Explică o sarcină",
+        "description": "Explică o sarcină lui Lingu în rol de coleg. Descrie pașii și verifică dacă explicația este clară."
+      },
+      "clarify_instructions": {
+        "title": "Clarifică instrucțiunile",
+        "description": "Lingu va fi managerul tău. Pune întrebări despre instrucțiuni neclare și confirmă ce trebuie să faci."
+      },
+      "negotiate_deadline": {
+        "title": "Negociază un termen",
+        "description": "Discută cu Lingu în rol de manager de proiect. Explică o dificultate și stabiliți un termen realist."
+      },
+      "share_proposal": {
+        "title": "Prezintă o propunere",
+        "description": "Prezintă o idee de îmbunătățire lui Lingu în rol de coleg. Explică avantajele și răspunde la întrebări."
+      }
+    }
+  },
+  "grammarPractice": {
+    "retryCreation": "Reîncearcă solicitarea inițială",
+    "voiceAction": "Exersează vocal această temă de gramatică",
+    "voiceDescription": "Începe o conversație vocală cu Lingu despre această temă și exercițiile finalizate. Este necesar accesul la microfon și se aplică limitele de utilizare vocală.",
+    "title": "Practică de gramatică",
+    "description": "Salvează teme din Resurse și exersează în seturi de cinci: trei întrebări cu variante și două completări de spații. Progresul este salvat; nu se acordă XP.",
+    "add": "Exersează",
+    "back": "Înapoi la practica de gramatică",
+    "voiceUnavailable": "Această practică de gramatică nu este disponibilă.",
+    "noPlan": "Ai nevoie de un plan activ în această limbă pentru a adăuga teme sau a genera exerciții. Sesiunile salvate rămân disponibile.",
+    "assessment": "Creează un plan de studiu",
+    "contextChanged": "Contextul de studiu s-a schimbat. Actualizează și încearcă din nou în mod explicit.",
+    "explore": "Explorează gramatica",
+    "empty": "Biblioteca ta de practică este goală. Alege o temă din resursele de gramatică.",
+    "answered": "{count} răspunsuri",
+    "accuracy": "{percent}% corecte",
+    "lastPracticed": "Ultima practică",
+    "never": "Încă nu",
+    "theory": "Vezi teoria",
+    "continue": "Continuă sesiunea",
+    "recover": "Recuperează sesiunea",
+    "generate": "Generează cinci exerciții",
+    "history": "Istoricul sesiunilor",
+    "noHistory": "Nu există încă sesiuni.",
+    "score": "{correct}/{answered} corecte",
+    "generating": "Se pregătesc exercițiile…",
+    "ready": "Gata de continuare",
+    "completed": "Practică finalizată",
+    "failed": "Generarea a eșuat",
+    "abandoned": "Sesiune abandonată",
+    "recoveryError": "Nu am putut confirma starea salvată. Reîncearcă pentru a o recupera fără a retrimite răspunsul.",
+    "another": "Încă un set",
+    "correct": "Corect",
+    "incorrect": "Nu chiar",
+    "yourAnswer": "Răspunsul tău",
+    "solution": "Răspuns corect",
+    "abandon": "Abandonează sesiunea",
+    "abandonDescription": "Închizi această sesiune? Răspunsurile salvate rămân în istoric. Cota de generare nu se restituie.",
+    "choose": "Alege un răspuns",
+    "fillBlank": "Completează spațiul",
+    "check": "Verifică răspunsul"
+  },
+  "questionExplanation": {
+    "show": "De ce acest răspuns",
+    "hide": "Ascunde explicația",
+    "loading": "Se pregătește explicația...",
+    "error": "Explicația nu este disponibilă. Încearcă din nou.",
+    "evidence": "Fragment din textul original",
+    "language": "Explicație în {language}"
+  },
   "landing": {
     "freeTrialNote": "Acces Premium inițial la înregistrare, fără card. Apoi continui gratuit cu limite dacă nu te abonezi.",
     "modes": {
@@ -42,7 +314,7 @@
       },
       "languages": {
         "question": "Ce limbi pot învăța?",
-        "answer": "Engleză britanică și americană, spaniolă, italiană, portugheză, germană, franceză, japoneză, coreeană și chineză continentală. Poți învăța mai multe simultan, cu planuri și progres separat pentru fiecare limbă."
+        "answer": "{languages}. Poți învăța mai multe simultan, cu planuri și progres separat pentru fiecare limbă."
       },
       "start": {
         "question": "Cum încep să învăț?",
@@ -92,12 +364,22 @@
     "footerProduct": "Produs",
     "footerLegal": "Juridic",
     "languageGreetings": {
+      "ru-RU": "Привет!",
+      "sv-SE": "Hej!",
+      "da-DK": "Hej!",
+      "cs-CZ": "Ahoj!",
+      "hr-HR": "Bok!",
+      "fi-FI": "Hei!",
+      "ro-RO": "Bună!",
       "en-US": "Hello!",
       "en-GB": "Hello!",
       "de-DE": "Hallo!",
+      "pl-PL": "Cześć!",
       "es-ES": "¡Hola!",
       "fr-FR": "Bonjour !",
       "it-IT": "Ciao!",
+      "pt-BR": "Oi!",
+      "nl-NL": "Hallo!",
       "pt-PT": "Olá!",
       "ja-JP": "こんにちは！",
       "ko-KR": "안녕하세요!",
@@ -181,7 +463,7 @@
     "failed": "Generare eșuată",
     "abandoned": "Joc abandonat",
     "generatingDescription": "Lingu pregătește și verifică cinci provocări. Poți părăsi pagina și reveni mai târziu.",
-    "failedDescription": "Nu am putut pregăti un joc valid. Nu s-a consumat cota de jocuri. Revino la meniu pentru a încerca din nou.",
+    "failedDescription": "Nu am putut pregăti jocul. Acesta nu se ia în calcul pentru limita ta de jocuri. Revino la meniu pentru a încerca din nou.",
     "contextChanged": "Contextul de învățare s-a schimbat sau modul nu este disponibil. Reîmprospătează înainte de a începe.",
     "challenge": "Provocarea {current} din {total}",
     "detect": "Selectează fragmentul care conține greșeala.",
@@ -242,13 +524,18 @@
     "goToPlan": "Mergi la planul meu"
   },
   "nav": {
+    "situations": "Situații cotidiene",
+    "practiceGrammar": "Practică de gramatică",
+    "learning": "Învățarea mea",
+    "practice": "Exersează",
+    "help": "Ajutor",
     "games": "Jocuri",
     "home": "Acasă",
     "myPlan": "Planul meu",
     "progress": "Progres",
     "flashcards": "Carduri flash",
-    "tutor": "Chat cu tutore",
-    "assessment": "Evaluare",
+    "tutor": "Chat cu Lingu",
+    "assessment": "Evaluarea nivelului",
     "resources": "Resurse",
     "grammar": "Gramatică",
     "vocabulary": "Vocabular",
@@ -256,9 +543,9 @@
     "settings": "Setări",
     "faq": "Întrebări frecvente",
     "admin": "Admin",
-    "conversation": "Conversație",
-    "listening": "Listening",
-    "reading": "Reading",
+    "conversation": "Conversație vocală",
+    "listening": "Înțelegere orală",
+    "reading": "Citire",
     "contact": "Contact",
     "feedback": "Feedback",
     "reviews": "Recenzii",
@@ -349,6 +636,13 @@
       "backToLogin": "Înapoi la autentificare"
     }
   },
+  "accountDeletion": {
+    "cancellationRequired": "Înainte de ștergerea acestui cont, titularul trebuie să anuleze reînnoirea din gestionarea abonamentului. Ștergerea contului nu anulează abonamentul.",
+    "checkoutPending": "O achiziție este în așteptare sau starea ei nu poate fi încă confirmată. Rezolvă situația înainte de a șterge contul. Nicio achiziție nu a fost anulată automat.",
+    "verificationUnavailable": "Starea facturării nu a putut fi verificată. Contul nu a fost șters. Încearcă din nou mai târziu.",
+    "failed": "Contul nu a putut fi șters. Încearcă din nou.",
+    "manageSubscription": "Gestionează abonamentul"
+  },
   "settings": {
     "title": "Setări",
     "sectionAccount": "Cont",
@@ -411,9 +705,12 @@
     "deleteAccountMessage": "Acest lucru va șterge permanent contul tău și toate datele asociate. Această acțiune nu poate fi anulată.",
     "deleteAccountConfirm": "Șterge contul",
     "sectionUsageLimits": "Limite de utilizare",
-    "sectionVoice": "Voce",
-    "voiceHint": "Alege vocea lui Lingu și apasă redare pentru a o asculta.",
-    "voicePlay": "Redă",
+    "sectionVoice": "Vocea lui Lingu",
+    "voiceFemale": "Voce feminină",
+    "voiceMale": "Voce masculină",
+    "voiceHint": "Alege cum vrei să sune vocea lui Lingu.",
+    "voiceCharacter": "Caldă și prietenoasă",
+    "voicePlay": "Ascultă",
     "voiceStop": "Opreşte",
     "quotaSessions": "Sesiuni / săptămână",
     "quotaMinutesDay": "Minute / zi",
@@ -456,7 +753,7 @@
     "cardSessionSecurity": "Sesiune și securitate",
     "cardTheme": "Temă",
     "cardConversationTiming": "Durata conversației",
-    "cardTutorVoice": "Vocea tutorelui",
+    "cardTutorVoice": "Vocea lui Lingu",
     "cardCurrentUsage": "Utilizare curentă",
     "cardProductReview": "Recenzie produs",
     "cardLegalDocuments": "Documente legale",
@@ -490,9 +787,9 @@
       "s4Title": "4. Conținut și interacțiuni AI",
       "s4Body": "Conversațiile cu tutorele AI sunt stocate în baza de date pentru continuitatea învățării. AI poate oferi răspunsuri incorecte — folosește întotdeauna propriul tău raționament. Conținutul generat de tutorele AI (exerciții, corecturi, explicații și alte materiale) îți aparține pentru uz personal. FreeLingo nu revendică drepturi de proprietate asupra conversațiilor tale sau asupra conținutului generat din acestea.",
       "s5Title": "5. Moduri de serviciu",
-      "s5Body": "Implementările auto-găzduite sunt gratuite. Serviciul găzduit de echipa FreeLingo oferă un plan gratuit cu limite de utilizare și abonamente plătite pentru acces nelimitat, disponibile lunar sau anual. Planul gratuit include o perioadă de probă de 7 zile cu acces complet (fără metodă de plată necesară) și ulterior cote zilnice limitate pentru lecții și chat AI, plus cote săptămânale pentru exerciții de ascultare, citire și conversații vocale. Abonamentele plătite elimină toate limitele de utilizare ale acestor funcții. În serviciul găzduit, datele tale sunt stocate pe servere operate de echipa FreeLingo. Limitele actuale de utilizare pentru contul tău sunt disponibile în tabloul de bord.",
+      "s5Body": "Implementările auto-găzduite sunt gratuite. Serviciul găzduit de echipa FreeLingo oferă un plan gratuit cu limite de utilizare și abonamente plătite pentru acces Premium, disponibile lunar sau anual. Planul gratuit are cote zilnice limitate pentru lecții și chat AI, plus cote săptămânale pentru exerciții de ascultare, citire și conversații vocale. Atunci când este oferită, perioada inițială de probă asigură acces Premium fără metodă de plată, pentru durata indicată în contul tău. Abonamentele plătite și perioada de probă elimină cotele planului gratuit, dar limitele generale ale contului, inclusiv cele pentru utilizarea AI și conversațiile vocale, rămân valabile. În serviciul găzduit, datele tale sunt stocate pe servere operate de echipa FreeLingo. Limitele actuale de utilizare pentru contul tău sunt disponibile în tabloul de bord.",
       "s6Title": "6. Abonament și facturare",
-      "s6Body": "Planul gratuit oferă acces limitat la funcțiile AI și o perioadă de probă completă de 7 zile pentru utilizatorii noi. Abonamentele plătite sunt lunare sau anuale și se reînnoiesc automat dacă nu sunt anulate în prealabil. Le poți anula din Setări, cu efect la sfârșitul perioadei curente. Operatorul poate anula reînnoirile sau abonamentele dacă serviciul este modificat sau închis. Dacă serviciul se încheie înaintea unei perioade plătite, se aplică rambursarea impusă de legislația consumatorilor.",
+      "s6Body": "Planul gratuit oferă acces limitat la funcțiile AI și, atunci când este oferită, o perioadă inițială de probă Premium pentru utilizatorii noi fără metodă de plată, pentru durata indicată în contul tău. Premium elimină cotele planului gratuit; limitele generale ale contului rămân valabile, inclusiv în perioada de probă. Abonamentele plătite sunt lunare sau anuale și se reînnoiesc automat dacă nu sunt anulate în prealabil. Le poți anula din Setări, cu efect la sfârșitul perioadei curente. Operatorul poate anula reînnoirile sau abonamentele dacă serviciul este modificat sau închis. Dacă serviciul se încheie înaintea unei perioade plătite, se aplică rambursarea impusă de legislația consumatorilor.",
       "s7Title": "7. Disponibilitate",
       "s7Body": "Serviciul găzduit este oferit fără garanții de continuitate sau disponibilitate. Operatorul îl poate modifica, suspenda sau închide oricând din motive tehnice, financiare sau de altă natură. Când este rezonabil posibil, închiderile planificate vor fi anunțate în aplicație sau prin e-mail. După data anunțată, conturile și datele operaționale pot fi șterse fără recuperare. FreeLingo nu oferă servicii de backup sau un instrument automat de export.",
       "s8Title": "8. Limitarea răspunderii",
@@ -599,16 +896,16 @@
     "performanceNeedsPractice": "Necesită practică",
     "performanceInProgress": "În progres",
     "performanceStrong": "Puternic",
-    "premiumBannerTitle": "Deblochează conversație, listening și reading",
+    "premiumBannerTitle": "Mai multă practică de conversație, ascultare și citire",
     "premiumBannerDesc": "Începe cu o probă gratuită și exersează cu Lingu prin text, voce și exerciții adaptate nivelului tău.",
-    "premiumBannerDescTrialUsed": "Activează Premium pentru a debloca chat cu Lingu, conversație vocală, reading și listening.",
+    "premiumBannerDescTrialUsed": "Activează Premium pentru mai multă practică prin chat cu Lingu, conversații vocale, citire și ascultare.",
     "premiumBannerCta": "Probă gratuită",
     "premiumBannerCtaTrialUsed": "Vezi planurile",
     "premiumBannerPastDueTitle": "Plată în așteptare",
     "premiumBannerPastDueDesc": "Actualizează metoda de plată pentru a restabili accesul Premium la chat, conversație vocală, reading și listening.",
     "premiumBannerPastDueCta": "Restabilește Premium",
     "freemiumTrialTitle": "{days, plural, one {# zi de test gratuit} other {# zile de test gratuit}}",
-    "freemiumTrialDesc": "Bucură-te de acces nelimitat la chat, voce, listening și reading. Încearcă tot Premium gratuit.",
+    "freemiumTrialDesc": "Încearcă gratuit accesul Premium la chat, voce, ascultare și citire. Limitele generale ale contului tău rămân valabile.",
     "announcementDismiss": "Închide anunțul",
     "announcementDismissError": "Anunțul nu a putut fi închis. Încearcă din nou."
   },
@@ -757,6 +1054,7 @@
     "generatingError": "Generarea lecției a eșuat",
     "loading": "Se încarcă planul...",
     "learningRoadmap": "Foaia de parcurs",
+    "progressSummary": "{completed} din {total} lecții finalizate",
     "level": "Nivel",
     "duration": "Durată",
     "durationDetail": "{weeks} săptămâni · {days} zile/săptămână",
@@ -815,7 +1113,7 @@
     "feedback": "Feedback",
     "corrections": "Corectări",
     "completeLesson": "Finalizează lecția",
-    "completing": "Se finalizează...",
+    "completing": "Se salvează progresul și se pregătește următoarea lecție...",
     "relatedGrammar": "Gramatică conexă",
     "explanation": "Explicație",
     "exercises": "Exerciții",
@@ -828,7 +1126,14 @@
     "showNativeExplanation": "Arată în",
     "hint": "Indiciu",
     "showNativeHint": "Arată indiciu în",
+    "showQuestionTranslation": "Arată traducerea întrebării în {language}",
+    "hideQuestionTranslation": "Ascunde traducerea întrebării",
+    "translatingQuestion": "Se traduce întrebarea...",
+    "questionTranslationError": "Întrebarea nu a putut fi tradusă. Încearcă din nou.",
+    "retryQuestionTranslation": "Încearcă din nou să traduci întrebarea",
     "regenerateExercise": "Regenerează exercițiul",
+    "listeningIncomplete": "Acest exercițiu de ascultare este incomplet. Regenerează-l înainte de a răspunde.",
+    "listeningUnavailable": "Sunetul nu este disponibil pentru acest exercițiu salvat. Răspunsul și scorul înregistrate sunt păstrate.",
     "regeneratingExercise": "Se regenerează...",
     "regenerateError": "Exercițiul nu a putut fi regenerat. Încearcă din nou.",
     "regenerateNotNeeded": "Acest exercițiu nu trebuie regenerat.",
@@ -1277,6 +1582,12 @@
   "faq": {
     "title": "Întrebări frecvente",
     "subtitle": "Întrebări frecvente",
+    "sectionGettingStarted": "Primii pași și limbile de studiu",
+    "sectionPractice": "Resurse și practică",
+    "sectionLingu": "Conversații cu Lingu",
+    "sectionSubscription": "Planuri și limite de utilizare",
+    "sectionAccount": "Cont și ajutor",
+    "sectionAdmin": "Administrare",
     "q_start": "De unde încep?",
     "a_start": "Alege limba de studiu și deschide <strong>Evaluarea</strong> pentru a-ți estima nivelul. Dacă începi de la zero, poți alege A1 fără test. Confirmă nivelul și durata pentru a crea <strong>Planul de studiu</strong> pentru acea limbă.",
     "q_workflow": "Care este fluxul complet de lucru?",
@@ -1287,7 +1598,7 @@
     "workflowStep5": "Folosește carduri flash pentru a antrena vocabularul în paralel",
     "workflowStep6": "Exersează conversația liberă cu Lingu",
     "q_language": "Ce limbă voi învăța?",
-    "a_language": "FreeLingo suportă în prezent mai multe limbi (chineză continentală, coreeană, engleză americană, engleză britanică, franceză, germană, italiană, japoneză, portugheză, spaniolă) și vom adăuga mai multe în timp. Când o nouă limbă devine disponibilă, o vei găsi în Setări → Limbile mele — adaug-o și începe să înveți imediat.",
+    "a_language": "FreeLingo suportă în prezent mai multe limbi ({languages}) și vom adăuga mai multe în timp. Când o nouă limbă devine disponibilă, o vei găsi în Setări → Limbile mele — adaug-o și începe să înveți imediat.",
     "q_assessment": "Ce este Evaluarea?",
     "a_assessment": "Un test adaptiv cu cel mult 15 întrebări dintr-o bancă specifică limbii de studiu. Acoperă gramatica, vocabularul și înțelegerea lecturii de la A1 la C2. Rezultatul estimează nivelul CEFR și indică punctele forte și aspectele de exersat; poți ajusta nivelul sugerat înainte de a crea planul.",
     "q_studyPlan": "Ce este Planul de studiu și cum îl generez?",
@@ -1301,11 +1612,11 @@
     "q_tutor": "Cum pot exersa cu Lingu?",
     "a_tutor": "Lingu adaptează răspunsurile la limba de studiu activă și contextul planului. Pune întrebări de gramatică, cere explicații, exersează scrierea în acea limbă sau conversează. Conversațiile sunt salvate separat pe limbi și pot fi reluate din istoric.",
     "q_voice": "Cum funcționează conversația vocală?",
-    "a_voice": "Modul <strong>Conversație vocală</strong> îți permite să vorbești cu Lingu în timp real. Apasă Start pentru a începe — aplicația detectează automat vocea ta prin detecția activității vocale (VAD) și tutorele răspunde cu sinteză vocală. Poți întrerupe tutorele în orice moment (barge-in). Sesiunea se încheie când se atinge limita de timp sau apeși Stop. Asigură-te că browserul are permisiunea de a accesa microfonul.",
+    "a_voice": "În <strong>Conversație vocală</strong>, apasă Începe sesiunea și permite accesul la microfon. Aplicația detectează când vorbești, iar Lingu răspunde vocal. Așteaptă ca Lingu să termine înainte de a vorbi din nou: dacă vorbești peste tutore, răspunsul său nu se întrerupe. În <settingsLink>Setări</settingsLink>, poți ajusta pauza înainte de trimiterea intervenției tale, durata sesiunii și timpul maxim de inactivitate. Sesiunea se încheie când apeși Oprește sau atingi una dintre limitele aplicabile.",
     "q_listening": "Cum funcționează exercițiile de ascultare?",
-    "a_listening": "În <strong>Listening</strong>, Lingu pregătește exerciții de ascultare adaptate nivelului tău CEFR. Ascultă audio și răspunde la 5 întrebări de înțelegere. După trimitere, primești scorul (0–5), XP, răspunsurile corecte și transcrierea completă. Poți genera exerciții noi la cerere.",
+    "a_listening": "În <strong>Înțelegere orală</strong>, Lingu pregătește exerciții de ascultare adaptate nivelului tău CEFR. Ascultă înregistrarea, apoi răspunde la 5 întrebări de înțelegere. După trimiterea răspunsurilor, poți consulta scorul (0–5), XP câștigate, răspunsurile corecte și transcrierea completă. Selectează <strong>De ce acest răspuns</strong> pentru a solicita o explicație în limba ta maternă, cu un fragment din transcriere care justifică răspunsul. Poți solicita exerciții noi în limitele de utilizare ale contului tău.",
     "q_reading": "Cum funcționează exercițiile de citire?",
-    "a_reading": "Secțiunea <strong>Reading</strong> generează texte la nivelul tău CEFR — anunțuri, e-mailuri, articole, postări de blog și multe altele. Citește textul și răspunde la 5 întrebări cu variante multiple. După trimitere, primești scorul (0–5) și XP. Exerciții noi pot fi generate la cerere.",
+    "a_reading": "În <strong>Citire</strong>, Lingu pregătește texte la nivelul tău CEFR, precum anunțuri, e-mailuri și articole. Citește textul și răspunde la 5 întrebări cu variante de răspuns. După trimiterea răspunsurilor, poți consulta scorul (0–5), XP câștigate și răspunsurile corecte. Selectează <strong>De ce acest răspuns</strong> pentru a solicita o explicație în limba ta maternă, cu un fragment din text care justifică răspunsul. Poți solicita exerciții noi în limitele de utilizare ale contului tău.",
     "q_providers": "Ce furnizori AI acceptă FreeLingo?",
     "a_providers_intro": "Configurabil în <code>.env</code> prin <code>LLM_PROVIDER</code>:",
     "provider_ollama": "Local, gratuit. Necesită Ollama pe gazdă. Model recomandat: gemma4:e4b.",
@@ -1313,11 +1624,25 @@
     "provider_anthropic": "Anthropic Claude. Necesită ANTHROPIC_API_KEY.",
     "provider_deepseek": "DeepSeek API. Necesită DEEPSEEK_API_KEY.",
     "q_invite": "Pot invita pe alții?",
-    "a_invite": "Da. Prin <adminLink>Admin → Utilizatori</adminLink>, administratorul poate crea utilizatori direct sau poate genera linkuri de invitație de unică folosință care expiră după 48 de ore. Înregistrarea publică este dezactivată implicit (<code>ALLOW_REGISTRATION=false</code>).",
+    "a_invite": "Da. Din <adminLink>Admin → Utilizatori</adminLink>, administratorii pot crea utilizatori direct sau pot genera linkuri de invitație de unică folosință care expiră după 48 de ore. Înregistrarea publică depinde de setarea <code>ALLOW_REGISTRATION</code> a serverului.",
     "q_password": "Cum îmi schimb parola sau limba maternă?",
     "a_password": "Mergi la <settingsLink>Setări</settingsLink>. Acolo poți actualiza numele afișat, limba maternă și parola.",
     "q_uiLanguage": "Cum schimb limba platformei?",
-    "a_uiLanguage": "Mergi la <settingsLink>Setări</settingsLink> și găsește meniul derulant <strong>Limba platformei</strong> în secțiunea Profil. Selectează limba preferată și întreaga interfață se va schimba imediat.",
+    "a_uiLanguage": "Mergi la <settingsLink>Setări</settingsLink> și găsește meniul derulant <strong>Limba interfeței</strong> în profilul tău. Selectează limba preferată și apasă <strong>Salvează modificările</strong>. După salvare, pagina se reîncarcă în limba selectată. Acest lucru nu schimbă limba pe care o înveți.",
+    "q_multiLanguage": "Pot învăța mai multe limbi fără să-mi pierd progresul?",
+    "a_multiLanguage": "Da. Adaugă o limbă în <languagesLink>Setări → Limbile mele</languagesLink> și folosește selectorul de limbă pentru a trece de la una la alta. Fiecare limbă își păstrează propriul plan, progres, carduri flash și istoric al conversațiilor. Schimbarea limbii nu șterge progresul salvat. Setările contului, abonamentul, cotele de utilizare și amintirile lui Lingu sunt comune tuturor limbilor.",
+    "q_grammarPractice": "Cum exersez o anumită temă de gramatică?",
+    "a_grammarPractice": "Deschide o temă în <grammarLink>Resurse → Gramatică</grammarLink> și selectează <strong>Exersează</strong> pentru a o adăuga în biblioteca ta personală de practică de gramatică. Cu un plan activ, poți genera seturi de cinci exerciții: trei întrebări cu variante de răspuns și două de completare a spațiilor libere. Răspunsurile și rezultatele sunt salvate, astfel încât să-ți poți urmări practica. Această activitate nu acordă XP.",
+    "q_games": "Ce jocuri sunt disponibile și ce mod să aleg?",
+    "a_games": "În <gamesLink>Jocuri</gamesLink>, poți identifica și corecta greșeli în Detectivul greșelilor, ordona fragmente în Ordonează propoziția sau asocia cuvinte cu sensurile lor în Perechi de vocabular. Alege modul de recapitulare pentru a reveni la lecțiile finalizate, modul de pregătire pentru a consolida materialul cunoscut legat de următoarea lecție sau practica liberă pentru a lucra la nivelul planului tău. Modurile pentru care nu există suficient material sunt dezactivate și însoțite de o explicație.",
+    "q_plans": "Care este diferența dintre planul gratuit, Premium și perioada de probă?",
+    "a_plans": "Planul gratuit îți permite să înveți cu cote de utilizare. Premium elimină aceste cote ale planului gratuit, dar limitele generale ale contului se aplică în continuare. Dacă ai o perioadă de probă inițială fără card, la finalul ei poți continua cu planul gratuit, fără o plată automată. Orice perioadă de probă oferită la abonare este separată și poate necesita un card. Verifică-ți starea și condițiile actuale ale abonamentului în <billingLink>Setări → Plan și abonament</billingLink>.",
+    "q_quotas": "De ce am atins o limită și când se resetează?",
+    "a_quotas": "Cotele de utilizare aparțin contului tău și sunt comune tuturor limbilor studiate. Cotele zilnice gratuite se resetează la 00:00 UTC, iar cele săptămânale gratuite, lunea la 00:00 UTC. Verifică cota rămasă în fiecare activitate și limitele generale ale contului în <billingLink>Setări</billingLink>. Funcțiile exclusive Premium nu se deblochează dacă aștepți resetarea unei cote, iar limitele generale ale contului se aplică și pentru Premium și perioadele de probă.",
+    "q_cancelSubscription": "Cum anulez reînnoirea abonamentului?",
+    "a_cancelSubscription": "Mergi la <billingLink>Setări → Plan și abonament</billingLink>, selectează <strong>Gestionează abonamentul</strong> și finalizează anularea în portalul care se deschide. Dacă anulezi reînnoirea cu efect la sfârșitul perioadei curente, păstrezi accesul până la încheierea acelei perioade. Ștergerea contului nu anulează facturarea: trebuie să anulezi mai întâi reînnoirea.",
+    "q_memories": "Ce reține Lingu despre mine și cum pot șterge aceste informații?",
+    "a_memories": "Lingu poate salva detalii personale utile din conversațiile scrise și vocale pentru a personaliza răspunsurile viitoare. Aceste amintiri sunt comune tuturor limbilor studiate. În <memoriesLink>Setări → Memorie</memoriesLink>, le poți consulta, poți adăuga propriile amintiri, le poți șterge individual sau le poți șterge pe toate.",
     "q_feedback": "Cum pot sugera o funcționalitate nouă sau raporta o eroare?",
     "a_feedback": "Folosește secțiunea <feedbackLink>Feedback</feedbackLink> din bara laterală. Poți crea sugestii pentru funcționalități noi sau raporta erori. Votează ideile altor utilizatori, lasă comentarii și urmărește statusul fiecărei cereri. Toate trimiterile sunt publice și sunt revizuite de administrator."
   },
@@ -1361,14 +1686,14 @@
     "statusSpeaking": "Vorbește...",
     "statusThinking": "Se pregătește răspunsul...",
     "statusError": "Eroare",
-    "errorServicesDisabled": "Serviciile vocale nu sunt activate pe acest server.",
+    "errorServicesDisabled": "Conversațiile vocale nu sunt disponibile. Contactează echipa de asistență dacă ai nevoie de ajutor.",
     "errorConnection": "Eroare de conexiune. Încearcă din nou.",
     "errorTranscription": "Nu s-a putut transcrie ce ai spus. Încearcă să vorbești din nou.",
     "errorResponse": "Lingu nu a putut răspunde. Încearcă din nou.",
     "errorSpeech": "Nu s-a putut genera sunetul pentru răspunsul lui Lingu. Încearcă din nou.",
     "errorUnauthorized": "Sesiune expirată. Reîmprospătează pagina.",
-    "errorMic": "Accesul la microfon a fost refuzat.",
-    "errorVadInit": "Inițializarea detectării vocii a eșuat. Verifică dacă browserul tău suportă WebAssembly.",
+    "errorMic": "Nu putem accesa microfonul. Verifică permisiunile din browser și încearcă din nou.",
+    "errorVadInit": "Nu am putut porni conversația vocală. Reîncarcă pagina sau încearcă un browser actualizat.",
     "warningTimeout": "Sesiunea se va încheia în {seconds}s",
     "sessionEnded": "Sesiune încheiată",
     "tapToStart": "Vorbește când ești gata",
@@ -1379,14 +1704,14 @@
     "quotaUnlimited": "Nelimitat",
     "quotaExceededSessions": "Ai folosit toate sesiunile pentru această săptămână.",
     "quotaExceededTime": "Ai folosit tot timpul zilnic de practică.",
-    "quotaExceededTokens": "Ai folosit toți tokenii IA lunari.",
+    "quotaExceededTokens": "Ai atins limita lunară de utilizare a IA. Poți continua după reînnoirea acesteia.",
     "freemiumVoiceRemaining": "Voce gratuită: {remaining}/{limit} min săptămâna aceasta",
     "quotaTokens": "Tokeni luna aceasta",
     "memoryUpdated": "Memorie actualizată",
     "trialBanner": "Conversație gratuită după evaluare · {minutes} min",
     "trialCtaLabel": "Continuă să vorbești",
     "trialCtaTitle": "Continuă să exersezi cu Lingu",
-    "trialCtaDesc": "Deblochează conversații vocale complete, chat cu profesorul și exerciții de ascultare și citire cu Premium.",
+    "trialCtaDesc": "Exersează mai mult prin conversații vocale, chat cu profesorul și exerciții de ascultare și citire cu Premium.",
     "startersHint": "Sau începe cu un subiect",
     "starters": [
       "Artă și creativitate",
@@ -1430,6 +1755,8 @@
     "ariaStop": "Oprește înregistrarea"
   },
   "audioPlayer": {
+    "ariaPause": "Pune sunetul pe pauză",
+    "ariaSeek": "Poziția înregistrării audio",
     "listen": "Ascultă",
     "stop": "Oprește",
     "ariaListen": "Ascultă pronunția",
@@ -1474,13 +1801,39 @@
     "supportedLanguages": "Limbi disponibile"
   },
   "targetLanguages": {
+    "ro-RO": "Română (România)",
+    "ro": "Română",
+    "ro-RO-description": "Limba română vorbită în România.",
+    "fi-FI": "Finlandeză",
+    "fi": "Finlandeză",
+    "fi-FI-description": "Finlandeza vorbită în Finlanda.",
+    "hr-HR": "Croată",
+    "hr": "Croată",
+    "hr-HR-description": "Croata vorbită în Croația.",
+    "cs-CZ": "Cehă",
+    "cs": "Cehă",
+    "cs-CZ-description": "Ceha vorbită în Cehia.",
+    "da-DK": "Daneză",
+    "da": "Daneză",
+    "da-DK-description": "Daneza vorbită în Danemarca.",
+    "sv-SE": "Suedeză",
+    "sv": "Suedeză",
+    "sv-SE-description": "Suedeza vorbită în Suedia.",
+    "ru-RU": "Rusă",
+    "ru": "Rusă",
+    "ru-RU-description": "Rusa vorbită în Rusia, scrisă cu alfabetul chirilic.",
+    "nl-NL": "Neerlandeză (Țările de Jos)",
+    "nl": "Neerlandeză",
+    "nl-NL-description": "Neerlandeza vorbită în Țările de Jos.",
     "en-US": "Engleză americană",
     "en-GB": "Engleză britanică",
     "es-ES": "Spaniolă",
     "it-IT": "Italiană",
-    "pt-PT": "Portugheză",
+    "pt-BR": "Portugheză (Brazilia)",
+    "pt-PT": "Portugheză (Portugalia)",
     "fr-FR": "Franceză",
     "de-DE": "Germană",
+    "pl-PL": "Poloneză",
     "ja-JP": "Japoneză",
     "ko-KR": "Coreeană",
     "zh-CN": "Chineză continentală",
@@ -1490,16 +1843,19 @@
     "pt": "portugheză",
     "fr": "franceză",
     "de": "germană",
+    "pl": "Poloneză",
     "ja": "japoneză",
     "ko": "coreeană",
     "zh": "chineză",
     "es-ES-description": "Spaniola vorbită în Spania.",
     "it-IT-description": "Italiana vorbită în Italia.",
+    "pt-BR-description": "Portugheza vorbită în Brazilia.",
     "pt-PT-description": "Portugheza vorbită în Portugalia.",
     "en-US-description": "Engleza vorbită în Statele Unite.",
     "en-GB-description": "Engleza vorbită în Regatul Unit.",
     "fr-FR-description": "Franceza vorbită în Franța.",
     "de-DE-description": "Germana vorbită în Germania.",
+    "pl-PL-description": "Poloneza așa cum se vorbește în Polonia.",
     "ja-JP-description": "Japoneza vorbită în Japonia.",
     "ko-KR-description": "Coreeana vorbită în Coreea de Sud.",
     "zh-CN-description": "Chineză mandarină din China continentală, cu caractere simplificate."
@@ -1527,18 +1883,18 @@
     "trialHeadlineTrialUsed": "Premium",
     "trialTitle": "Începe cu {days} zile gratuite",
     "trialTitleTrialUsed": "Activează FreeLingo Premium",
-    "trialDesc": "Primești acces la Lingu, practică vocală, ascultare și citire înainte de prima plată.",
-    "trialDescTrialUsed": "Alege un plan pentru a debloca Lingu, practica vocală, listening și reading.",
+    "trialDesc": "Încearcă accesul Premium pentru practică cu Lingu, exerciții vocale, ascultare și citire înainte de prima plată.",
+    "trialDescTrialUsed": "Alege un plan pentru mai multă practică cu Lingu, exerciții vocale, ascultare și citire.",
     "trialCtaMonthly": "Încearcă gratuit, apoi {price}€/lună",
     "trialCtaMonthlyTrialUsed": "Lunar flexibil · {price}€/lună",
     "trialCtaYearly": "Încearcă gratuit, apoi {price}€/an · 2 luni gratuite",
     "trialCtaYearlyTrialUsed": "Cea mai bună ofertă · {price}€/an · 2 luni gratuite",
     "trialSkip": "Continuă cu funcțiile gratuite",
-    "trialNoCharge": "Fără taxă azi. Card necesar, anulează oricând.",
-    "trialNoChargeTrialUsed": "Verifică suma înainte de abonare. Anulează oricând.",
+    "trialNoCharge": "Abonarea începe o perioadă de probă separată de {days} zile; zilele rămase din proba inițială nu se adaugă. Este necesar un card; prima plată va fi la final, dacă nu anulezi înainte.",
+    "trialNoChargeTrialUsed": "Abonamentul plătit începe în momentul abonării. Verifică suma înainte de abonare. Anulează oricând.",
     "trialError": "Plata nu a putut fi inițiată. Încearcă din nou.",
     "freemiumTrialTitle": "Perioada ta de probă gratuită a început",
-    "freemiumTrialDesc": "Bucură-te de acces nelimitat la toate funcțiile timp de 7 zile. Fără card. Fă upgrade la Premium oricând din tabloul de bord.",
+    "freemiumTrialDesc": "În perioada de probă, bucură-te de acces Premium fără card. Limitele generale ale contului tău rămân valabile. Abonează-te la Premium oricând din tabloul de bord.",
     "freemiumChatLabel": "Chat cu Lingu",
     "freemiumVoiceLabel": "Conversații vocale",
     "freemiumListeningLabel": "Exerciții de ascultare",
@@ -1592,14 +1948,18 @@
     }
   },
   "billing": {
+    "paywallSituationsTitle": "Continuă să exersezi situații reale",
+    "paywallSituationsDesc": "Ai folosit exercițiile gratuite de situații din această săptămână sau această funcție necesită Premium. Cu Premium poți exersa mai mult; limitele generale pentru voce se aplică în continuare.",
+    "paywallGrammarPracticeTitle": "Continuă să exersezi gramatica",
+    "paywallGrammarPracticeDesc": "Ai folosit seturile gratuite de azi. Cu Premium poți genera mai multe; sesiunile salvate rămân disponibile.",
     "planFreeTrialDesc": "Încearcă accesul Premium la înregistrare, fără card sau abonament. Apoi continuă gratuit cu limite de utilizare.",
     "paywallGamesTitle": "Continuă să exersezi prin jocuri",
     "paywallGamesDesc": "Ai epuizat cota gratuită sau jocurile necesită Premium. Poți relua jocurile existente.",
     "paywallLabel": "Premium necesar",
     "paywallTitle": "Deblochează FreeLingo Premium",
-    "paywallDesc": "Încearcă gratuit {days} zile și deblochează toată practica Premium înainte de prima plată.",
-    "paywallDescTrialUsed": "Deblochează toată practica Premium și verifică suma înainte de confirmare.",
-    "paywallChatTitle": "Exersează cu Lingu fără limite",
+    "paywallDesc": "Încearcă gratuit {days} zile și exersează mai mult cu Premium înainte de prima plată.",
+    "paywallDescTrialUsed": "Exersează mai mult cu Premium și verifică suma înainte de confirmare.",
+    "paywallChatTitle": "Mai multă practică cu Lingu",
     "paywallChatDesc": "Pune întrebări, primește corecturi și conversează în scris cu Lingu.",
     "paywallLessonsTitle": "Completează lecții nelimitate",
     "paywallLessonsDesc": "Gramatică, vocabular, citire și scriere — termină câte lecții dorești în fiecare zi.",
@@ -1626,7 +1986,7 @@
     "month": "lună",
     "year": "an",
     "planFeature": {
-      "feature1": "Acces nelimitat — fără limite zilnice sau săptămânale",
+      "feature1": "Fără cotele planului gratuit; limitele generale ale contului rămân valabile",
       "feature2": "2 luni gratuite"
     },
     "planFreeName": "Gratuit",
@@ -1635,6 +1995,7 @@
     "ctaRegister": "Începe proba gratuită",
     "ctaRegisterTrialUsed": "Alege planul",
     "freeFeature": {
+      "situations": "Situații exersate prin voce",
       "f1": "Test de nivel & evaluare",
       "f2": "Plan de studiu personalizat",
       "lessons": "Finalizarea lecțiilor",
@@ -1648,9 +2009,9 @@
       "l4": "Exerciții de citire",
       "l5": "Probă completă de 7 zile"
     },
-    "successLabel": "Plată confirmată",
+    "successLabel": "Abonament confirmat",
     "successTitle": "Bun venit la FreeLingo Premium!",
-    "successDesc": "Abonamentul tău este acum activ. Bucură-te de acces nelimitat la toate funcțiile.",
+    "successDesc": "Abonamentul tău este acum activ. Bucură-te de acces Premium în limitele generale ale contului tău.",
     "successCheckingLabel": "Se confirmă abonamentul",
     "successCheckingTitle": "Verificăm abonamentul",
     "successCheckingDesc": "De obicei durează câteva secunde.",
@@ -1662,12 +2023,12 @@
     "successErrorDesc": "Mergi la tabloul de bord și reîmprospătează în curând sau verifică setările de facturare.",
     "successRedirect": "Redirecționare spre tabloul de bord în {seconds}s...",
     "successCta": "Mergi la tabloul de bord",
-    "canceledLabel": "Plată anulată",
-    "canceledTitle": "Nu a fost efectuată nicio taxă",
-    "canceledDesc": "Nu a fost efectuată nicio taxă. Progresul tău este în siguranță și poți alege un plan mai târziu din setări.",
+    "canceledLabel": "Proces de abonare întrerupt",
+    "canceledTitle": "Ai părăsit procesul de abonare",
+    "canceledDesc": "Progresul tău este salvat. Poți verifica abonamentul sau alege un plan din Setări.",
     "canceledCtaDashboard": "Mergi la tabloul de bord",
     "canceledCtaSettings": "Vezi planurile",
-    "canceledNoCharge": "Nu a fost efectuată nicio taxă în această sesiune · alege un plan oricând",
+    "canceledNoCharge": "Verifică abonamentul din Setări",
     "section": "Abonament",
     "status": "Status",
     "statusActive": "Activ",
@@ -1687,7 +2048,7 @@
     "pastDueTitle": "Plată în așteptare",
     "pastDueDesc": "Actualizează metoda de plată pentru a restabili accesul Premium.",
     "subscribe": "Abonează-te",
-    "portalError": "Nu s-a putut deschide portalul de facturare. Încearcă din nou.",
+    "portalError": "Nu am putut deschide administrarea abonamentului. Încearcă din nou.",
     "openSourceTitle": "Sursă deschisă",
     "openSourceDesc": "Găzduieşte-l gratuit pe propriul server",
     "openSourceCta": "Vezi pe GitHub",
@@ -1699,7 +2060,47 @@
     "planFreeCta": "Începe",
     "limitedLabel": "Limitat"
   },
+  "premiumOffer": {
+    "navLabel": "Premium",
+    "viewPremium": "Descoperă Premium",
+    "planSection": "Plan și abonament",
+    "viewPlans": "Vezi planurile",
+    "stayFree": "Continuă cu planul gratuit",
+    "expiredTitle": "Perioada ta de probă Premium s-a încheiat",
+    "expiredDescription": "Progresul tău este salvat. Poți continua să înveți gratuit cu limite de utilizare sau poți alege Premium pentru mai multă practică alături de Lingu, lecții, jocuri, citire și ascultare. Limitele generale ale contului se aplică în continuare.",
+    "resultTitle": "Continuă să progresezi folosind ce ai învățat",
+    "exhaustedTitle": "Continuă să exersezi cu Premium",
+    "continuePremium": "Continuă cu Premium",
+    "dailyReset": "Cota ta gratuită se reînnoiește zilnic la 00:00 UTC.",
+    "weeklyReset": "Cota ta gratuită se reînnoiește lunea la 00:00 UTC.",
+    "trialResultNote": "Perioada ta de probă gratuită este încă activă. Consultă planurile pentru când se va încheia.",
+    "result": {
+      "situations": "Continuă să exersezi situații reale prin voce cu Lingu, cu Premium.",
+      "voice": "Pornind de la această conversație, exersează mai mult exprimarea orală și primește feedback de la Lingu cu Premium.",
+      "lessons": "Cu Premium, continuă să finalizezi lecții și să pui în practică alături de Lingu ceea ce ai învățat.",
+      "listening": "Cu Premium, continuă să-ți antrenezi auzul cu mai multe exerciții de ascultare adaptate nivelului tău.",
+      "reading": "Cu Premium, continuă să-ți îmbunătățești înțelegerea textelor cu mai multe exerciții de citire adaptate nivelului tău.",
+      "games": "Continuă să exersezi cu mai multe jocuri educative cu Premium.",
+      "flashcards": "Folosește cuvintele recapitulate în conversații cu Lingu. Premium îți oferă mai multă practică prin chat și voce."
+    },
+    "benefitsTitle": "Ce include Premium",
+    "benefitsDescription": "Continuă să exersezi fără cotele planului gratuit.",
+    "benefitsVoice": "Conversații vocale cu Lingu",
+    "benefitsChat": "Chat scris cu corecturi și explicații",
+    "benefitsComprehension": "Exerciții de înțelegere a textelor și a limbii vorbite",
+    "benefitsLessonsGames": "Finalizarea lecțiilor și jocuri educative",
+    "benefitsLanguages": "Toate limbile disponibile pentru învățare într-un singur abonament",
+    "generalLimits": "Limitele generale de utilizare și de conversație se aplică în continuare.",
+    "noCardTrialStatus": "Probă Premium · fără card",
+    "noCardTrialDescription": "Perioada ta de probă Premium durează până la {date}, fără card sau debitare automată. După aceea se aplică limitele planului gratuit, dacă nu te abonezi.",
+    "monthlyCommitment": "Plătește lunar, cu un angajament financiar inițial mai mic.",
+    "yearlyCommitment": "O singură plată pentru întregul an.",
+    "cardTrialTerms": "Când te abonezi, începe o perioadă de probă separată de {days} zile; aceasta nu se adaugă zilelor rămase din perioada ta de probă actuală. Este necesar un card. Ulterior se percepe prețul planului ales, dacă nu anulezi înainte de încheierea perioadei de probă a abonamentului.",
+    "paidTerms": "Este necesar un card. Abonamentul tău plătit începe la achiziție. Se reînnoiește la intervalul ales, dacă nu îl anulezi."
+  },
   "freemium": {
+    "situationsLabel": "Situații în această săptămână",
+    "grammarPracticeLabel": "Seturi de gramatică azi",
     "gamesLabel": "Jocurile de azi",
     "chatLabel": "Chat",
     "lessonsLabel": "Lecții",
@@ -1708,7 +2109,7 @@
     "voiceLabel": "Voce (min)",
     "freeLimit": "Obține Premium",
     "trialDaysLeft": "{days, plural, one {# zi de probă gratuită} other {# zile de probă gratuită}}",
-    "trialUnlimited": "Acces nelimitat",
+    "trialUnlimited": "Acces Premium",
     "requiresSubscription": "Doar Premium"
   },
   "lessonPractice": {
@@ -1760,13 +2161,29 @@
   },
   "whatsNew": {
     "title": "Noutăți",
-    "version": "v1.10.50",
+    "version": "v1.14.10",
     "cta": "Am înțeles",
     "entry1": {
-      "label": "Conversații vocale mai fluide",
-      "desc": "Am îmbunătățit conversațiile cu Lingu pentru o redare vocală mai fluidă și indicații mai clare despre când este rândul tău să vorbești."
+      "label": "Exersează conversații de zi cu zi",
+      "desc": "Pregătește-te pentru situații reale cu 50 de scenarii din viața cotidiană, călătorii, cumpărături, viața socială și muncă. Exersează prin conversații vocale cu Lingu, care va juca rolul interlocutorului tău și va adapta conversația la nivelul tău."
     },
     "entry2": {
+      "label": "Planul tău, pas cu pas",
+      "desc": "Planul meu îți prezintă acum învățarea ca pe un traseu: urmărește-ți progresul, identifică unitatea curentă și descoperă etapele următoare. Deschide fiecare unitate pentru a vedea lecțiile, a continua să înveți sau a recapitula ce ai finalizat."
+    },
+    "entry3": {
+      "label": "Exersează gramatica în ritmul tău",
+      "desc": "Adaugă teme din resursele de Gramatică în biblioteca personală și exersează cu seturi de câte cinci exerciții, cu corecturi și explicații. Consultă rezultatele și, după ce termini, continuă practica prin conversații vocale cu Lingu pe baza temei și a răspunsurilor tale."
+    },
+    "entry4": {
+      "label": "Limbi noi: croată, cehă, daneză, finlandeză și română",
+      "desc": "Am adăugat croata, ceha, daneza, finlandeza și româna ca limbi de studiu, cu conținut de la A1 la C2. Alege-le la început sau adaugă-le din Setări → Limbile mele."
+    },
+    "entry5": {
+      "label": "Lingu te ajută când ai nevoie",
+      "desc": "Dacă nu înțelegi ceva în timpul unei conversații vocale, cere-i ajutor lui Lingu. Îți poate explica pe scurt în limba ta maternă, apoi poate relua practica în limba pe care o înveți."
+    },
+    "entry6": {
       "label": "O experiență mai fluidă",
       "desc": "Am corectat și mici erori și am finisat câteva detalii, ca învățarea de zi cu zi cu FreeLingo să fie și mai plăcută."
     }
@@ -1785,7 +2202,7 @@
     "errorGeneric": "Trimiterea a eșuat. Te rog încearcă din nou."
   },
   "listening": {
-    "title": "Ascultare",
+    "title": "Înțelegere orală",
     "topic": "Subiect",
     "listenLabel": "Ascultă",
     "questionsLabel": "Întrebări",

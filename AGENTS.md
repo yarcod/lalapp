@@ -1,6 +1,6 @@
 # AGENTS.md — FreeLingo
 
-**Current version: 1.10.50**
+**Current version: 1.14.10**
 
 ## Project
 
@@ -37,6 +37,7 @@ Any code change affecting behavior, models, endpoints, configuration, or depende
 4. Record user-visible changes in `CHANGELOG.md`. For changes not yet in production, explicitly ask the user whether a changelog entry is warranted before adding one; documenting intermediate changes may not make sense.
 5. Follow `specs/version.md` when a version bump is warranted.
 6. Do not use Markdown tables in long-form project docs or specs; use concise lists.
+7. Keep one canonical specification for each contract and reference it from other specs. Before removing a duplicate, confirm that its relevant rules remain in the owning spec. When adding or reorganizing specs, update this index and affected cross-references.
 
 Common documentation targets:
 
@@ -45,7 +46,10 @@ Common documentation targets:
 - Service, provider, or environment changes: `services.instructions.md`, `architecture-backend.instructions.md`, `docker.instructions.md`, and possibly `README.md`.
 - Auth or cross-system flow changes: `platform.instructions.md`, `architecture.instructions.md`.
 - Frontend structure changes: `architecture-frontend.instructions.md` and the affected domain spec.
+- Interface/native-language additions: follow `add-ui-native-language.instructions.md` for the coordinated implementation and documentation checklist.
+- Public landing or static project-site content, navigation, and presentation: `public-site.instructions.md`.
 - Public indexing, metadata, canonical URLs, sitemap, robots, and structured data: `seo.instructions.md`.
+- Shared Listening/Reading generation: `services.instructions.md` owns the backend coordinator; `architecture-frontend.instructions.md` owns the shared client. Keep domain-specific content, audio, scoring, and history in `listening.instructions.md` and `reading.instructions.md`.
 - Study plan, lesson, or progress changes: `study-plan.instructions.md`, `learning-resources.instructions.md`, `api-endpoints.instructions.md`.
 - New major domain: add a domain-oriented spec, then update `README.md`, this file, and `CHANGELOG.md` as applicable.
 
@@ -54,13 +58,80 @@ Common documentation targets:
 Use the narrowest relevant spec first:
 
 - Architecture: `architecture.instructions.md`, `architecture-backend.instructions.md`, `architecture-frontend.instructions.md`.
+- Public landing and static project site: `public-site.instructions.md`.
 - Technical SEO and Search Console: `seo.instructions.md`.
-- Platform and languages: `platform.instructions.md`, `target-language.instructions.md`, `multi-language.instructions.md`, `add-target-language.instructions.md`.
-- Learning: `study-plan.instructions.md`, `learning-resources.instructions.md`, `listening.instructions.md`, `reading.instructions.md`, `games.instructions.md`.
+- Platform and languages: `platform.instructions.md`, `target-language.instructions.md`, `multi-language.instructions.md`, `add-target-language.instructions.md`, `add-ui-native-language.instructions.md`.
+- Learning: `study-plan.instructions.md`, `learning-resources.instructions.md`, `grammar-practice.instructions.md`, `situations.instructions.md`, `listening.instructions.md`, `reading.instructions.md`, `games.instructions.md`.
 - Speech and AI: `speech-services.instructions.md`, `voice-conversation.instructions.md`, `memories.instructions.md`, `prompts.instructions.md`, `llm-error-handling.instructions.md`.
 - Access and community: `subscriptions-freemium.instructions.md`, `feedback.instructions.md`, `reviews.instructions.md`, `whats-new.instructions.md`.
 - Contracts and operations: `database-models.instructions.md`, `services.instructions.md`, `api-endpoints.instructions.md`, `rate-limiting.instructions.md`, `docker.instructions.md`, `umami.instructions.md`.
-- Project maintenance: `testing.instructions.md`, `readme.instructions.md`, `changelog.instructions.md`, `version.md`.
+- Project maintenance: `dependency-updates.instructions.md`, `testing.instructions.md`, `readme.instructions.md`, `changelog.instructions.md`, `version.md`.
+
+## Specialized OpenCode reviews
+
+Project reviewers live in `.opencode/agents/`. They inherit the parent model and use read-only
+discovery tools; shell commands, edits, external tools, and further delegation are disabled.
+
+- `study-plan-reviewer`: placement, curriculum scheduling, lessons, progression, and completion.
+- `practice-reviewer`: Reading, Listening, games, flashcards, and learning resources.
+- `conversation-reviewer`: Lingu conversations, streaming, voice, speech services, and memories.
+- `access-reviewer`: authentication, authorization, subscriptions, quotas, and rate limits.
+- `language-isolation-reviewer`: cross-language ownership, language switching, and global versus
+  language-scoped state.
+
+### Coordination
+
+- The primary agent owns implementation, review integration, and authorized validation. Delegate
+  substantive domain changes or investigations to the relevant reviewer; skip unrelated reviewers
+  and trivial edits. Use independent reviewers in parallel when multiple domains are affected.
+- Use reviewers during design when a change affects important invariants, and on the resulting
+  implementation when review can expose regressions. Do not repeatedly review unchanged code.
+- Add `access-reviewer` when authorization, entitlements, quota accounting, or rate limiting changes.
+  Add `language-isolation-reviewer` when ownership, language selection, persisted associations, or
+  language-sensitive client state changes. These reviewers cover their cross-cutting concerns;
+  the functional reviewer owns the domain behavior.
+- Give each child the goal and acceptance criteria, review mode (design, implementation, or bug
+  investigation), relevant paths, and known constraints. For change reviews, supply the comparison
+  base and relevant diff, including staged, unstaged, and untracked changes in scope. Reviewers cannot
+  obtain Git diffs themselves. Supply any existing validation results with their exact scope.
+- Child sessions start with fresh context. Do not assume they know the parent conversation, user
+  approvals, or previous findings. If essential context is missing, they must report the blocker.
+- Reviewers may read across frontend, backend, tests, and specifications to trace a complete flow.
+  Their domain is a responsibility boundary, not a restriction to one directory.
+- The primary agent must verify findings against the code, reconcile overlapping reports, and
+  distinguish new regressions from pre-existing defects. Retain responsibility for integration and
+  areas outside these domains, including public-site/SEO, infrastructure, and developer tooling.
+- If a configured reviewer is unavailable, report it and use an available general reviewer with the
+  same instructions and read-only constraints. Do not claim the configured agent ran.
+
+### Shared reviewer protocol
+
+- Read this file, the narrowest relevant domain specs, and the affected implementation and tests.
+  Agent files provide review focus; canonical specs own behavioral contracts. Read related specs
+  only when the traced flow needs them. Report disagreements between code, specs, and requested
+  behavior instead of silently choosing one as correct.
+- Trace realistic success, failure, retry, and boundary scenarios. Check callers and shared
+  consumers when a change crosses domain boundaries. Inspect relevant tests for actual assertions,
+  not just filenames. Avoid unrelated refactoring and speculative findings.
+- Report a defect only when supported by a demonstrable code path or a documented execution result.
+  Verify the triggering conditions, reachable callers, relevant guards, and actual consequence;
+  an isolated suspicious line or a hypothetical input is not sufficient evidence.
+- Distinguish static code evidence from observed runtime behavior. Never claim reproduction,
+  passing/failing tests, production impact, or provider behavior without corresponding evidence.
+  Missing tests alone do not establish a defect. Call a defect a regression only when the supplied
+  comparison establishes that the change introduced it.
+- Investigate hypotheses before reporting them. If verification requires unavailable context or
+  execution, report only the specific evidence gap and the check needed to resolve it under
+  limitations, not as a finding. Do not infer missing contracts or fill gaps with assumptions.
+- Do not edit files, execute tests or other validation, contact providers, or delegate work.
+  Recommend the smallest useful existing checks to the primary agent, using
+  `specs/testing.instructions.md`; execution still requires user authorization.
+- Respond in Spanish. Order actionable findings by severity (high, medium, low). For each, include
+  `path:line`, the failing scenario, impact, evidence, and a focused correction recommendation.
+  Include only verified defects in findings; keep missing evidence and pending checks in limitations.
+- Finish with the scope inspected, relevant test coverage read, checks recommended but not run,
+  blockers, and any cross-domain handoff. Explicitly state when no actionable findings were found;
+  a read-only review does not establish runtime correctness or passing tests.
 
 ## Pull requests and issues
 
@@ -74,15 +145,15 @@ Use the narrowest relevant spec first:
 
 ## Development environment
 
-- Docker is unavailable locally and the application is not deployed on this machine. Do not suggest local Docker commands or runtime checks.
-- Local validation is limited to backend tests/static checks and frontend lint/typecheck/unit tests. Deployment checks belong to the maintainer.
-- Local runtimes, dependencies and caches must stay inside the repository. Use `./scripts/bootstrap.sh` to install the exact toolchain from `scripts/toolchain.env`, and `./scripts/local.sh {root|backend|frontend} command` for commands. Do not use global Python/Node/npm, Homebrew installations, or bare `npx` for project work.
+- Local application development uses OrbStack or Colima with Docker CLI/Compose on macOS, `docker-compose.dev.yml`, and `run-dev.sh` with macOS Keychain credentials. See `DEVELOPMENT.md` for setup and `specs/docker.instructions.md` for container topology. Do not assume the runtime is installed or the stack is running; obtain explicit authorization before starting/rebuilding containers or running application checks.
+- Automated local validation uses backend tests/static checks and frontend lint/typecheck/unit tests without requiring containers or a running application. This complements the interactive Compose workflow. Deployment checks belong to the maintainer.
+- Host-side validation runtimes, dependencies and caches must stay inside the repository. Use `./scripts/bootstrap.sh` to install the exact toolchain from `scripts/toolchain.env`, and `./scripts/local.sh {root|backend|frontend} command` for host-side Python/Node commands. Do not use global Python/Node/npm, Homebrew installations, or bare `npx` for project work.
 - `.local/`, `.venv/` and `frontend/node_modules/` are generated and Git-ignored. Bootstrap reconstructs them; `--recreate` replaces an existing `.venv`. Python development tools and their indirect dependencies are pinned in `backend/requirements-dev.txt` and `backend/constraints-dev.txt`. Dependency installation belongs to bootstrap, not validation scripts.
 - Use the `run-tests` skill for requested targeted validation and the `pre-push` skill for final full validation.
 - Ask before running tests, builds, linters, typechecks, formatters, or other validation. Do not launch full suites automatically.
 - If a test fails, stop, report the failure, and ask before changing code or tests.
-- Backend CI and images use Python 3.14 and pip 26.2.1. Keep `requirements.txt`, `constraints.txt`, Docker, CI, and cache inputs aligned.
-- Frontend CI and Dockerfiles use Node 25 and explicitly install npm 11. Generate `package-lock.json` with npm 11 and keep `@types/node` on major 25.
+- Backend CI and images use Python 3.14.9 and pip 26.2.2. Keep `requirements.txt`, `constraints.txt`, Docker, CI, and cache inputs aligned.
+- Frontend CI and Dockerfiles use Node 26.13.0 LTS and explicitly install npm 11.20.0, matching the local toolchain. Generate `package-lock.json` with that npm version and keep `@types/node` on major 26.
 - `develop` and `main` publish Linux `amd64` and `arm64` images from the same backend/frontend Dockerfile paths.
 
 ## Code conventions

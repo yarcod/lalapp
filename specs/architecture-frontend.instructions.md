@@ -15,6 +15,11 @@ Route-group names organize layouts but do not determine authorization. Middlewar
 refresh-cookie navigation checks for an explicit protected-route list; backend dependencies remain
 authoritative.
 
+This specification owns frontend boundaries, shared client infrastructure, state placement, and
+presentation/component contracts. Authentication belongs to `platform.instructions.md`, language
+recovery to `multi-language.instructions.md`, and access/quota policy to
+`subscriptions-freemium.instructions.md`. Domain specs own learning workflows and scoring.
+
 ## Layout
 
 ```text
@@ -38,21 +43,29 @@ to check application and test code together.
 ## Route families
 
 - `(auth)`: login, registration, onboarding, account recovery/verification, and billing-return pages
-  under a shared layout. Onboarding and billing returns are included in middleware's protected list.
+  outside the authenticated shell and its loading provider. Onboarding and billing returns are
+  included in middleware's protected list.
 - `(app)`: authenticated shell and learning, resources, account, community, and administration pages.
+- `/grammar-practice`, `/grammar-practice/[topicId]`, and `/grammar-practice/sessions/[uuid]`:
+  personal grammar library, topic history/statistics, and saved practice. Grammar resource detail
+  supplies the add action; `lib/grammar-practice.ts` owns the typed backend client and
+  `components/grammar-practice/` the domain presentation. New work captures language and plan,
+  while saved sessions render their persisted language independently of active selection.
+  Completed sessions enter existing voice conversation through `?grammarPractice={uuid}`.
+  See `grammar-practice.instructions.md` for lifecycle, quota, answer, and source-context contracts.
 - `/games`: authenticated Games catalog, linked from the shared desktop/mobile main navigation.
-  Presentation metadata lives in `lib/games.ts`; each catalog card uses the matching
-  `public/game/{id}.jpeg` illustration above its title and description. An empty catalog shows
-  localized guidance and a link to My Plan. See `games.instructions.md` for the section's contract.
+  Presentation metadata lives in `lib/games.ts`; see `games.instructions.md` for catalog behavior.
+  Each card uses `public/game/{id}.jpeg` above its title and description.
+- `/situations`: authenticated role-play catalog in Practice. The backend supplies canonical IDs,
+  category membership, and owned plan context; the `situations` translation namespace supplies
+  interface-localized titles and descriptions. Category filters, title/description search, and
+  locale-aware category/card ordering lead into the existing voice conversation page with a captured
+  situation and plan. A confirmed missing plan uses `NoPlanBanner`. See `situations.instructions.md`
+  for catalog, context, and role-play behavior.
 - `/games/error-detective`, `/games/sentence-order` and `/games/vocabulary-pairs` use `components/games/GameCatalog.tsx` for
-  mode availability, global admission quota and game-type/language-filtered history. Their `[id]`
-  pages resume backend-owned sessions without retargeting them after a language switch, and reject
-  sessions from the other game. `lib/detective.ts` supplies shared bounded authenticated requests;
-  `lib/sentence-order.ts` adds the ordering contracts. Audio uses `AudioPlayer`. Sentence Order uses
-  keyboard-operable fragment buttons and an exact-spacing preview; only submitted answers persist.
-  `lib/vocabulary-pairs.ts` defines matched pairs, meanings and the persisted attempt log.
-  Its session page uses two selectable columns and explicit checking, disables solved items and
-  prevents repeated combinations, recovers uncertain attempts via GET, and reveals examples at completion.
+  shared catalog presentation. `lib/detective.ts` supplies bounded authenticated requests;
+  `lib/sentence-order.ts` and `lib/vocabulary-pairs.ts` define their game-specific contracts.
+  Session ownership, interactions, and recovery are defined in `games.instructions.md`.
 - `(legal)`: terms and privacy pages with a minimal public layout.
 - `api/`: Next.js handlers that proxy chat SSE, TTS, STT, and conversation warmup to the backend.
 
@@ -62,36 +75,21 @@ an exhaustive route inventory here.
 
 ## Backend access
 
-`apiFetch` adds the in-memory bearer token, participates in global loading state, and retries a 401
-through one serialized refresh only when the original request had an access token. Failed refresh
-clears auth state and routes to login.
-
-Callers with an AbortSignal can stop waiting for shared refresh independently. Cancellation releases
-their loading-counter slot and prevents their retry; shared token rotation continues for other callers.
-Authentication has a local session version advanced by login, registration, and logout, but not normal
-access-token rotation. API 401 recovery checks this identity before renewal, global auth updates and
-retry. A response belonging to a replaced session cannot start recovery or clear/replace current auth.
-In-flight refreshes are shared only within the same session; obsolete completion cannot clear a newer
-session's pending refresh. Delayed 401s within the same session reuse an already rotated access token.
-Avatar recovery and landing/checkout restoration also use `requestAccessToken` for this shared HTTP
-rotation. Renewal carries the known bearer and profile ID (`X-Expected-User-ID`) so the backend can
-reject a cookie belonging to another tab's account before rotation. On 409 `auth_context_changed`,
-the shared client path clears only the originating local session, redirects to login and aborts
-waiting consumers; it neither replays their operations nor invalidates the other account's cookie.
-A late conflict cannot invalidate a newer local login. Initial restoration without a known token or
-profile remains cookie-based. `restoreAccessToken` publishes a missing token only for the original, uncancelled session;
-restoration errors remain owned by the caller. Avatar failures retain the image fallback without
-independently logging out. Avatar cache entries and pending work are session-scoped. Profile consumers
-check session identity after reading response bodies before updating the global user; login and
-conversation profile requests are also aborted on unmount.
-Landing subscription lookup obtains a fresh token through the shared refresh before `/me`, even if
-an in-memory token exists. Ordinary public-page failures do not force logout or redirect; account
-identity conflicts follow the shared invalidation rule. Only successful
-subscription responses are cached for the session, so a failed lookup can be retried on a later visit.
+`apiFetch` adds the in-memory bearer token and participates in global loading state. Authentication
+recovery uses `requestAccessToken`; callers restoring a missing token use `restoreAccessToken`.
+`platform.instructions.md` (Authentication and session) owns serialized renewal, session identity,
+account conflicts, cancellation, profile/avatar publication, and public-page restoration behavior.
 
 Ordinary JSON APIs use same-origin `/api` requests proxied by Next.js rewrites to `BACKEND_URL`. The chat handler preserves
 SSE JSON frames. TTS and STT handlers proxy authenticated binary/multipart traffic and propagate
 cancellation where supported.
+
+The generic `/api/:path*` rewrite is a `fallback`, allowing static and dynamic Route Handlers to run
+first. Voice-preview and Phrasebook audio GET handlers share `lib/audio-proxy.ts` to accommodate
+on-demand synthesis beyond the rewrite's 30-second timeout. Their 60-second deadline covers response
+headers and body; they preserve authentication, trusted client-IP headers, query parameters, ranges,
+backend status and audio MIME type. Speech proxy and cache contracts belong to
+`speech-services.instructions.md`.
 
 `api/conversation/warmup` uses a dedicated handler to accommodate speech-provider cold starts beyond
 the generic rewrite's 30-second timeout. It forwards authentication cookies, bearer authorization,
@@ -102,25 +100,57 @@ The handler preserves `X-Real-IP` and `X-Forwarded-For` so the backend's IP-base
 identity. The trusted ingress must overwrite forwarding headers as specified in
 `rate-limiting.instructions.md`.
 
+WebSocket voice conversation connects from the browser to `/ws/conversation`; production routing must
+forward `/ws/*` to the backend.
+
+## Shared comprehension client
+
 Listening and Reading share `hooks/useExerciseGeneration.ts` and `lib/exercise-generation.ts`.
 The hook loads missing or invalidated language context before querying exercises. Context loading
 is cancellable and bounded to 20 seconds; failure exits the loading screen with a localized error
 and a Retry action. Successful recovery starts a read-only exercise lookup with the refreshed context.
-They use immediate status queries, ten-second polling, bounded transport recovery, and at most one
-generation POST per operation. The hook prevents duplicate starts, resumes active work on entry,
+A successful language lookup without an active language is also an error; an active language without
+a plan reaches the backend's no-active-plan response. That confirmed response sets the page to
+`no-plan`, which renders the shared `NoPlanBanner` and its assessment action instead of the empty
+exercise, generation, history, or quota controls. Missing local context and unrelated lookup failures
+do not imply a missing plan. A subsequent plan/context change restarts the read-only lookup.
+
+The resolver always checks `/next` before requesting generation and issues at most one generation POST
+per operation. It resumes active work or retrieves a saved result on page entry. An uncertain POST is
+recovered through GET only; manual retry checks existing work first. The hook prevents duplicate starts,
 cancels on unmount or local language/plan/level changes, and guards late responses. Each operation
 retains its expected plan/language/level; server-side changes return a context conflict rather than
-silently switching pools. Server-calculated remaining time is converted to a local monotonic budget
-shared by requests and retry pauses. Errors use the shared
-`exerciseGeneration` namespace in all interface catalogs. Detailed status and timing rules belong
-to the Listening and Reading specifications.
+silently switching pools. Returned exercise language and level must match that context.
+
+- Polling uses sequential GETs separated by ten-second pauses, shortened for the final deadline check.
+  Each request has at most 20 seconds or the remaining budget, including authentication-refresh wait.
+- The first server-calculated remaining time is anchored to `performance.now()` and is not extended
+  by later status responses. Missing remaining time uses a 60-second observation window. A final
+  result lookup has up to ten seconds of grace. This generation budget does not use client wall time.
+- Network/transport failures, 5xx, and 429 use progressive backoff. Four consecutive failures stop
+  recovery. `Retry-After` is respected up to 120 seconds; longer delays return unavailable. Pauses
+  are capped by the remaining budget; expiry stops the operation rather than sending an early retry.
+- Errors distinguish failure, timeout, unavailable status, context conflict, and no active plan.
+  Generation messages use the shared `exerciseGeneration` translation namespace.
+- A confirmed access denial from lookup or generation reaches the page's access-recovery hook;
+  `freemium_unavailable` remains a localized availability error. An HTTP 402 alone does not identify
+  exhausted quota. Returned feature/reason metadata is interpreted through `lib/freemium-access.ts`.
+
+`services.instructions.md` (Shared generation coordinator) owns backend leases and deadlines.
+`multi-language.instructions.md` owns switch/reconciliation behavior: pending lookups pause during a
+provisional switch, while displayed exercises, answers, and replay mode survive a definite rejection
+with unchanged context. Only interrupted lookups resume; changed/invalidated context triggers recovery.
+
+### Answer submission and quota reconciliation
 
 Exercise delivery also captures the server-returned plan/language/level context. Pages submit that
 snapshot with answers; history pages capture their response context for replay, including exercises
 from an earlier level. A `study_context_changed` submission response displays the shared localized
 context-conflict message instead of showing results or decrementing the local quota.
-Attempt submissions have a separate cancellation lifecycle from exercise lookup. An obsolete response
-cannot publish results, errors, review prompts, or overwrite the submitting state of a newer attempt.
+Attempt submissions have a separate cancellation lifecycle from exercise lookup. Unmount, session
+replacement, confirmed language change, invalidation, or exercise/plan/level replacement makes local
+presentation obsolete. An obsolete response cannot publish results, errors, review prompts, or
+overwrite the submitting state of a newer attempt.
 The server may already have persisted a cancelled attempt; cancellation does not undo that write.
 Starting a provisional language switch does not cancel an answer submission or release its submitting
 lock. `waitForLanguageSwitch` holds local presentation until the switch settles (or the owner is cancelled).
@@ -133,28 +163,72 @@ decrement that might count already-included usage twice. Quota reads reject obso
 consumption are reconciled again rather than restoring a potentially older balance. Failed forced reads
 expire the cache window so a later visit can retry.
 
-The freemium store subscribes to authentication session-version changes and synchronously clears
-`status`, `loaded`, and `lastFetch`, invalidating pending quota reads. This binds both direct selectors
-and the 60-second cache window to the session. Logout or replacement leaves no snapshot while the next
-session's GET is pending or has failed; banners hide unknown balances and quota paywalls require a
-known exhausted snapshot. Normal token rotation and language changes do not clear global user quotas.
-Chat's delayed stream completion checks its originating session before applying an optimistic decrement.
+Session-scoped quota caching, unknown balances, and paywall presentation are defined in
+`subscriptions-freemium.instructions.md`.
 
-The language store shares pending queries for the current context and session. Cancelling a page's
-wait does not cancel global recovery; a persistent selector can still receive the result. Context
-invalidation rejects older responses, and add/remove/switch mutations invalidate before reconciliation.
-Overlapping switch calls are rejected by the store; switch controls are disabled until the current
-PUT and reconciliation finish. The switch PUT has a 20-second timeout that also
-bounds its authentication-refresh wait. Transport/timeout failures and HTTP 408/5xx invalidate the
-summary for GET-only reconciliation; a definite rejection preserves the valid summary.
-The exercise hook pauses pending lookups during a switch, then resumes them through GET. A busy-flag
-transition alone does not reload an already displayed exercise or discard answers and replay mode.
-Changed or invalidated context still triggers recovery. Failed summary refreshes remain recoverable
-through the selector, language settings, and exercise pages; success feedback requires a refreshed
-summary.
+Reading and Listening history reads have their own request identity, bounded fetch, loading, error,
+and manual retry state. HTTP or transport failure is not an empty history. A confirmed exhausted
+access response uses the shared denial recovery; temporary unavailability remains an error. Retry
+reloads the requested page, and pagination is disabled during loading or failure. Session,
+language/plan/level replacement, context invalidation, and unmount cancel obsolete reads and clear
+their history context. Responses wait for provisional language switching to settle before publishing.
 
-WebSocket voice conversation connects from the browser to `/ws/conversation`; production routing must
-forward `/ws/*` to the backend.
+An access denial during submission preserves the loaded exercise, selections, and replay state.
+The inline paywall disables submission without replacing the exercise. Confirmed access recovery
+re-enables the existing attempt; it does not submit answers or generate a replacement automatically.
+
+### Post-answer comprehension review
+
+Reading results retain the full passage; Listening results include the existing authenticated audio
+player alongside the revealed transcript. `components/comprehension/QuestionExplanation.tsx` adds a
+collapsed per-question explanation control only after a saved `attempt_id` is returned. Opening it
+requests help explicitly, with local loading, a 30-second client deadline and manual retry. It never
+resubmits answers or changes local quota/progress. Evidence uses `TargetLanguageText`; the explanation
+uses the profile native language and `lang` attribute, with interface-localized labels.
+
+Help state is keyed by feature, attempt, question, source, plan/language/level, native language, user
+and authentication session. Context replacement or unmount cancels requests and discards late results;
+language switching/invalidation hides the control and clears its help state. Returned language codes
+must match and the evidence must occur in the displayed passage/transcript. The owning saved attempt
+remains the backend authority; domain and cache rules live in Reading, Listening and Services specs.
+
+`ExerciseAudioPlayer` owns cancellable media work per exercise and authentication session. Unmount or
+context replacement releases pending requests, audio, event listeners and Blob URLs. Late completions
+cannot restart playback; ordinary access-token refresh does not restart the current audio. Its first-play
+callback fires once per exercise context and is omitted for result-review playback.
+
+## Lesson listening exercises
+
+The lesson page renders `listening` as a multiple-choice comprehension task with the shared
+`ExerciseAudioPlayer`. Its TTS source is the mapped exercise's `listening_text`, and its context is
+the loaded lesson's `study_plan_id`, never the currently selected language. Source or plan replacement
+invalidates playback even if regeneration retains the exercise ID. The transcript is displayed through
+`TargetLanguageText` in the persisted lesson language after evaluation or during review.
+
+An incomplete listening exercise shows recovery guidance and permits regeneration when unanswered;
+answer submission is blocked until the response marks it ready. Regeneration replaces the mapped
+exercise, including its source and readiness. Failed answer requests retain the answer and do not
+publish a score. Answer options expose their selected state to assistive technology. In-flight
+answer/regeneration work prevents conflicting actions. Pronunciation recording and transcription also
+block exercise regeneration, while the recorder's stop control remains available during capture.
+Domain validation belongs to `study-plan.instructions.md`; player transport and resource lifecycle belong to
+`speech-services.instructions.md`.
+
+## Lesson question translation
+
+`components/lesson/QuestionTranslation.tsx` provides a collapsed, keyboard-accessible reveal/hide
+control below the original question. Its label names the profile's native language using the UI's
+language catalog. The original `TargetLanguageText` and word-selection interaction remain independent.
+The translated text uses its native-language `lang` attribute and automatic direction.
+
+Matching support from the lesson response opens without a request. Otherwise the component requests
+the exercise's question-translation endpoint, shows local loading, and offers manual retry on failure.
+The request has a 30-second client deadline. Translation state is local to the component, so opening
+support does not replace the exercise array or reset a draft answer. The parent keys it by lesson,
+exercise, source question, native/target language, user and authentication session, and unmounts it
+during regeneration. Unmount cancels the request; obsolete responses cannot publish text, errors, or
+loading state into a different context. Responses must match both the source question and native
+language. See `study-plan.instructions.md` for pedagogical, cache, and persistence rules.
 
 ## Lingu avatar
 
@@ -168,43 +242,53 @@ the rendering configuration described under Streaming and media, independently o
 
 ## Page loading
 
-`components/ui/page-loading.tsx` provides general page loading with `LinguAvatar` playing `reposo`
-at 75 × 75 px on mobile and 150 × 150 px on desktop, centered localized text, and optional subtext
-in Geist Sans. Text is visible independently of avatar readiness. A spinner is shown while the 3D
-module/model loads; static artwork is reserved for reduced motion or loading failures. Inline mode
-stays compact, with a decorative spinner disabled by `showDot={false}`; its rotation respects reduced
-motion. Both modes hold one global loading-counter slot while mounted and release it on unmount.
-General and generation screens reuse `PageLoadingPresentation`: the avatar/title block is centered
-between equal flexible grid tracks, with descriptions and delay warnings in the lower track so they
-do not shift that block. Short viewports allow the presentation to scroll rather than clipping text.
-Page-specific minimum-height overrides are not supported; standalone loading uses the dynamic viewport.
+`components/ui/page-loading.tsx` provides general page loading with a lightweight decorative spinner,
+localized text, and optional subtext in Geist Sans. Inline mode stays compact, with its spinner
+disabled by `showDot={false}`. Indicators respect reduced motion. Both modes hold one global
+loading-counter slot while mounted and release it on unmount.
+General and generation screens reuse `PageLoadingPresentation`: the indicator has a stable reserved
+position, independent of title wrapping, descriptions, and delay warnings. Short viewports allow
+scrolling rather than clipping text. Standalone full-page loading uses the dynamic viewport.
+Loading presentations do not mount the 3D avatar or wait for model or image readiness.
 
 `app/(app)/loading.tsx` reuses `PageLoading` and the application background, keeping the route Suspense
 fallback consistent with client-side loading. Once hydrated,
 the fallback participates in the same mounted loading counter.
 
-`components/ui/page-loading-boundary.tsx` coordinates a 500 ms minimum presentation inside the
-authenticated app layout. A persistent `PageLoadingProvider` shares the clock across route fallback,
-initialization, page loading, and exercise generation. `PageLoadingViewport` presents the loading UI
-while underlying content remains mounted but invisible, inert, and hidden from assistive technology.
+`components/ui/page-loading-boundary.tsx` coordinates presentation inside the authenticated app layout.
+A persistent `PageLoadingProvider` shares the clock across route fallback, initialization, page
+loading, and exercise generation. `PageLoadingViewport` hides and makes underlying content inert
+immediately while a full-page load is registered. It delays the visible indicator by 200 ms; loads
+that finish before that deadline do not show an indicator or retain ready content. Once shown, the
+presentation remains visible for at least 300 ms from its appearance. Underlying content stays
+mounted and hidden from assistive technology during the wait and any retained presentation.
 The app shell occupies `100dvh`; the main loading viewport fills the remaining area beside the desktop
 sidebar and below the mobile header and any verification banner. The viewport contains a persistent
 full-height content scroller and a sibling loading overlay. Hidden page height and content scroll
 position do not determine loading placement. Initialization uses the entire dynamic viewport.
-Requests and page effects continue normally; the minimum is presentation-only and does not delay
-authentication, exercise delivery, or retry timers. Consecutive loading states share the same deadline,
-including handoffs after 500 ms; slow loads end without an additional minimum wait. Once the
-presentation has finished, a new loading cycle gets a new minimum. Provider unmount cancels pending
-timers. Retained presentation does not hold extra global activity-counter slots. Inline indicators
-and consumers outside this provider retain their normal lifetime. Avatar readiness never gates content.
+Requests and page effects continue normally; timing is presentation-only and does not delay
+authentication, exercise delivery, or retry timers. Consecutive loading states share the same cycle,
+including immediate handoffs after the minimum has expired. Slow loads end without another minimum
+wait. Provider unmount cancels pending timers. Retained presentation does not hold extra global
+activity-counter slots. Inline indicators and consumers outside this provider appear immediately
+and have no retained minimum. Managed consumers do not render an independent indicator during SSR.
+Resource errors, retries, cancellation, and request deadlines belong to their consumers;
+the viewport never declares a pending operation successful or starts a request.
 
 Reading and Listening share `components/ui/exercise-generation-loading.tsx` for their generation
-screens, with `LinguAvatar` playing `pensando` at 75 × 75 px on mobile and 150 × 150 px on desktop.
-Each page supplies its localized status text independently of avatar readiness, with descriptions and
-delay warnings below the centered avatar/title block. A spinner precedes the first animated frame; reduced motion and loading
-failures use static artwork. Generation participates in the shared minimum presentation above.
-The component retains the mounted loading-counter lifecycle used by `PageLoading`. See
-`reading.instructions.md` and `listening.instructions.md` for generation behavior.
+screens, using static Lingu artwork. Each page supplies localized status, description, and delay
+warning text. Generation participates in the same presentation cycle and mounted loading-counter
+lifecycle as `PageLoading`. See `reading.instructions.md` and `listening.instructions.md` for
+generation behavior.
+
+The fixed monochrome top loading bar remains a secondary activity indicator. It delays appearance
+by 200 ms, measures its 300 ms minimum visible duration once per activity cycle, and exits over
+150 ms. It suppresses presentation while the full-page viewport is busy, including retained
+presentation. Completion does not depend solely
+on a CSS animation event, so reduced motion cannot leave the bar stuck. The counter aggregates
+requests and mounted loading consumers; it is not a progress percentage or a page-readiness signal.
+Local section updates use compact indicators and preserve usable surrounding content. A new
+language or authentication session must not display or accept results belonging to an obsolete scope.
 
 ## Written-chat response presentation
 
@@ -251,6 +335,86 @@ Zustand stores shared cross-route state:
 Screen-specific forms, async state, playback, selections, and modal state remain local React state.
 Do not promote local state into a global store without a cross-route requirement.
 
+### Shared access presentation
+
+`hooks/useTrialStatus.ts` owns reactive trial activity and displayed-day countdowns.
+`hooks/useFreemiumStatusRefresh.ts` belongs to the authenticated shell and schedules boundary and
+focus/visibility quota refreshes. Cache lifetime, trial eligibility, and access policy are canonical in
+`subscriptions-freemium.instructions.md`.
+
+`components/billing/PremiumResultOffer.tsx` owns inline post-completion invitations. Learning pages
+mount it only for new successful results and pass whether their review prompt blocks presentation.
+The component consumes the existing auth, config, trial, and freemium stores; it does not make quota
+requests or authorize access. Its soft-offer lifecycle is scoped to account, authentication session,
+and feature. Intersection visibility and document visibility determine when it claims an invitation.
+Voice result invitations and continuation paywalls sit inside the transcript scroller so they do not
+reserve fixed vertical space outside the conversation result.
+
+`components/billing/TrialExpiredNotice.tsx` belongs to dashboard entry and reuses `ConfirmDialog`.
+Its account/session-keyed visit captures tour/news priority before waiting for configuration or page
+loading. This local decision survives profile updates and token rotation; changing account/session
+or returning to Dashboard starts a new visit. Deferred visits do not acknowledge the trial.
+`lib/premium-prompts.ts` stores account-scoped browser presentation preferences under
+`fl_premium_prompts_<userId>`: the last offer timestamp and the acknowledged trial-expiration timestamp.
+These local preferences contain no credentials, are not analytics identifiers, and are never sent to
+the server. They intentionally survive logout in the same browser; another account uses a separate key.
+Billing eligibility, cadence, and storage limitations are owned by
+`subscriptions-freemium.instructions.md`.
+
+`lib/freemium-access.ts` maps confirmed feature denials separately from temporary unavailability.
+Its `useFreemiumAccessRecovery` hook retains a server denial even when the follow-up status read
+fails or the advisory snapshot still predates that denial. A new successful quota snapshot with
+available balance/trial, a confirmed Premium/new trial profile transition, eligible trial re-enablement,
+or billing disablement retires it. Session/user/feature replacement clears the obsolete denial.
+Retirement occurs on the confirming store event, so another forced refresh invalidating the cache
+before React renders cannot restore the old denial.
+
+Chat, lesson completion, comprehension, and voice reuse this recovery. Chat restores a rejected
+HTTP 402 message as a draft and removes its unpersisted optimistic turn. Lesson completion retains
+answers on failure and waits for provisional language switching before publishing success or errors;
+unchanged-context rejection of the switch permits the original result. Obsolete local completion
+does not undo a successful backend write or its session-owned quota reconciliation.
+Language-summary `needsRefresh` alone does not block completion of a loaded, resource-owned lesson.
+
+`GameCatalog` refetches its authoritative catalog once a blocked state sees a positive quota,
+subscription/trial, or billing-toggle recovery transition in the same session/language/plan/level.
+It does not infer catalog mode availability from the global quota snapshot or start a game
+automatically. Recovery transitions during an in-flight catalog read or creation are retained:
+a later blocked response from that older access state triggers a fresh catalog read instead of
+restoring a stale blocked state. Catalog loads and creation responses reject obsolete scopes.
+
+`SubscriptionPlanButtons` shares explicit monthly/yearly Checkout actions, optional preferred-plan
+ordering, and trial/payment terms. `lib/billing-copy.ts` owns the price comparison behind the
+conditional annual savings label. Low-quota notices link to `/settings#plan`.
+
+Public configuration includes the selected TTS provider and logical `openai_tts_voice` and
+`gemini_tts_voice` defaults. Shared
+`lib/tts-voice.ts` resolves provider-specific voice preferences: OpenAI uses browser storage key
+`tts_voice`; Gemini uses `gemini_tts_voice`, both with only `female`/`male` choices. Settings shows the active
+provider's selector and previews under the localized “Lingu's voice” heading, with an invitation to
+choose how Lingu sounds and a “Listen” preview action. Both cloud providers use localized “Female voice”
+and “Male voice” labels, with a shared “Warm and friendly” description associated with the selector
+for assistive technology. Audio players, tour, Listening generation, and conversation reuse
+that resolution; local TTS uses its configured backend voice. The preference keys remain separate
+when the operator changes provider. Stored OpenAI provider voice names are ignored rather than
+mapped to a logical option; the backend default applies until the user chooses `female` or `male`.
+The client sends only logical choices; actual provider voice mappings remain backend-owned.
+
+The config store shares concurrent loads with a 20-second deadline covering headers and body;
+failure releases the shared operation for retry, and late responses cannot overwrite new config.
+`resolveConfiguredTtsVoice` waits for a successful load
+before resolving a synthesis preference and supports consumer cancellation; unavailable configuration
+uses the consumer's error state. Initial configuration arrival preserves the pending first playback.
+Listening generation bounds this wait to 20 seconds and rechecks session and learning context;
+if a provisional language switch interrupts the wait, a rejected switch resumes a read-only lookup.
+Conversation resolves the voice before sending warmup and opening its WebSocket. Configuration keeps
+its separate 20-second deadline; the 75-second warmup request budget starts after that resolution.
+Both waits share cancellation on session cleanup. Settings previews release
+audio and discard pending responses on account-session changes.
+Conversation invalidates its entire microphone, warmup, WebSocket, and playback lifecycle when the
+authentication session or user changes, including during asynchronous startup. Access-token rotation
+within the same session does not interrupt conversation.
+
 Dashboard's `components/dashboard/ProgressOverview.tsx` renders existing plan-scoped progress with
 prominent XP/streak cards, today's XP, a seven-day UTC strip, and compact lesson/accuracy metrics.
 `today_xp` and `activity_week` come from `/api/progress/summary` and stay in page-local state. Request
@@ -279,11 +443,10 @@ vocabulary filters expose selection, and learned-language curriculum text uses `
 
 ## Flashcards
 
-`app/(app)/flashcards/page.tsx` owns page-local setup, review and summary states. Setup selects 5, 10
-or all due cards and shows new/review counts. The active queue is a subset of the full due snapshot;
-successful reviews and management removals update that snapshot independently. Early finish and queue
-completion show acknowledged reviews, backend-reported XP, remaining due cards, removed-card counts
-and words rated as difficult. Another session reloads the due list. No session summary is persisted.
+`app/(app)/flashcards/page.tsx` owns page-local setup, review, and summary states. The active queue is
+a subset of the full due snapshot; reviews and management removals update that snapshot independently.
+`platform.instructions.md` owns session sizing, review/retry behavior, generation results, management,
+and account-wide preferences. This section defines component and presentation responsibilities.
 
 Flashcard screens share the dashboard/progress visual language: solid `fl-*` surfaces, petroleum-blue
 accents, readable Geist Sans interface text, semantic page/section headings and decorative Lucide
@@ -303,21 +466,13 @@ than relying on icons or color alone.
 
 The standard card uses a native reveal button with keyboard support and separate audio controls.
 `useBackPreference` subscribes to the account-session store in `store/flashcard-preferences.ts`;
-`BackPreference` renders its selector and errors. Reads and writes are serialized across mounted
-views. The store owns pending requests across mode, language, plan and page changes; a returning view
-subscribes to an in-flight operation instead of issuing a competing GET. Later visits revalidate the
-saved value. Failed operations expose retry through a fresh read. A new authentication session gets
-an isolated store, and old responses cannot update it. Token rotation preserves the account session.
+`BackPreference` renders its selector and errors. The store owns cross-view request serialization and
+session isolation according to the preference lifecycle in `platform.instructions.md`.
 `SpeakingCard` owns transcription feedback and retry state, confirms a result before calling the
 review handler, and exposes a learner correction for recognition mismatches. It is keyed by card ID
 and editable content so an edit invalidates old feedback. `lib/flashcard-review.ts` implements speech
 normalization and conservative example masking. The resource-owned `VoiceRecorder` busy notification
 prevents management and mode changes during recording or transcription.
-
-Generation is available from setup and summary. Its initial CEFR selection comes from the active
-plan metadata in `/api/flashcards/due`; explicit learner selection is retained until the page context
-resets. Server-computed creation, duplicate and empty-result counts appear after generation. A
-successful request with zero created cards is still a result, not a loading or generation error.
 
 `app/(app)/flashcards/vocabulary/page.tsx` is the full active-plan library. It uses `/api/flashcards/library`
 with source/state filters, debounced word/translation search and pagination. The saved-from-text filter
@@ -338,11 +493,8 @@ Acknowledged deletion removes a visible row and decreases the current total only
 still contains the row. If a refresh or filter change has already removed it, the late acknowledgment
 does not decrease the total again. Server refreshes remain authoritative for pagination and totals.
 
-Review submission retains the card, original rating and UUID while a response is unresolved. The
-dedicated save retry sends that same payload, while other review actions stay disabled. Only a
-successful response advances the queue or adds the attempt's XP to the local summary. A definitive
-client rejection can also refresh the queue. Receipt persistence and conflict rules belong to the
-backend contract; no attempt identity or review receipt is written to browser storage.
+Review retry follows the UUID/receipt contract in `platform.instructions.md`; attempt identity and
+receipts are not written to browser storage.
 
 `FlashcardBoundary` reconciles missing/invalidated language context and keys content by session,
 language, plan and invalidation version. Switching unmounts old content. `useFlashcardScope` also
@@ -352,80 +504,45 @@ not advance the queue. No flashcard content or preference is persisted in browse
 
 ## Public landing
 
-`app/page.tsx` is server-rendered. Its hero introduces the study plan, practice and voice conversation
-with Lingu. The `#features` anchor leads to an ordered three-step learning journey: level assessment
-and a structured A1–C2 curriculum, comprehension/vocabulary practice and the three available games,
-then speaking with Lingu. The steps connect horizontally on desktop and vertically on mobile without
-additional animation or client-side state. Game names reuse the `games` translation namespace.
-
-The static written English correction example accompanies an explanation of voice practice started
-from a completed lesson, whose content and answered exercises can inform Lingu's conversation. It
-uses `TargetLanguageText` with `en-GB`, localized labels, and no simulated controls or API requests.
-Spaced repetition, XP and streaks are supplementary copy rather than a separate feature grid.
-The hero retains the single animated Lingu in `LanguageBubbles`. A short line links to `#modalities`,
-whose two cards precede pricing and distinguish FreeLingo Cloud from self-hosting. Cloud copy describes
-managed hosting, updates and AI/voice within plan limits. Self-hosting copy identifies AGPL-3.0 software,
-operator-owned maintenance and infrastructure/provider costs. The Cloud card links explicitly to
-`https://freelingo.app/login`, independently of the current instance's registration/session state;
-the installation guide links to the repository's `#quick-start`. The cards render without reveal
-gating. Reviews, local learning CTAs and checkout retain
-their existing flows.
-The comparison explicitly distinguishes the main action for the current installation from the official
-Cloud link and states that accounts and progress are installation-specific. Stripe availability is not
-treated as proof that an installation is the official Cloud service.
-
-`LandingFAQ` uses its own `landing.faq` translations rather than the authenticated help catalog. Its
-six questions cover deployment modes, free signup versus the card-based Premium trial, self-hosting
-requirements, storage and external processing, study languages, and the learning journey. Answers stay
-in the rendered HTML, with inactive panels hidden; buttons expose `aria-expanded`, `aria-controls`
-and labelled answer regions. Opening a question retains the anonymous `faq_viewed` event.
-
-The English static project site in `docs/index.html` retains its general overview, feature cards,
-deployment comparison and open-source/licensing section. It shares the Cloud/self-hosted terminology,
-learning journey and operational distinctions without duplicating dynamic prices or trial durations.
-Its CTAs lead to FreeLingo Cloud and the repository installation guide. The CSS keeps the existing
-solid blue-tinted theme and language orbit, compact hero spacing, visible keyboard focus and
-reduced-motion support.
-
-Hero and end-of-journey CTAs share the same destination: `/dashboard` for a session cookie,
-`/register` for anonymous visitors when registration is open, otherwise `/login`. Anonymous signup
-copy invites visitors to start learning free. When Stripe is enabled, both signup CTAs clarify that
-registration needs no card. If the public `freemium_trial_enabled` flag is true, they explain that
-initial Premium access starts at signup and becomes limited free access unless the learner subscribes.
-Otherwise, they describe limited free access directly. Neither copy promises a fixed duration: public
-config exposes the signup-trial flag but not `FREEMIUM_TRIAL_DAYS`. This signup period is independent
-of the optional Stripe subscription trial. A missing Stripe trial duration defaults to zero on the
-landing rather than advertising unconfirmed additional days.
-
-Landing copy and page-specific metadata use `next-intl` in all fifteen interface catalogs. Metadata,
-Open Graph, Twitter and the software-application description communicate the structured learning
-journey. The new content renders without reveal gating, and CTA transitions respect reduced motion
-and include visible keyboard focus.
-
-Authenticated FAQ copy in `faq` describes the selected study language, optional beginner entry at A1,
-the adaptive static-bank placement quiz and plan creation on level/duration confirmation. Flashcards
-belong to their language's study plan even though review does not require advancing lessons. Tutor
-guidance follows the active language and plan context; provider copy refers to operator configuration
-rather than a fixed model name.
-
-Public metadata is defined through server pages/layouts and the shared `lib/seo.ts` helper.
-The indexing, sitemap, robots, structured-data, and Search Console contract belongs to
-[`seo.instructions.md`](seo.instructions.md).
-
-## Public registration surfaces
-
-The server-rendered landing page retains its one-hour `/api/config` revalidation and passes
-`allowRegistration` to pricing. Login, registration, and registration-origin legal pages load the
-config store. Public signup links use the flag, while dashboard and authenticated checkout actions retain their session
-behavior. The registration page gates the form for ordinary visitors and accepts any nonempty
-`invite` query parameter without frontend validation. Legal links carry that invite through the
-terms/privacy pages and back to registration. All closed-state copy reuses existing locale keys.
+`app/page.tsx` is server-rendered, with client components for interactive pricing, FAQ, and avatar
+presentation. `public-site.instructions.md` owns the landing and static project site's content and
+navigation. `seo.instructions.md` owns public metadata and indexing; `platform.instructions.md`
+owns registration, invitations, and session restoration.
 
 ## Authenticated shell
 
 The app layout resolves the session, loads the current profile, enforces onboarding completion,
 provides desktop/mobile navigation, initializes language/config state, and owns global notices,
 loading, theme, contact, Settings, logout, and admin navigation.
+
+Desktop and mobile share the same navigation order:
+
+- Home.
+- My learning: My Plan, Progress, Level assessment.
+- Practice: Chat with Lingu, Flashcards, Games, Listening, Reading, Situations, Voice conversation.
+- Resources: Grammar, Phrasebook, Vocabulary.
+- Help: Contact (opens the contact modal), Feedback, Frequently asked questions.
+- A separate block after Help: Settings for everyone and Admin only for administrators.
+- Account area: profile, version, and logout.
+
+Practice, Resources, Help (including Contact), and the Settings/Admin block sort their visible entries
+alphabetically by translated label using the interface locale's collation rules. My learning retains
+the listed order.
+
+The learning, practice, resources, and help groups can be independently collapsed. All start expanded
+when the app layout mounts. Their shared desktop/mobile state stays in component memory only and is
+not persisted; reloading resets all groups to expanded. Group buttons expose `aria-expanded` and
+`aria-controls`. When Help is collapsed, its heading shows the Feedback unread badge.
+A collapsed group containing the current route shows the active link's left accent border on its
+heading. Expanded groups show that indicator only on the active link, including nested routes.
+
+Navigation labels are localized and use Geist Sans. Active links include nested routes and expose
+`aria-current="page"`. Premium links, trial indicators, and Feedback unread badges retain their
+existing visibility rules. The desktop navigation scrolls independently of the account area; the
+mobile menu scrolls within the viewport and closes when a destination or Contact is selected.
+While the mobile menu is open, a lightly tinted, blurred backdrop covers the page below the menu.
+The page content is inert and isolated beneath that backdrop; tapping the backdrop does not dismiss
+the menu. Switching to the desktop breakpoint closes the mobile menu and restores page interaction.
 
 Frontend route guards and visibility flags do not grant access. Any protected action must still rely on
 backend authorization.
@@ -436,6 +553,9 @@ backend authorization.
   status colors, and monochrome controls.
 - Do not introduce dot grids or hero gradients.
 - Use Geist Sans through `font-sans` for interface and Latin learned-language text.
+- Russian learned-language text uses the explicit `cyrillic` capability and `font-target-cyrillic`,
+  backed by Geist Sans with its Cyrillic subset. It retains word spacing and relaxed line height;
+  Cyrillic does not require romanization or CJK typography.
 - Use Geist Mono through `font-code` for branding, version labels, and technical text.
 - Preserve CJK font configuration and readable learned-language sizing through
   `TargetLanguageText`.
@@ -448,6 +568,12 @@ backend authorization.
 in `lib/locales.ts`; target-language metadata is separate from UI locale. Missing translation catalogs
 fall back to English according to the platform contract.
 
+For interface/native-language additions, follow
+[Add Interface or Native Language](add-ui-native-language.instructions.md). It owns the cross-project
+registration, catalog, packaging, script/direction, accessibility, and completion checklist. Current
+selectors and initial browser detection include additional explicit inventories; changing
+`SUPPORTED_LOCALES` alone does not complete an addition.
+
 Locale selection, profile persistence, and cookies are coordinated by Settings and middleware. A
 target-language switch must not mutate UI locale or global account preferences.
 Visible copy, including resource counts, errors, role labels, tooltips, and accessibility text, uses
@@ -458,11 +584,41 @@ names alphabetically using the active UI locale's collation. The translation edi
 incomplete translations with a localized pending suffix, without adding completion checkmarks to
 options; the overall completion counter remains visible.
 
+Login/registration, billing, comprehension-access, and voice errors map recognized response codes
+or validation cases to friendly catalog messages and use a localized fallback for unknown failures.
+Raw server `detail`, provider messages, and browser media exception text are not interpolated into
+those error surfaces. Voice diagnostics remain separate from learner-facing copy.
+
 Product copy names Lingu when describing the tutor's actions, conversations, and exercise preparation.
 References to AI remain appropriate for technology, providers, and usage; this editorial convention
 does not replace disclosures in privacy policies or terms. Apply wording consistently by meaning
 across all fifteen UI catalogs, preserving translation keys, interpolation variables, and rich-text
 tags. Reading and Listening generation descriptions name Lingu without promising a fixed wait time.
+
+Authenticated FAQ copy in `faq` describes the selected study language, optional beginner entry at A1,
+the adaptive static-bank placement quiz and plan creation on level/duration confirmation. Flashcards
+belong to their language's study plan even though review does not require advancing lessons. Tutor
+guidance follows the active language and plan context; provider copy refers to operator configuration
+rather than a fixed model name. The public FAQ has its own catalog and scope in `public-site.instructions.md`.
+The authenticated page groups questions into getting started and languages, resources and practice,
+conversations with Lingu, plans and usage limits, account and help, and administration. The plans
+section appears only after configuration confirms billing is enabled; administration remains visible
+only to administrators. Stable question IDs preserve the open answer when conditional sections change.
+One answer is expanded at a time across all sections, with semantic headings, labeled answer regions,
+and keyboard-accessible buttons exposing `aria-expanded` and `aria-controls`.
+
+All fifteen catalogs include guidance on multiple languages, grammar practice, games, memories,
+free/Premium access and trials, quota renewal, and subscription cancellation. Contextual links lead
+to the relevant feature or Settings panel. Commercial copy distinguishes no-card and subscription
+trials, shared quotas and general account limits without hardcoding configurable prices or allowances.
+Voice guidance reflects disabled automatic interruption and configurable turn pauses; Reading and
+Listening explain the optional native-language answer explanations. Profile-language changes require
+saving, and public registration depends on server configuration.
+
+Both FAQs interpolate `{languages}` from `useTargetLanguageList`: every supported target language
+uses its regional `targetLanguages` label, sorted with `Intl.Collator` for the active interface
+locale and joined with `Intl.ListFormat` for that same locale. Translation catalogs retain the
+surrounding answer, not a duplicated language inventory.
 
 ## Streaming and media
 
@@ -498,15 +654,22 @@ renderer; `@types/three` supplies development types.
 accepts any of these animations independently of the tour. Its optional `loop` prop overrides the
 catalog playback default for that instance. The tour currently selects only its five contextual animations.
 
-The landing's `LanguageBubbles` reuses `LinguAvatar` in the centered 140 × 140 px slot and repeats
-`saludo` with `loop`. Its transparent canvas lets the landing's light/dark background show
-through. The avatar and language circle remain transparent and hidden from assistive technology
-until `onReady`, then fade in together without a preliminary PNG or staggered bubble entrances.
-The reserved space, surrounding language positions, and container dimensions remain stable.
-Flag images use fixed 14 × 10 px boxes matching their declared image dimensions, with flex shrinking
-disabled and centered `object-cover` cropping to keep a uniform size without stretching the artwork.
-Bubble floating starts when the group is ready. Reduced motion disables the entrance transition
-and floating; reduced motion and loading failures reveal the group with static Lingu artwork.
+The landing's `LanguageBubbles` reuses `LinguAvatar` in a centered 220 × 220 px slot, increasing to
+300 × 300 px from the small-screen breakpoint, and repeats `saludo` with `loop`. Its transparent
+canvas lets the landing's light/dark background show through. The avatar and six greeting bubbles
+remain transparent and hidden from assistive technology until `onReady`, then fade in together
+without a preliminary PNG or staggered bubble entrances.
+While waiting, a text-free spinner occupies the avatar's center outside the hidden group; it has a
+localized accessible label, respects reduced motion, and disappears on `onReady`.
+The container reserves 260 px of height and up to 360 px of width, increasing to 360 px of height
+and up to 420 px of width from the small-screen breakpoint. Greeting positions use fixed responsive
+CSS offsets and do not float or depend on the full language catalog.
+Greetings render through `TargetLanguageText`. Flag images use fixed 18 × 13 px boxes matching
+their declared image dimensions, with flex shrinking disabled and centered `object-cover` cropping
+to keep a uniform size without stretching the artwork. Reduced motion disables the entrance
+transition; reduced motion and loading failures reveal the group with static Lingu artwork.
+`public-site.instructions.md` owns the hero layout, greeting selection, and separate server-rendered
+language list, which remains visible independently of this component's readiness.
 An optional `className` overrides the avatar's default responsive dimensions so other surfaces
 can size it to their own container.
 
@@ -531,6 +694,14 @@ Voice conversation owns microphone/VAD and playback lifecycle with cancellation 
 guards. Resource audio components fetch authenticated blobs and release object URLs on replacement or
 unmount.
 
+HTTP audio playback and TTS proxies preserve the backend MIME type (`audio/wav` for Gemini,
+`audio/mpeg` for local/OpenAI). Voice playback decodes either binary format with `decodeAudioData`
+and supplies the matching MIME type to its HTML audio fallback. The WebSocket framing and turn
+pipeline remain provider-independent; persisted Listening recordings retain their own format.
+Player request budgets and the TTS proxy's cancellation/deadline behavior are defined in
+`speech-services.instructions.md`. Both sources in `ExerciseAudioPlayer` share localized controls
+and keyboard-accessible seeking.
+
 Detailed behavior belongs to `platform.instructions.md`, `speech-services.instructions.md`, and
 `voice-conversation.instructions.md`.
 
@@ -547,5 +718,6 @@ Detailed behavior belongs to `platform.instructions.md`, `speech-services.instru
 - `platform.instructions.md`: shell, auth, onboarding, dashboard, and chat.
 - `learning-resources.instructions.md`: backend-owned resource contracts.
 - `multi-language.instructions.md`: language state and switching.
+- `public-site.instructions.md`: public landing and static project overview.
 - Domain specs: detailed page and interaction behavior.
 - `testing.instructions.md`: frontend validation and mocking conventions.

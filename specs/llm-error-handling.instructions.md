@@ -27,7 +27,8 @@ currently retries any `LLMError`, not only transient subclasses. Anthropic disab
 explicitly; OpenAI Responses and the Chat Completions clients do not, so three adapter invocations
 do not guarantee only three network requests.
 
-The default request timeout is 120 seconds per network attempt, not an end-to-end generation limit.
+`REQUEST_TIMEOUT` in `backend/app/services/llm_adapter.py` fixes the ordinary request timeout at
+120 seconds per network attempt, not an end-to-end generation limit or an operator environment setting.
 OpenAI SDK `APITimeoutError` and Python `TimeoutError` normalize to `LLMTimeoutError`. Do not document
 malformed output or context overflow as non-retryable while the default implementation catches the
 common base class.
@@ -37,8 +38,17 @@ disables adapter and SDK transport retries, sets each request timeout to the rem
 preserves timeout/provider exception types during JSON correction. It does not mutate shared client
 configuration or change the default retry policy of other features. The outer background-job budget
 also includes TTS and persistence and is configured by `EXERCISE_GENERATION_TIMEOUT_SECONDS`.
+Its backend default and validation are in `backend/app/core/config.py`; deployment fallbacks are in
+`docker-compose.yml` and `docker-compose.dev.yml`.
 The exercise coordinator maps Python, HTTPX, normalized LLM, and OpenAI SDK timeout exceptions to the
 same `timeout` status, including OpenAI TTS failures outside the LLM adapter.
+
+On-demand lesson question translation, native explanations and native hints use the same deadline-aware
+structured-output path with a 20-second generation budget. Exercise regeneration has an outer
+20-second generation budget. These writers do not hold a database transaction or the lesson writer
+lock while awaiting the provider. Question translation finishes generation within the client's
+30-second timeout; timeout and invalid or obsolete translation return `503`. Cache and concurrent-write
+rules belong to `study-plan.instructions.md` (Optional question translation).
 
 ## Structured output
 

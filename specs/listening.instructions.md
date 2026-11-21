@@ -23,7 +23,7 @@ scores, XP, and completion history belong to the learner and their study plan.
 - `level` and `target_language` define the exercise pool and have a composite lookup index.
 - `exercise_type` identifies the generated format.
 - `topic` and `text` store the LLM output.
-- `audio_path` records the generated MP3 path.
+- `audio_path` records the generated audio path, including its `.mp3` or `.wav` extension.
 - `duration_seconds` defaults to `0`; current generation does not calculate it.
 - `questions` stores question, options, index, and correct answer as JSON.
 - `play_count` is incremented when an attempt is submitted, including a replay.
@@ -66,14 +66,15 @@ The service:
 2. Builds a language-aware prompt with level-specific length guidance.
 3. Requests structured output through `llm_adapter.structured_output()`.
 4. Synthesizes the generated text with the configured TTS service, optional requested voice, and full
-   BCP-47 target language. Instruction-capable OpenAI models use that language for native regional
-   pronunciation, as described in `speech-services.instructions.md`.
+   BCP-47 target language. Gemini and instruction-capable OpenAI models use that language for native
+   regional pronunciation, as described in `speech-services.instructions.md`.
 5. Inserts the exercise to obtain its database ID.
-6. Writes the MP3 as `{AUDIO_STORAGE_PATH}/listening/{exercise_id}.mp3`.
+6. Writes `{AUDIO_STORAGE_PATH}/listening/{exercise_id}.{extension}` using the adapter's format:
+   `.wav` for Gemini or `.mp3` for local/OpenAI.
 7. Stores the path and commits the exercise.
 
 If writing audio or the pre-commit ownership guard fails or is cancelled, the service removes the
-uncommitted MP3 on a best-effort basis; the session rolls back the uncommitted row. Audio is retained
+uncommitted audio on a best-effort basis; the session rolls back the uncommitted row. Audio is retained
 once commit has been attempted, including an uncertain commit outcome or a later refresh failure.
 
 Types currently used are `monologue`, `announcement`, `voicemail`, `dialogue`, `story`, `podcast`,
@@ -90,38 +91,21 @@ membership. Those prompt requirements are not database invariants.
 
 ## Generation lease and status
 
-Redis prevents ordinary duplicate generation with the key:
-
-```text
-listening:generating:{level}:{target_language}
-```
-
-- `exercise_generation.py` acquires a unique-owner lease with a 60-second TTL and renews it every
-  20 seconds. Lua operations atomically acquire the lease and state, compare-and-renew, and
-  compare-and-finish. An older task cannot release a replacement lease or overwrite its state.
-- The background task opens its own database and Redis resources. Detected lease loss, renewal
-  failure, or cancellation stops local work; persistence checks ownership before saving. Redis and
-  PostgreSQL do not share a transaction: the lease prevents ordinary duplicate work but is not a
-  database fencing guarantee if ownership disappears between the final guard and commit.
-- `EXERCISE_GENERATION_TIMEOUT_SECONDS` defaults to 600 and bounds the complete job from acquisition,
-  including structured generation, JSON correction, TTS, and persistence. Provider-specific TTS
-  timeouts still apply. The LLM receives the remaining budget with SDK and adapter transport retries
-  disabled for this flow; one JSON correction remains possible within that budget.
-- Redis `{lock_key}:state` stores the generation status. Running state lives for the configured
-  budget plus 15 minutes; terminal state lives for 15 minutes. A running state without a lease is
-  reported as interrupted. Redis state is operational, not a durable job queue.
-- Available exercises take priority over generation status. Generation checks availability before
-  and after acquiring a lease and returns `status: "available"` without starting redundant work.
-- Failures are logged and exposed through `/next` as controlled error codes, not raw exceptions.
-
-`GET /api/listening/next` responds immediately. A supplied `wait` query parameter does not enable a
-long-poll. The frontend periodically queries the existing endpoint; closing the page or losing one
-HTTP response does not cancel the accepted background job.
+Listening uses `listening:generating:{level}:{target_language}` and the shared generation coordinator
+in `services.instructions.md` (Shared generation coordinator). Its total budget includes TTS and audio
+persistence and is set in seconds by `EXERCISE_GENERATION_TIMEOUT_SECONDS` in
+`backend/app/core/config.py`; provider-specific speech timeouts also apply. Audio compensation
+follows the Generation section above. The shared contract defines leases, status expiry, cancellation, and the
+Redis/PostgreSQL transaction boundary.
 
 ## API
 
-All endpoints require authentication, an active language, an active study plan, and normal
-maintenance access. They derive level, language, and plan from persisted server state.
+All endpoints require authentication and normal maintenance access. Exercise selection, generation,
+audio, submission and history require an active language and study plan. Post-attempt explanations
+instead derive ownership and target language from the saved attempt's plan, including historical plans.
+
+The `/started` measurement signal and optional attempt-correlation header are defined in
+`api-endpoints.instructions.md`; their measurement semantics belong to `umami.instructions.md`.
 
 `/next` and `/generate` accept optional `expected_study_plan_id`, `expected_target_language`, and
 `expected_level` query parameters. These are consistency checks against the authenticated user's
@@ -148,7 +132,11 @@ Changing the active context in another tab stops the stale operation and prompts
 
 - Rate limit: `5/minute`.
 - Access: freemium consuming-feature policy, without consuming quota at generation time.
-- Optional `voice` query parameter is passed to TTS.
+- Optional `voice` query parameter selects a logical cloud voice; local Kokoro ignores it and uses its configured voice.
+- OpenAI and Gemini accept only `female` or `male`; an invalid supplied voice, including an actual
+  provider voice name, returns `400` before background generation. Omission uses the backend default.
+  The backend resolves the logical choice to its configured provider voice.
+- Voice preferences or provider configuration changes do not regenerate persisted exercise audio.
 - Returns HTTP `202` with `status: "generating"`, whether this request acquired the lease or found
   generation already in progress; returns `status: "available"` when an exercise can already be used.
 
@@ -157,11 +145,12 @@ Changing the active context in another tab stops the stale operation and prompts
 - Rate limit: `60/minute`.
 - Access: freemium read-only policy.
 - Requires the exercise language to match the active plan language.
-- Reconstructs the path from configured storage and the integer exercise ID rather than trusting
-  `audio_path` from the database.
-- Returns `audio/mpeg` with `Accept-Ranges: bytes`.
+- Reconstructs the path from configured storage, the integer exercise ID, and the allowlisted `.mp3`
+  or `.wav` extension recorded in `audio_path`; it never uses the database value as an arbitrary path.
+- Returns `audio/mpeg` for MP3 or `audio/wav` for WAV, with `Accept-Ranges: bytes`. The persisted
+  format determines playback, not the currently configured provider; existing MP3 needs no schema migration.
 - Returns `404 exercise_not_found` for an absent or different-language exercise.
-- Returns `404 audio_not_found` when the MP3 is missing.
+- Returns `404 audio_not_found` when the audio file is missing.
 
 ### `POST /api/listening/attempt`
 
@@ -176,10 +165,23 @@ Changing the active context in another tab stops the stale operation and prompts
    earlier-level exercise in the same language and use the spaced-replay reward rules below.
 - A normal duplicate returns `409 already_attempted`.
 - An unknown exercise returns `404 exercise_not_found`.
-- The response includes score, XP, correct answers, and the full transcript.
+- The response includes `attempt_id`, score, XP, correct answers, and the full transcript.
 
 The current request schema does not require exactly five Listening answers. Missing answers score as
 incorrect. Omitting the submission context returns validation HTTP `422`.
+
+### Post-answer explanations
+
+`POST /api/listening/attempts/{attempt_id}/questions/{question_index}/explanation` returns optional
+native-language help for one question after an owned attempt exists. It uses read-only feature access,
+has a `10/minute` rate limit, and does not consume another attempt, quota, or XP. Request and response
+details belong to `api-endpoints.instructions.md`; the shared generation/cache contract belongs to
+`services.instructions.md` (Comprehension review help).
+
+The explanation describes why the saved correct option follows from the transcript and includes a
+short literal source quote. It uses the profile's native language, independently of interface locale,
+and does not depend on which distractor the learner selected. Existing exercises can receive help
+without regeneration. Structural checks validate the quote, not pedagogical truth.
 
 ### `GET /api/listening/history`
 
@@ -203,7 +205,7 @@ answer awards 10 XP, so a valid five-question exercise produces 0-50 XP.
 
 A normal submission:
 
-1. Rejects an existing non-replay attempt for the same user and exercise.
+1. Checks previous attempts for the same user and exercise, without filtering by replay or plan.
 2. Calculates score and XP.
 3. Stores the attempt against the active plan.
 4. Increments `play_count`.
@@ -230,7 +232,8 @@ When Stripe is disabled, Listening is unrestricted by subscription or freemium q
 enabled:
 
 - active/trialing subscribers and users in the no-card freemium trial have unrestricted access;
-- other users share one weekly Listening quota across all target languages and study plans;
+- other users share the weekly Listening quota configured by `FREEMIUM_LISTENING_WEEKLY` in
+  `backend/app/core/config.py` across all target languages and study plans;
 - generation and attempt endpoints require remaining quota;
 - next, audio, and history remain readable after quota exhaustion when the configured quota is
   greater than zero;
@@ -242,57 +245,36 @@ Maintenance mode blocks Listening for non-admin users with HTTP `503`.
 ## Frontend
 
 The Listening page keeps transient state locally. Its states are `loading`, `idle`, `generating`,
-`exercise`, `results`, and `history`.
+`exercise`, `results`, `history`, and `no-plan`.
 
-- Initial load and active-language changes request the next exercise.
-- A pending language switch pauses an in-flight lookup without replacing an already displayed
-  exercise. A definite rejection with unchanged context preserves answers and replay mode; only
-  interrupted lookups need resuming. The switch PUT has a 20-second timeout including authentication
-  refresh. An uncertain outcome invalidates context for GET-only reconciliation and bounded recovery.
-- Missing or invalidated language context is loaded first through the shared language store, with
-  cancellation and a 20-second timeout. Failure exits `loading`, shows the localized unavailable
-  message, and offers Retry. Retry reloads context and checks for existing exercises before any
-  generation can be requested. A successful language lookup with no active language is also an error;
-  a valid active language without a study plan is handled by the backend's no-active-plan response.
+- Exercise lookup, generation, and answer submission use the shared client contracts in
+  `architecture-frontend.instructions.md` (Shared comprehension client). Language-switch recovery
+  belongs to `multi-language.instructions.md`.
 - Idle state offers generation, history, quota information, or an inline paywall.
-- `useExerciseGeneration` and `resolveExercise` share the generation lifecycle with Reading.
-- Generating state queries `/next` every 10 seconds, with no overlapping requests, and adds a delay
-  warning after 15 seconds. Each request uses at most 20 seconds or the remaining operation budget,
-  including the consumer's wait for shared authentication refresh.
-- The first server-calculated remaining time is anchored to the browser's monotonic clock. A final
-  result lookup at expiry has up to 10 seconds of grace. Missing remaining time uses a 60-second
-  observation window. Client wall-clock offsets do not change this budget.
-- Network errors, 5xx, and 429 use progressive backoff; recovery stops after four consecutive failures.
-  `Retry-After` is respected up to 120 seconds; longer delays are surfaced as unavailable status.
-  Recovery pauses are capped by the remaining budget; when Retry-After cannot fit, the operation
-  expires without sending a request earlier than permitted or outside its budget.
-- An uncertain POST response is recovered using GET only. Checking status never resubmits generation.
-- Page entry resumes active generation or retrieves a saved result. Localized errors distinguish
-  generation failure, timeout, and unavailable status. A manual retry checks for existing work first.
-- Repeated clicks are blocked before POST completes. Unmount and local language, plan, or level
-  changes abort the current lookup and its timers. Responses must match the operation's context;
-  late responses cannot update a replacement operation.
+- No-plan presentation uses the shared banner and confirmation rules in
+  `architecture-frontend.instructions.md` (Shared comprehension client).
+- Generating state adds a delay warning after 15 seconds.
 - Exercise state shows topic, type, level, authenticated audio playback, and all questions.
 - Submission becomes available when every received question index has an answer.
-- Local submission results are discarded after unmount, session replacement, a confirmed language change,
-  context invalidation, or exercise/plan/level replacement. Results, errors, review prompts, and the
-  submitting indicator belong to that attempt only. Cancelling the client wait does not undo a saved
-  attempt; a newer exercise cannot display its result or have its own submission unlocked by it.
-- A provisional language switch keeps the pending submission and its lock. Responses received during
-  the switch wait for its outcome. If rejected with unchanged context, the original result is shown
-  without resubmitting the attempt, including replay.
-- The POST remains observed after local cancellation. A successful HTTP response updates global quota
-  once for the originating session even if the exercise is no longer visible or body decoding fails.
-  Transport failures and HTTP 408/5xx reconcile quota through a forced GET; old-session responses cannot
-  change the current user's balance.
-- Results reveal transcript, correct answers, score, and XP.
+- Quota exhaustion disables submission and adds an inline paywall while retaining the loaded exercise,
+  audio player, answers, and replay state. Confirmed access recovery restores manual submission without
+  replacing the exercise. Temporary quota-service unavailability shows a localized retryable error;
+  the shared classification/recovery contract lives in `architecture-frontend.instructions.md`.
+- Results reveal transcript, correct answers, score, and XP, with audio playback alongside the transcript.
+- Each corrected question offers optional native-language explanation with a source quote; loading and
+  manual retry remain local to the help control and never resubmit the attempt.
 - A successful first attempt may open the shared review prompt; replay never does.
 - History displays ten attempts per page through the shared pagination component.
 - Starting practice from history creates a replay with blank answers.
 
-`ExerciseAudioPlayer` fetches the protected MP3 through `apiFetch`, creates a Blob URL, and provides
-play, pause, progress, click-to-seek, browser-derived duration, and an error state. Listening does not
+`ExerciseAudioPlayer` fetches the protected MP3 or WAV through `apiFetch`, preserves its MIME type,
+creates a Blob URL, and provides play, pause, progress, click-to-seek, browser-derived duration,
+and an error state. Playback labels are localized; seeking uses a focusable slider supporting arrow
+keys, Home, and End for both persisted Listening audio and lesson TTS. Listening does not
 require audio playback before answers can be submitted.
+Unmount, exercise replacement or authentication-session replacement cancels pending playback work,
+detaches media listeners and releases its audio/Blob URL. Late fetch, Blob and play completions cannot
+start obsolete audio or replace a newer player's state. Playback failure permits an explicit retry.
 
 Question prompts, revealed transcripts, and history transcripts support the shared single-selection
 word-save flow. Answer options are not vocabulary-selection surfaces. Saving derives the destination

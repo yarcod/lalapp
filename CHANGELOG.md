@@ -4,6 +4,234 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.10] - 2026-11-17
+
+### Added
+
+- Add Everyday situations to Practice with 50 voice role-plays across five personal and work themes, including straightforward everyday exchanges, translated titles and descriptions, search, category filtering, and locale-aware ordering. Each situation gives Lingu a concrete role and objective adapted to the learner's study plan, with concise interaction and a natural conclusion after meaningful practice.
+- Add a configurable Situations allowance of one start per account/ISO week through `FREEMIUM_SITUATIONS_WEEKLY`, preserving existing voice access and limits. Situations use the current voice conversation, transcript history, and plan-owned vocabulary saves.
+
+### Changed
+
+- Align the Games catalog header with Everyday situations, using an open title and description layout with matching typography and responsive spacing.
+- Give OpenAI TTS the same female/male selector as Gemini, with independent provider preferences and backend-configurable voices. Default to `gpt-4o-mini-tts` with `female` mapped to `marin` and `male` to `cedar`; ignore saved provider-name preferences until a new choice is selected. Validate voice/model compatibility and refresh on-demand audio caches when mapped voices change, including with legacy OpenAI models.
+- Give Gemini TTS explicit pronunciation and regional-accent guidance for every supported language, sharing OpenAI's instructions while preserving the selected voice and multilingual text. Refresh on-demand audio caches when those instructions change.
+
+### Fixed
+
+- Prevent daily lessons from returning a server error after a generation or persistence rollback. Reuse concurrent lesson inserts safely and continue remaining slots without losing committed lessons or progress.
+
+## [1.14.5] - 2026-11-17
+
+### Changed
+
+- Present My Plan as a vertical learning itinerary with an expanded current unit, overall lesson progress, readable upcoming stages, a distinct final assessment milestone, and pending lessons near the header. Redesign unit details with lesson progress, clearer actions, expandable grammar references, and accessible modal navigation.
+- Increase Feedback filter and action text to 12 px and metadata and counters to 11 px for improved readability.
+- Increase authenticated FAQ questions and answers to 14 px, matching the public FAQ.
+- Group the authenticated FAQ by topic and add guidance on multiple languages, grammar practice, games, memories, plans, quotas, and subscription cancellation in all interface languages. Correct voice interruption, profile-language saving, and registration guidance, and explain Reading and Listening answer help.
+
+### Fixed
+
+- Prevent duplicate lesson keys in My Plan unit details when generated lessons and future scheduled lessons appear together.
+
+### Security
+
+- Update Next.js and its ESLint configuration to 16.4.6 to fix cached data disclosure across root parameters (GHSA-mfr8-8qww-v76h).
+- Update the transitive typescript-eslint packages to 8.73.0, adopting the patched minimatch dependency for glob-pattern denial of service (GHSA-g3hv-75wg-m249). The separate shadcn dependency chain remains affected pending an upstream update.
+
+## [1.14.0] - 2026-11-16
+
+### Added
+
+- Add a personal Grammar Practice library from grammar resources, with saved five-question practices, deterministic feedback, language-specific history and statistics across plans, and a configurable free allowance of three new practices per account/UTC day independent of Games.
+- Continue completed grammar practices in voice with Lingu using the full topic, exercises, and saved answers, with existing voice limits, transcript history, and word saves tied to the original study plan.
+
+### Changed
+
+- Blur and lightly dim the page behind the open mobile menu, blocking background interaction without dismissing the menu when the backdrop is tapped.
+- Organize desktop and mobile navigation into collapsible learning, practice, resources, and help groups, expanded by default without persisting their state, with clearer localized labels and a separate final block containing Settings and an administrator-only Admin link. Sort Practice, Resources, Help, and Settings/Admin alphabetically by their translated labels using the interface language. Keep the Feedback unread badge visible when Help is collapsed, and mark a collapsed group containing the current page with the active link's left accent border.
+
+## [1.13.5] - 2026-11-15
+
+### Added
+
+- Add permanent Premium links to desktop and mobile navigation, plus a dismissible trial-expiration notice on dashboard entry, remembered per account in the browser.
+- Offer contextual Premium continuation after completed learning activities, with a shared three-day cadence for optional invitations and immediate continuation offers when free quotas are exhausted.
+- Add specialized OpenCode reviewers for study plans, practice, conversations, access, and language isolation, with shared review and coordination guidelines.
+
+### Changed
+
+- Explain Premium benefits, the no-card trial expiration, and subscription payment terms in Plan and subscription settings, prioritizing monthly billing unless the learner selected another plan.
+- Make trial and Premium-only quota labels actionable, and offer upgrades before the last free use with clear daily or weekly renewal information.
+- Require cancellation of subscription renewal before self-service or administrator account deletion; pending checkout or unavailable billing verification blocks deletion without ending the user's session.
+
+### Fixed
+
+- Preserve monthly or annual plan selection through registration, login, legal pages, onboarding, and subscription settings, with checkout requiring an explicit action.
+- Keep existing Premium actions available during the initial trial and link quota upgrade prompts directly to subscription settings.
+- Refresh trial countdowns and free-plan balances at expiration, UTC resets, and return to the app; recover consuming controls after access is restored without discarding learner answers.
+- Distinguish exhausted voice and exercise quotas from temporary service failures, with localized user-facing errors instead of technical server messages.
+- Show trial eligibility, annual savings, comparison prices, and Premium usage terms accurately; subscription and checkout-return pages no longer imply an unverified charge.
+- Preserve voice transcripts when the free allowance runs out, and allow post-assessment voice practice to continue when the account still has subscription, trial, or free-quota access.
+- Preserve explicit administrator quota overrides when changing subscription status in the same update.
+
+## [1.13.0] - 2026-11-14
+
+### Security
+
+- Updated the shared runtime and development dependency `dnspython` to 2.9.2 to fix excessive memory and CPU consumption when parsing malicious WKS records in zone files.
+- Updated the shared runtime and development dependency `opentelemetry-api` to 1.45.2 to fix denial of service through quadratic-time parsing of malicious `traceparent` values.
+
+## [1.12.20] - 2026-11-14
+
+### Added
+
+- New study languages: Croatian from Croatia (`hr-HR`), Czech from Czechia (`cs-CZ`), Danish from Denmark (`da-DK`), Finnish from Finland (`fi-FI`), and Romanian from Romania (`ro-RO`), each with an A1–C2 curriculum, grammar reference, vocabulary, phrasebook, placement bank, language-specific cultural and generation guidance, and localized selection with its national flag.
+
+### Changed
+
+- The landing and static project site use a two-column desktop hero with Lingu and six greetings, stacking content and entry actions before Lingu on mobile. Supported languages appear in separate wrapping rows, alphabetically ordered by their translated names; the English project site retains static Lingu artwork.
+
+### Security
+
+- Updated transitive Hono dependencies to `hono` 4.13.18 and `@hono/node-server` 2.1.8 to address middleware and validation bypasses, HTML injection, and WebSocket upgrade vulnerabilities.
+
+## [1.12.15] - 2026-11-12
+
+### Added
+
+- Optional Gemini TTS with configurable female and male voices, separate voice preferences and previews, and regional pronunciation context across speech features.
+
+### Changed
+
+- Gemini speech uses native WAV audio for playback and persistent caches. Listening retains playback of existing MP3 recordings when the configured provider changes; local and OpenAI speech continue using MP3.
+- Lingu's text-chat guidance prioritizes conversational continuity, varied replies, and selective corrections, with brief native-language learning support and fictional practice scenarios. Shared text and voice memory guidance excludes fictional practice details from saved learner facts.
+- Voice tutor guidance emphasizes context-aware openings, topic continuity, fewer repetitive questions and stock responses, level-appropriate help, and selective conversational corrections. Brief native-language help returns naturally to the learned language without a mandatory example-and-question sequence. Voice turns retain up to 40 recent messages for continuity.
+
+### Fixed
+
+- Listening generation uses Kokoro's configured voice when local TTS is selected, ignoring stale cloud voice preferences.
+
+## [1.12.10] - 2026-11-11
+
+### Added
+
+- Lesson exercises offer an optional question translation in the learner's native language at every level, including existing lessons, while keeping the original question and separate hints available.
+- Reading and Listening offer optional native-language explanations after submission, with a literal quote supporting each correct answer. Reading results retain the full passage, and Listening results include audio playback alongside the transcript.
+
+### Changed
+
+- Vocabulary imports translate new cards with missing translations into the learner's native language, preserving existing cards and supplied translations. Failed translation or a changed study/profile context prevents partial imports.
+- In voice conversations, Lingu can briefly explain in the learner's native language when asked for help or told something is unclear, then return to target-language practice.
+
+### Fixed
+
+- My Plan follows the actual study-plan position, places Start on the correct unit, and keeps reached lessons accessible for review or resumption. Unit completion and percentages reflect completed scheduled lessons rather than competency scores.
+- Listening cancels pending audio and releases playback resources when leaving an exercise or changing accounts, preventing late playback after the player disappears.
+- Listening exercises inside lessons provide playable source audio with pause, seeking and replay, multiple-choice answers, and a transcript after answering. Incomplete unanswered exercises can be regenerated instead of remaining unplayable, and cannot be graded until repaired.
+
+## [1.12.5] - 2026-11-07
+
+### Changed
+
+- Page loading uses lightweight indicators with delayed appearance and a shared minimum visible duration. Exercise preparation uses static Lingu artwork, keeping loading independent of the 3D model and its animation startup.
+- The top loading bar retains its appearance and coordinates with full-page loading. Section updates and landing subscription checks keep their feedback within the affected content.
+- The landing shows a text-free spinner while Lingu and the surrounding language greetings prepare to appear together.
+- Lesson completion explains that progress is being saved and the next lesson prepared while the existing full-page loading indicator is visible.
+
+### Fixed
+
+- Vocabulary, chat history, usage limits, and language selection distinguish pending requests, empty results, and recoverable failures instead of showing false empty states or indefinite placeholders.
+- Resource and list loading discards obsolete responses, avoids duplicate filter requests, and preserves current loading state when requests overlap. Grammar help stops automatic retries after a failure and offers an explicit retry.
+- Voice conversation shows a loading state while preparing its plan context before the conversation module is available.
+
+## [1.12.0] - 2026-11-06
+
+### Added
+
+- Optional RevenueCat Premium entitlement synchronization with authenticated, idempotent webhooks, account reconciliation, and administrator-controlled Stripe receipt imports, while retaining Stripe web checkout and a Stripe Customer Portal fallback when RevenueCat is unavailable.
+- Brazilian Portuguese (`pt-BR`), Dutch from the Netherlands (`nl-NL`), Russian (`ru-RU`), and Swedish from Sweden (`sv-SE`) as separate study languages, each with an A1–C2 curriculum, grammar reference, vocabulary, phrasebook, placement bank, cultural contexts, and regional speech instructions.
+
+### Changed
+
+- Billing rejects a new checkout for an already-subscribed account; RevenueCat-managed access preserves the last confirmed state during delayed renewals or provider failures and applies entitlement expiry and grace periods through verified reconciliation.
+- Portuguese language selectors explicitly distinguish Brazil from Portugal, using separate flags and localized labels.
+- What's New highlights Polish, Brazilian Portuguese, Dutch, Russian, and Swedish together in the first entry, across all interface languages.
+- Public and authenticated FAQs list study languages alphabetically by their translated names in the active interface language.
+
+### Fixed
+
+- Paywalls show no-charge-today terms only when a Stripe trial is configured and the user has not already used it.
+- Paywall and Settings checkout actions refresh the profile when billing confirms an existing Premium subscription, removing stale purchase prompts without opening another checkout.
+- Stripe Customer Portal creation is asynchronous and returns a controlled unavailable response on provider failure, including the RevenueCat fallback.
+- Profile reads recover from failed retroactive freemium-trial writes and allow a later request to retry the grant.
+- Landing language bubbles use stable server/client positioning and a wider desktop orbit, with wrapping mobile rows to prevent crowding as the language catalog grows.
+- Study-plan generation rejects invalid or disabled target languages before changing data, and free voice conversations no longer inherit another language's study plan or level.
+- Stripe-only access reconciles current subscription state and deduplicates webhooks, preventing delayed events from undoing cancellations or payment recovery and duplicate deliveries from resetting quotas.
+- Checkout reuses a single pending session per account, recovers interrupted creation idempotently, and expires the previous session before changing plans to prevent duplicate subscriptions.
+- Checkout resumes incomplete payments in the same open session and recovers old reservations that no longer meet Stripe's minimum expiry window; interrupted Customer creation retains its original request parameters across profile changes.
+- RevenueCat expirations caused by billing issues allow resubscription after definitive cancellation; subscriptions that remain recoverable in Stripe route to Customer Portal instead of creating another purchase.
+
+## [1.11.0] - 2026-11-02
+
+### Added
+
+- Polish (`pl-PL`) as a study language, with an A1–C2 curriculum, grammar reference, vocabulary, phrasebook, placement bank, and selectable onboarding and language-management entries.
+
+## [1.10.65] - 2026-10-30
+
+### Changed
+
+- Aligned local tooling, CI, and frontend container images on Node.js 26.13.0 LTS (Lithium), retaining npm 11.20.0.
+
+### Fixed
+
+- British and American English study plans explicitly cover A1 plurals, demonstratives, and object pronouns, plus A2 past continuous, with corresponding consolidation practice.
+- New American English A1 plans include listening among their scheduled lesson types.
+- Corrected ambiguous present-perfect and advice questions in both English placement banks so valid alternative answers are not marked incorrect.
+- Corrected British English phonetic transcriptions for “euphoria” and “scenario”.
+- New German study plans include listening in every A1–C2 unit's lesson cycle.
+- Corrected German placement questions with invalid or ambiguous answers, removed English-dependent questions, and varied correct-answer positions in the static bank.
+- Corrected German grammar explanations, declension examples, spelling and noun genders, and replaced circular vocabulary definitions with meaningful explanations.
+- New Spanish study plans include listening throughout A1–C2, explicit A1 practice of `estar + gerundio`, and A2 perfect-compound and `por`/`para` coverage with consolidation.
+- Corrected ambiguous Spanish placement questions and varied correct-answer positions in the static bank.
+- Corrected Spanish grammar explanations and examples, regional and historical references, greeting registers, and a vocabulary example and phonetic transcription.
+- New French, Italian, and Portuguese study plans include listening in every A1–C2 unit's lesson cycle.
+- French A1 plans explicitly cover frequent present-tense verbs; Italian A2 plans introduce `stare + gerundio` with consolidation; Portuguese introductions include `ter` for age.
+- Corrected ambiguous or invalid French, Italian, and Portuguese placement questions, clarified advanced exercises, and balanced correct-answer positions in their static banks.
+- Corrected grammar rules, examples, spelling, and greeting registers in French, Italian, and Portuguese, including reported speech, subjunctive usage, and sociolinguistic descriptions.
+- Replaced circular French vocabulary definitions, corrected Italian phonetic transcriptions, and fixed literal newline escapes in Portuguese grammar explanations.
+- Corrected Japanese grammar rules and false corrections across A1–C2, clarified A2 plain-negative formation, and corrected literary analysis, historical examples, and meaning-preserving reformulations.
+- Corrected Japanese phrasebook romanizations and their correspondence with the saved phrases.
+- Clarified ambiguous Japanese placement questions, replaced weak advanced items with contextual exercises, and balanced correct-answer positions within each level and skill.
+- Corrected Korean A1–C2 conjugation rules, false corrections, honorific and register guidance, historical explanations, and reformulations that changed the source meaning; clarified foundational A1 forms in existing references.
+- Corrected Korean vocabulary meanings, examples, and vocabulary and phrasebook romanizations.
+- Clarified ambiguous Korean placement questions, replaced weak advanced items with contextual exercises, and balanced correct-answer positions within each level and skill.
+- Corrected remaining Italian concessive examples, past-tense accents, metonymy guidance, and a reported-speech reformulation that changed the unconfirmed claim.
+- Aligned a French literary-register example with its definition, distinguishing literary effects from language formality.
+- Corrected a German statistical-significance example that confused significance with its threshold.
+
+## [1.10.60] - 2026-10-24
+
+### Security
+
+- Updated frontend transitive dependencies to Zod 4.6.7, ip-address 10.7.4, brace-expansion 1.1.21 and 5.0.12, and undici 7.30.1 to address denial-of-service vulnerabilities, IP classification and subnet allowlist bypasses, and a Subresource Integrity bypass.
+- Updated backend opentelemetry-api to 1.45.1 for runtime and development dependencies to prevent excessive CPU usage when parsing malformed tracestate headers.
+
+## [1.10.55] - 2026-10-24
+
+### Changed
+
+- Aligned local tooling, CI, and container images on Node.js 26.12.1, npm 11.20.0, and Python 3.14.9, with Node.js 26 type definitions.
+- Updated Next.js and eslint-config-next to 16.4.3, FastAPI to 0.143.5, SQLAlchemy to 2.1.6, Alembic to 1.20.1, and Ruff to 0.17.2 for upstream maintenance fixes.
+- Updated Zustand to 5.0.16, Lucide React to 1.61.0, shadcn to 4.22.1, pydantic-settings to 2.16.1, and certifi to 2026.10.23.
+- Updated coverage to 7.17.0, websockets to 17.3, pycparser to 3.12, and platformdirs to 4.13.5 for upstream maintenance fixes in backend dependencies and development tooling.
+- Updated GitHub Actions checkout to 7.0.1, Node.js and Python setup to 7.1.0, and release publishing to 3.0.3 across CI and publication workflows.
+
+### Security
+
+- Replaced the end-of-life Node.js 25 runtime with Node.js 26.12.1 and updated Python to 3.14.9 to incorporate upstream security fixes.
+
 ## [1.10.50] - 2026-10-21
 
 ### Security

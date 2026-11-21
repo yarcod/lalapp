@@ -46,7 +46,8 @@ upstream settings.
   profile section shows a child checkbox that saves on click; if the request fails the checkbox
   returns to its saved value and shows the shared error alert. Saves are serialized, the store
   resets on session change, and it reloads when the language store's `userLanguages` change so
-  `tagged_languages` follows plan changes.
+  `tagged_languages` follows plan changes. The app layout loads it once the user is loaded, through
+  `useHomeSession`; pages such as chat only read the store, so they send no extra request.
 - `app/home/context.py` holds the current learner (`is_child`, native language) in a context variable.
   `get_current_user` sets it once per authenticated request through `enter_user`; the
   conversation WebSocket sets it where it resolves the user; background work uses `use_learner`.
@@ -144,7 +145,7 @@ with HTTP 200.
 unknown state. When `STT_PROVIDER` is not `local` the state is always `ready`. Gateway calls use a
 3-second timeout. `live_llm_is_small()` reports whether the state is `shared` (the small LLM tier).
 
-Frontend: the app layout (through `useSpeechSession`) opens a session once the user is loaded, sends
+Frontend: the app layout (through `useHomeSession`, which calls `useSpeechSession`) opens a session once the user is loaded, sends
 a keepalive every 60 seconds while the tab is visible and on return to visibility, and reopens when
 the stored state is missing, `off` or `away`. Voice can start only when the state is `ready` or
 `shared` (`useCanStartVoice`); start buttons and topic buttons are disabled otherwise. The
@@ -299,7 +300,9 @@ Backend:
 - `backend/app/routers/chat.py`: passes `target_code` to the prompt builders, filters streamed tokens
   through `TaggedChatStream`, and adds `error_code: "llm_unavailable"` to the error event.
 - `backend/app/routers/conversation.py`: `enter_user` sets the learner for the socket and
-  `build_pipeline` constructs the home pipeline.
+  `build_pipeline(ConversationPipeline, ...)` constructs the home pipeline. Upstream's import stays,
+  so upstream tests that patch `ConversationPipeline` in the router still work: `build_pipeline`
+  calls a replaced class unchanged.
 - `backend/app/routers/games.py`: returns `stock_empty_response` when the start returns no session.
 - `backend/app/services/conversation_pipeline.py`: base seams whose bodies are the code they replaced,
   so upstream behaviour is unchanged. They are `_build_conversation_system_prompt(..., target_code)`
@@ -325,7 +328,7 @@ Frontend:
 
 - `frontend/src/app/(app)/chat/page.tsx`: hides the per-message audio player when tagged replies apply and shows
   the "Lingu is away" message for `llm_unavailable`.
-- `frontend/src/app/(app)/layout.tsx`: calls `useSpeechSession`.
+- `frontend/src/app/(app)/layout.tsx`: calls `useHomeSession` (speech session and home profile).
 - `frontend/src/components/conversation/ConversationMode.tsx`: call sites for the provisional-turn
   hook, speech-session gating, the redo line and the status notice.
 - `frontend/src/components/conversation/MicButton.tsx`: `canStart` prop from the speech-session state.
@@ -360,10 +363,13 @@ Upstream sync checklist:
 1. Run `./scripts/home-surface.sh --since <last synced upstream commit>` and read the listed commits.
 2. Merge `upstream/main`.
 3. Run `pytest tests/home` (including the seam tests), frontend `tsc`, and `vitest run tests/home`.
+   Also run the upstream tests for every file with a conflict or a hook line: seam tests do not see
+   upstream test fixtures that patch a name we replaced, or extra requests that a test's fetch mock
+   does not expect.
 4. By hand on the deployed app: one voice conversation as a child profile, and one game start.
 5. Record the synced upstream commit below.
 
-Last synced upstream commit: `8fb4f41828b682a3bd9dc1f7746882b499296183`
+Last synced upstream commit: `59d53d2d284ebb9b6fdb4624e9626ec07322c253`
 
 ## Deployment rules
 

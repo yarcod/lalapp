@@ -29,11 +29,15 @@ async def freemium_status(
         current_user.freemium_trial_ends_at,
     )
     from app.services.games import game_quota
+    from app.services.grammar_practice import practice_quota
 
     games = await game_quota(db, current_user.id)
+    grammar_practice = await practice_quota(db, current_user.id)
     return {
         "games_remaining": games["remaining"],
         "games_limit": games["limit"],
+        "grammar_practice_remaining": grammar_practice["remaining"],
+        "grammar_practice_limit": grammar_practice["limit"],
         "trial_active": status.trial_active,
         "trial_ends_at": status.trial_ends_at,
         "chat_remaining": status.chat_remaining,
@@ -46,4 +50,6 @@ async def freemium_status(
         "reading_limit": status.reading_limit,
         "voice_remaining_seconds": status.voice_remaining_seconds,
         "voice_limit_seconds": status.voice_limit_seconds,
+        "situations_remaining": status.situations_remaining,
+        "situations_limit": status.situations_limit,
     }

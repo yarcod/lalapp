@@ -1,4 +1,276 @@
 {
+  "situations": {
+    "title": "Gerçek yaşam durumlarını çalış",
+    "description": "Bir senaryo seç ve konuşman gereken kişiyi canlandıracak Lingu ile sesli pratik yap.",
+    "search": "Durum ara",
+    "allCategories": "Tüm kategoriler",
+    "noResults": "Aramana uygun durum bulunamadı.",
+    "loadError": "Durumlar yüklenemedi.",
+    "retry": "Tekrar dene",
+    "start": "Pratiğe başla",
+    "unavailable": "Bu durum şu anda kullanılamıyor. Tekrar dene.",
+    "back": "Durumlara dön",
+    "contextChanged": "Çalışma bağlamın değişti. Sayfayı yenile ve pratiği yeniden başlat.",
+    "categories": {
+      "daily_life": "Günlük yaşam",
+      "travel": "Seyahat",
+      "shopping_services": "Alışveriş ve hizmetler",
+      "social": "Sosyal yaşam",
+      "work": "İş"
+    },
+    "items": {
+      "bakery_purchase": {
+        "title": "Fırından alışveriş yap",
+        "description": "Lingu fırındaki satış görevlisi olacak. Ekmek veya kahvaltılık bir şey iste, ne kadar istediğini belirt ve fiyatını sor."
+      },
+      "clothes_shopping": {
+        "title": "Kıyafet alışverişi yap",
+        "description": "Mağaza görevlisini canlandıran Lingu ile beden ve renk hakkında konuş ve kıyafeti deneyip deneyemeyeceğini sor."
+      },
+      "cafe_order": {
+        "title": "Kafede sipariş ver",
+        "description": "Lingu kafedeki garson olacak. Bir içecek ve yiyecek bir şey sipariş et."
+      },
+      "haircut_appointment": {
+        "title": "Kuaföre git",
+        "description": "Lingu kuaförün olacak. Basit bir saç kesimi iste ve saçını nasıl istediğini anlat."
+      },
+      "supermarket_help": {
+        "title": "Markette yardım iste",
+        "description": "Market çalışanını canlandıran Lingu'ya aradığın ürünleri nerede bulabileceğini sor."
+      },
+      "buy_ticket": {
+        "title": "Bilet al",
+        "description": "Lingu gişe görevlisi olacak. Gideceğin yeri söyle, kalkış saatini ve fiyatı sor ve bir bilet al."
+      },
+      "hotel_check_in": {
+        "title": "Otele giriş yap",
+        "description": "Lingu resepsiyon görevlisi olacak. Rezervasyonunu teyit et ve konaklamanla ilgili temel bilgileri sor."
+      },
+      "taxi_ride": {
+        "title": "Taksi çağır",
+        "description": "Taksi çağrı merkezi görevlisini canlandıran Lingu'yu ara. Alınacağın yeri ve varış noktanı söyle ve taksinin ne zaman geleceğini sor."
+      },
+      "collect_key": {
+        "title": "Anahtarı teslim al",
+        "description": "Tatil için kiraladığın dairenin anahtarını ev sahibini canlandıran Lingu'dan al ve daireye nasıl gireceğini sor."
+      },
+      "local_recommendations": {
+        "title": "Gezilecek yerleri sor",
+        "description": "Lingu bölge sakinini canlandıracak. İlgi alanlarını anlat ve ziyaret edebileceğin yerler için öneri iste."
+      },
+      "congratulate_friend": {
+        "title": "Arkadaşını kutla",
+        "description": "Lingu doğum günü olan veya güzel bir haber paylaşan arkadaşın olacak. Onu kutla ve biraz sohbet edin."
+      },
+      "hobbies_chat": {
+        "title": "Hobiler hakkında konuş",
+        "description": "Arkadaşını canlandıran Lingu ile boş zamanlarınızda neler yapmayı sevdiğinizi konuşun ve ortak ilgi alanları bulun."
+      },
+      "family_chat": {
+        "title": "Aile hakkında konuş",
+        "description": "Lingu bir tanıdığını canlandıracak. Ailenden bahset ve onun ailesini sor."
+      },
+      "invite_friend": {
+        "title": "Arkadaşını davet et",
+        "description": "Arkadaşını canlandıran Lingu'yu birlikte bir şeyler yemeye veya içmeye davet et ve bir saat belirleyin."
+      },
+      "choose_gift": {
+        "title": "Hediye seç",
+        "description": "Arkadaşını canlandıran Lingu ile ortak bir hediye seç. Hediye alacağınız kişinin neleri sevdiğini konuşun ve birlikte karar verin."
+      },
+      "late_arrival": {
+        "title": "Geç kalacağını haber ver",
+        "description": "İş arkadaşını canlandıran Lingu'ya geç kalacağını haber ver ve yaklaşık ne zaman varacağını söyle."
+      },
+      "work_update": {
+        "title": "Ne üzerinde çalıştığını anlat",
+        "description": "İş arkadaşını canlandıran Lingu'ya günlük bir iş görevini ve ne kadar ilerlediğini anlat."
+      },
+      "arrange_meeting": {
+        "title": "Toplantı ayarla",
+        "description": "İş arkadaşını canlandıran Lingu ile bir toplantı planla ve ikinize de uyan bir gün ve saat belirleyin."
+      },
+      "colleague_help": {
+        "title": "İş arkadaşından yardım iste",
+        "description": "Lingu iş arkadaşın olacak. Hangi konuda yardıma ihtiyacın olduğunu açıkla ve yol göstermesini iste."
+      },
+      "break_chat": {
+        "title": "Molada sohbet et",
+        "description": "Lingu iş arkadaşın olacak. İş molasında günlük konular üzerine rahatça sohbet edin."
+      },
+      "recount_day": {
+        "title": "Gününün nasıl geçtiğini anlat",
+        "description": "Arkadaşını canlandıran Lingu'ya bugün neler yaptığını ve gün içinde yaşadığın bir olayı anlat."
+      },
+      "weather_chat": {
+        "title": "Hava hakkında konuş",
+        "description": "Lingu komşun olacak. Hava ve planlarınız hakkında konuşun."
+      },
+      "daily_routine": {
+        "title": "Günlük rutinini anlat",
+        "description": "Lingu bir tanıdığını canlandıracak. Sıradan bir gününün nasıl geçtiğini anlat ve onun rutinini sor."
+      },
+      "household_chores": {
+        "title": "Ev işlerini paylaş",
+        "description": "Lingu ev arkadaşın olacak. Hangi ev işini kimin yapacağını ve ne zaman yapacağınızı kararlaştırın."
+      },
+      "plan_dinner": {
+        "title": "Akşam yemeğini planla",
+        "description": "Lingu ev arkadaşın olacak. Ne pişireceğinize karar verin ve elinizdeki malzemelerle eksik olanları konuşun."
+      },
+      "medical_appointment": {
+        "title": "Doktor randevusu al",
+        "description": "Bir kliniği ara. Lingu danışma görevlisi olacak: ziyaret nedenini açıkla ve uygun bir tarih belirle."
+      },
+      "neighbour_problem": {
+        "title": "Bir komşuyla konuş",
+        "description": "Lingu komşunu canlandıracak. Evde yaşadığın rahatsızlığı açıkla ve karşılıklı saygıyla bir çözüm bulun."
+      },
+      "flat_viewing": {
+        "title": "Bir daireyi gez",
+        "description": "Emlak danışmanını canlandıran Lingu ile bir daireyi gez. Kira, masraflar ve koşullar hakkında sorular sor."
+      },
+      "school_meeting": {
+        "title": "Okulda bir görüşme",
+        "description": "Lingu çocuğunun öğretmeni olacak. Okul düzenini konuşun ve çocuğunun öğrenmesini nasıl destekleyeceğinizi kararlaştırın."
+      },
+      "household_repair": {
+        "title": "Tamir randevusu ayarla",
+        "description": "Evdeki bir arızayı teknisyeni canlandıran Lingu'ya anlat. Ücreti sor ve ziyaret için bir zaman belirle."
+      },
+      "change_reservation": {
+        "title": "Rezervasyonu değiştir",
+        "description": "Rezervasyon görevlisi olan Lingu ile konuş. Neyi değiştirmek istediğini açıkla ve yeni koşulları teyit et."
+      },
+      "hotel_problem": {
+        "title": "Otelde bir sorun",
+        "description": "Lingu resepsiyon görevlisi olacak. Odanla ilgili bir sorunu açıkla ve uygun bir çözüm iste."
+      },
+      "ask_directions": {
+        "title": "Yol tarifi iste",
+        "description": "Bölge sakinini canlandıran Lingu'ya gideceğin yere nasıl ulaşacağını sor ve güzergâhı doğru anladığından emin ol."
+      },
+      "missed_connection": {
+        "title": "Aktarmayı kaçır",
+        "description": "Aktarmanı kaçırdın. Ulaşım görevlisini canlandıran Lingu ile konuşarak gideceğin yere ulaşmanın başka bir yolunu bul."
+      },
+      "lost_luggage": {
+        "title": "Kayıp bagaj",
+        "description": "Bavulun gelmedi. Bagaj masasındaki Lingu'ya bavulunu tarif et ve nasıl geri alabileceğini sor."
+      },
+      "return_purchase": {
+        "title": "Bir ürünü iade et",
+        "description": "Mağaza görevlisini canlandıran Lingu'ya ürünü neden iade etmek istediğini açıkla ve para iadesini sor."
+      },
+      "restaurant_order": {
+        "title": "Restoranda sipariş ver",
+        "description": "Lingu garsonun olacak. Yemekler hakkında sorular sor, tercihlerini açıkla ve siparişini ver."
+      },
+      "phone_contract": {
+        "title": "Bir mobil tarife seç",
+        "description": "Telefon operatörü danışmanını canlandıran Lingu ile konuş. Tarifeleri karşılaştır ve karar vermeden önce ücretleri ve koşulları netleştir."
+      },
+      "bank_appointment": {
+        "title": "Bankada bir randevu",
+        "description": "Lingu banka görevlisi olacak. Yapmak istediğin işlemi açıkla, gerekli belgeleri ve sonraki adımları sor."
+      },
+      "delivery_problem": {
+        "title": "Bir teslimat sorunu",
+        "description": "Müşteri hizmetleri görevlisi olan Lingu ile iletişime geç. Paketinle ilgili sorunu açıkla ve bir çözüm üzerinde anlaşın."
+      },
+      "meet_someone": {
+        "title": "Yeni biriyle tanış",
+        "description": "Lingu bir buluşmada yeni tanıştığın kişiyi canlandıracak. Kendini tanıt ve ortak ilgi alanlarınızı keşfedin."
+      },
+      "make_plans": {
+        "title": "Birlikte plan yapın",
+        "description": "Arkadaşını canlandıran Lingu ile bir gezi planla. Etkinlikler öner, nerede ve ne zaman buluşacağınızı kararlaştırın."
+      },
+      "decline_invitation": {
+        "title": "Bir daveti reddet",
+        "description": "Lingu seni dışarı davet eden bir arkadaşın olacak. Daveti nazikçe reddet ve başka bir zaman buluşmayı öner."
+      },
+      "resolve_misunderstanding": {
+        "title": "Yanlış anlaşılmayı gider",
+        "description": "Yanlış anlaşılan bir mesajı arkadaşını canlandıran Lingu ile açıklığa kavuştur ve yeniden samimi bir sohbet kur."
+      },
+      "host_visitors": {
+        "title": "Misafir ağırla",
+        "description": "Lingu evine gelen bir misafir olacak. Onu karşıla, içecek ikram et ve planlarını anlat."
+      },
+      "introduce_yourself": {
+        "title": "Ekibe kendini tanıt",
+        "description": "Lingu yeni bir iş arkadaşın olacak. Kendini tanıt, görevini açıkla ve ekip hakkında sorular sor."
+      },
+      "explain_task": {
+        "title": "Bir görevi açıkla",
+        "description": "İş arkadaşını canlandıran Lingu'ya bir görevi açıkla. Adımları anlat ve açıklamanın anlaşıldığından emin ol."
+      },
+      "clarify_instructions": {
+        "title": "Talimatları netleştir",
+        "description": "Lingu yöneticin olacak. Belirsiz talimatlar hakkında sorular sor ve ne yapman gerektiğini teyit et."
+      },
+      "negotiate_deadline": {
+        "title": "Teslim tarihini görüş",
+        "description": "Proje yöneticisini canlandıran Lingu ile konuş. Bir zorluğu açıkla ve gerçekçi bir teslim tarihi üzerinde anlaşın."
+      },
+      "share_proposal": {
+        "title": "Bir öneri sun",
+        "description": "Ekip arkadaşını canlandıran Lingu'ya bir iyileştirme fikri sun. Faydalarını açıkla ve sorularını yanıtla."
+      }
+    }
+  },
+  "grammarPractice": {
+    "retryCreation": "İlk isteği yeniden dene",
+    "voiceAction": "Bu dil bilgisi konusunu sesli çalış",
+    "voiceDescription": "Bu konu ve tamamladığın alıştırmalar hakkında Lingu ile sesli sohbet başlat. Mikrofon erişimi gerekir ve sesli kullanım sınırları geçerlidir.",
+    "title": "Dil bilgisi pratiği",
+    "description": "Kaynaklardan konular kaydedip beşli setlerle çalış: üç çoktan seçmeli soru ve iki boşluk doldurma. İlerleme kaydedilir; XP verilmez.",
+    "add": "Pratik yap",
+    "back": "Dil bilgisi pratiğine dön",
+    "voiceUnavailable": "Bu dil bilgisi pratiği kullanılamıyor.",
+    "noPlan": "Konu eklemek veya alıştırma oluşturmak için bu dilde etkin bir çalışma planı gerekir. Kayıtlı oturumlar kullanılabilir.",
+    "assessment": "Çalışma planı oluştur",
+    "contextChanged": "Çalışma bağlamın değişti. Yenile ve işlemi yeniden seç.",
+    "explore": "Dil bilgisini keşfet",
+    "empty": "Pratik kitaplığın boş. Dil bilgisi kaynaklarından bir konu seç.",
+    "answered": "{count} yanıtlandı",
+    "accuracy": "%{percent} doğru",
+    "lastPracticed": "Son pratik",
+    "never": "Henüz yok",
+    "theory": "Teoriyi görüntüle",
+    "continue": "Oturuma devam et",
+    "recover": "Oturumu kurtar",
+    "generate": "Beş alıştırma oluştur",
+    "history": "Oturum geçmişi",
+    "noHistory": "Henüz oturum yok.",
+    "score": "{correct}/{answered} doğru",
+    "generating": "Alıştırmalar hazırlanıyor…",
+    "ready": "Devam etmeye hazır",
+    "completed": "Pratik tamamlandı",
+    "failed": "Oluşturma başarısız",
+    "abandoned": "Oturum bırakıldı",
+    "recoveryError": "Kayıtlı durum doğrulanamadı. Yanıtı yeniden göndermeden durumu almak için tekrar dene.",
+    "another": "Başka bir set",
+    "correct": "Doğru",
+    "incorrect": "Tam değil",
+    "yourAnswer": "Yanıtın",
+    "solution": "Doğru yanıt",
+    "abandon": "Oturumu bırak",
+    "abandonDescription": "Bu oturum kapatılsın mı? Kayıtlı yanıtlar geçmişte kalır. Oluşturma kotası iade edilmez.",
+    "choose": "Bir yanıt seç",
+    "fillBlank": "Boşluğu doldur",
+    "check": "Yanıtı kontrol et"
+  },
+  "questionExplanation": {
+    "show": "Neden bu cevap",
+    "hide": "Açıklamayı gizle",
+    "loading": "Açıklama hazırlanıyor...",
+    "error": "Açıklama şu anda kullanılamıyor. Tekrar deneyin.",
+    "evidence": "Orijinal metinden alıntı",
+    "language": "Açıklama dili: {language}"
+  },
   "landing": {
     "freeTrialNote": "Kayıt sırasında kart gerektirmeyen başlangıç Premium erişimi. Abone olmazsanız sonrasında kullanım sınırlarıyla ücretsiz devam edin.",
     "modes": {
@@ -42,7 +314,7 @@
       },
       "languages": {
         "question": "Hangi dilleri öğrenebilirim?",
-        "answer": "İngiliz ve Amerikan İngilizcesi, İspanyolca, İtalyanca, Portekizce, Almanca, Fransızca, Japonca, Korece ve Çin anakarasında kullanılan Çince. Her dil için ayrı planlar ve ilerlemeyle aynı anda birden fazla dil öğrenebilirsiniz."
+        "answer": "{languages}. Her dil için ayrı planlar ve ilerlemeyle aynı anda birden fazla dil öğrenebilirsiniz."
       },
       "start": {
         "question": "Öğrenmeye nasıl başlarım?",
@@ -92,12 +364,22 @@
     "footerProduct": "Ürün",
     "footerLegal": "Yasal",
     "languageGreetings": {
+      "ru-RU": "Привет!",
+      "sv-SE": "Hej!",
+      "da-DK": "Hej!",
+      "cs-CZ": "Ahoj!",
+      "hr-HR": "Bok!",
+      "fi-FI": "Hei!",
+      "ro-RO": "Bună!",
       "en-US": "Hello!",
       "en-GB": "Hello!",
       "de-DE": "Hallo!",
+      "pl-PL": "Cześć!",
       "es-ES": "¡Hola!",
       "fr-FR": "Bonjour !",
       "it-IT": "Ciao!",
+      "pt-BR": "Oi!",
+      "nl-NL": "Hallo!",
       "pt-PT": "Olá!",
       "ja-JP": "こんにちは！",
       "ko-KR": "안녕하세요!",
@@ -181,7 +463,7 @@
     "failed": "Oluşturma başarısız",
     "abandoned": "Oyun bırakıldı",
     "generatingDescription": "Lingu beş görev hazırlayıp kontrol ediyor. Bu sayfadan ayrılıp daha sonra dönebilirsin.",
-    "failedDescription": "Geçerli bir oyun hazırlanamadı. Oyun kotası kullanılmadı. Yeniden denemek için menüye dön.",
+    "failedDescription": "Oyun hazırlanamadı. Bu oyun, oyun sınırına dâhil edilmez. Yeniden denemek için menüye dön.",
     "contextChanged": "Öğrenme bağlamın değişti veya bu mod kullanılamıyor. Başlamadan önce yenile.",
     "challenge": "Görev {current}/{total}",
     "detect": "Hatayı içeren parçayı seç.",
@@ -242,21 +524,26 @@
     "goToPlan": "Planıma git"
   },
   "nav": {
+    "situations": "Günlük yaşam durumları",
+    "practiceGrammar": "Dil bilgisi pratiği",
+    "learning": "Öğrenimim",
+    "practice": "Pratik yap",
+    "help": "Yardım",
     "games": "Oyunlar",
     "home": "Ana sayfa",
     "myPlan": "Planım",
     "progress": "İlerleme",
     "flashcards": "Bilgi Kartları",
-    "tutor": "Eğitmenle sohbet",
+    "tutor": "Lingu ile sohbet",
     "assessment": "Seviye Tespiti",
     "resources": "Kaynaklar",
     "grammar": "Dil Bilgisi",
     "vocabulary": "Kelime Bilgisi",
     "phrasebook": "Konuşma Kılavuzu",
     "settings": "Ayarlar",
-    "faq": "SSS",
+    "faq": "Sık sorulan sorular",
     "admin": "Yönetim",
-    "conversation": "Konuşma",
+    "conversation": "Sesli konuşma",
     "listening": "Dinleme",
     "reading": "Okuma",
     "contact": "İletişim",
@@ -349,6 +636,13 @@
       "backToLogin": "Girişe dön"
     }
   },
+  "accountDeletion": {
+    "cancellationRequired": "Bu hesabı silmeden önce hesap sahibi, abonelik yönetiminden yenilemeyi iptal etmelidir. Hesabı silmek aboneliği iptal etmez.",
+    "checkoutPending": "Bekleyen bir satın alma işlemi var veya durumu henüz doğrulanamıyor. Hesabı silmeden önce bu durumu çözün. Hiçbir satın alma işlemi otomatik olarak iptal edilmedi.",
+    "verificationUnavailable": "Faturalandırma durumu doğrulanamadı. Hesap silinmedi. Lütfen daha sonra tekrar deneyin.",
+    "failed": "Hesap silinemedi. Lütfen tekrar deneyin.",
+    "manageSubscription": "Aboneliği yönet"
+  },
   "settings": {
     "title": "Ayarlar",
     "sectionAccount": "Hesap",
@@ -411,9 +705,12 @@
     "deleteAccountMessage": "Bu işlem hesabınızı ve tüm verilerinizi kalıcı olarak silecek. Bu işlem geri alınamaz.",
     "deleteAccountConfirm": "Hesabı Sil",
     "sectionUsageLimits": "Kullanım Sınırları",
-    "sectionVoice": "Ses",
-    "voiceHint": "Lingu'nun sesini seçin ve dinlemek için oynat'a tıklayın.",
-    "voicePlay": "Oynat",
+    "sectionVoice": "Lingu'nun sesi",
+    "voiceFemale": "Kadın sesi",
+    "voiceMale": "Erkek sesi",
+    "voiceHint": "Lingu'yu nasıl duymak istediğinizi seçin.",
+    "voiceCharacter": "Sıcak ve samimi",
+    "voicePlay": "Dinle",
     "voiceStop": "Durdur",
     "quotaSessions": "Oturum / hafta",
     "quotaMinutesDay": "Dakika / gün",
@@ -456,7 +753,7 @@
     "cardSessionSecurity": "Oturum ve güvenlik",
     "cardTheme": "Tema",
     "cardConversationTiming": "Konuşma zamanlaması",
-    "cardTutorVoice": "Eğitmen sesi",
+    "cardTutorVoice": "Lingu'nun sesi",
     "cardCurrentUsage": "Mevcut kullanım",
     "cardProductReview": "Ürün yorumu",
     "cardLegalDocuments": "Yasal belgeler",
@@ -490,9 +787,9 @@
       "s4Title": "4. İçerik ve Yapay Zekâ Etkileşimleri",
       "s4Body": "Yapay zekâ eğitmeniyle yaptığınız konuşmalar, öğrenmenin sürekliliği için veritabanında saklanır. Barındırılan hizmette yapay zekâ sohbet ve ses özellikleri OpenAI API'si üzerinden işlenir ve içeriğiniz OpenAI'nin kullanım politikalarına tabidir. Yapay zekâ hatalı yanıtlar üretebilir — her zaman kendi muhakemenizi kullanın. FreeLingo, altta yatan dil modellerinin ürettiği içerikten sorumlu değildir. Yapay zekâ eğitmeninin ürettiği içerik (alıştırmalar, düzeltmeler, açıklamalar ve diğer materyaller) kişisel kullanımınız için size aittir. FreeLingo, konuşmalarınız veya bunlardan üretilen içerik üzerinde mülkiyet iddia etmez.",
       "s5Title": "5. Hizmet Şekilleri",
-      "s5Body": "Kendi kendine barındırılan kurulumlar ücretsizdir ve işletmeci, verileri ile altyapısı üzerinde tam denetime sahiptir. FreeLingo ekibinin işlettiği barındırılan hizmet, kullanım sınırları olan ücretsiz bir plan ile sınırsız erişim sağlayan, aylık veya yıllık olarak alınabilen ücretli abonelikler sunar. Ücretsiz plan, 7 günlük tam erişimli bir deneme süresi (ödeme yöntemi gerekmez) ve ardından dersler ile yapay zekâ sohbeti için sınırlı günlük kotaların yanı sıra dinleme alıştırmaları, okuma alıştırmaları ve sesli konuşmalar için haftalık kotalar içerir. Ücretli abonelikler bu özelliklerdeki tüm kullanım sınırlarını kaldırır. Barındırılan hizmette verileriniz FreeLingo ekibinin işlettiği sunucularda saklanır. Hesabınız için geçerli kullanım sınırlarını panonuzda görebilirsiniz.",
+      "s5Body": "Kendi kendine barındırılan kurulumlar ücretsizdir ve işletmeci, verileri ile altyapısı üzerinde tam denetime sahiptir. FreeLingo ekibinin işlettiği barındırılan hizmet, kullanım sınırları olan ücretsiz bir plan ile Premium erişimi sağlayan, aylık veya yıllık olarak alınabilen ücretli abonelikler sunar. Ücretsiz plan, dersler ile yapay zekâ sohbeti için sınırlı günlük kotaların yanı sıra dinleme alıştırmaları, okuma alıştırmaları ve sesli konuşmalar için haftalık kotalar içerir. Sunulduğunda, başlangıç denemesi hesabınızda belirtilen süre boyunca ödeme yöntemi gerektirmeden Premium erişimi sağlar. Ücretli abonelikler ve deneme süresi ücretsiz planın kotalarını kaldırır; yapay zekâ kullanımı ve sesli konuşma sınırları dâhil genel hesap sınırları geçerli olmaya devam eder. Barındırılan hizmette verileriniz FreeLingo ekibinin işlettiği sunucularda saklanır. Hesabınız için geçerli kullanım sınırlarını panonuzda görebilirsiniz.",
       "s6Title": "6. Abonelik ve Faturalandırma",
-      "s6Body": "Ücretsiz plan, yeni kullanıcılar için 7 günlük tam erişimli bir deneme süresiyle (ödeme yöntemi gerekmez) yapay zekâ özelliklerine sınırlı erişim sağlar. Ücretli abonelikler aylık veya yıllık olarak sunulur ve önceden iptal edilmedikçe otomatik olarak yenilenir. Aboneliğinizi istediğiniz zaman Ayarlar'dan iptal edebilirsiniz; iptal, mevcut dönemin sonunda geçerli olur. İşletmeci de hizmetin değiştirilmesi veya kapatılması durumunda yenilemeleri veya abonelikleri iptal edebilir. Hizmet, ücreti ödenmiş bir dönem bitmeden sona ererse, tüketici mevzuatının gerektirdiği her türlü iade uygulanır. Cayma hakları ve geçerli fiyatlar, yürürlükteki mevzuata uygun olarak gösterilir ve işlenir.",
+      "s6Body": "Ücretsiz plan, yapay zekâ özelliklerine sınırlı erişim ve sunulduğunda yeni kullanıcılar için ödeme yöntemi gerektirmeyen, hesapta belirtilen süre boyunca geçerli bir başlangıç Premium denemesi sağlar. Premium, ücretsiz planın kotalarını kaldırır; genel hesap sınırları deneme süresinde de geçerli olmaya devam eder. Ücretli abonelikler aylık veya yıllık olarak sunulur ve önceden iptal edilmedikçe otomatik olarak yenilenir. Aboneliğinizi istediğiniz zaman Ayarlar'dan iptal edebilirsiniz; iptal, mevcut dönemin sonunda geçerli olur. İşletmeci de hizmetin değiştirilmesi veya kapatılması durumunda yenilemeleri veya abonelikleri iptal edebilir. Hizmet, ücreti ödenmiş bir dönem bitmeden sona ererse, tüketici mevzuatının gerektirdiği her türlü iade uygulanır. Cayma hakları ve geçerli fiyatlar, yürürlükteki mevzuata uygun olarak gösterilir ve işlenir.",
       "s7Title": "7. Erişilebilirlik",
       "s7Body": "Barındırılan hizmet, süreklilik veya erişilebilirlik garantisi olmaksızın sunulur. İşletmeci, teknik, mali veya başka herhangi bir nedenle hizmeti istediği zaman değiştirebilir, askıya alabilir veya kapatabilir. Makul ölçüde mümkün olduğunda, planlanan kapanışlar uygulama üzerinden veya e-postayla duyurulur. Duyurulan tarihten sonra hesaplar ve operasyonel veriler geri getirilemeyecek şekilde silinebilir. FreeLingo bir yedekleme hizmeti veya otomatik dışa aktarma aracı sunmaz.",
       "s8Title": "8. Sorumluluğun Sınırlandırılması",
@@ -599,16 +896,16 @@
     "performanceNeedsPractice": "Pratik gerekiyor",
     "performanceInProgress": "Gelişiyor",
     "performanceStrong": "Güçlü",
-    "premiumBannerTitle": "Konuşma, dinleme ve okumanın kilidini açın",
+    "premiumBannerTitle": "Konuşma, dinleme ve okumada daha fazla pratik yapın",
     "premiumBannerDesc": "Ücretsiz denemeyle başlayın ve seviyenize uyarlanmış yazılı sohbet, sesli konuşma ve alıştırmalarla Lingu ile pratik yapın.",
-    "premiumBannerDescTrialUsed": "Lingu ile yazılı sohbetin, sesli konuşmanın, okuma ve dinlemenin kilidini açmak için Premium'u etkinleştirin.",
+    "premiumBannerDescTrialUsed": "Lingu ile yazılı sohbet, sesli konuşma, okuma ve dinlemede daha fazla pratik için Premium'u etkinleştirin.",
     "premiumBannerCta": "Ücretsiz deneme",
     "premiumBannerCtaTrialUsed": "Planları görüntüle",
     "premiumBannerPastDueTitle": "Ödeme bekleniyor",
     "premiumBannerPastDueDesc": "Sohbet, sesli konuşma, okuma ve dinlemeye Premium erişiminizi geri kazanmak için ödeme yönteminizi güncelleyin.",
     "premiumBannerPastDueCta": "Premium'u geri yükle",
     "freemiumTrialTitle": "{days, plural, one {# günlük ücretsiz deneme} other {# günlük ücretsiz deneme}}",
-    "freemiumTrialDesc": "Sohbet, ses, dinleme ve okumaya sınırsız erişimin keyfini çıkarın. Premium'un tüm özelliklerini ücretsiz deneyin.",
+    "freemiumTrialDesc": "Sohbet, ses, dinleme ve okuma için Premium erişimini ücretsiz deneyin. Hesabınızın genel sınırları geçerli olmaya devam eder.",
     "announcementDismiss": "Duyuruyu kapat",
     "announcementDismissError": "Duyuru kapatılamadı. Tekrar deneyin."
   },
@@ -757,6 +1054,7 @@
     "generatingError": "Ders oluşturulamadı",
     "loading": "Plan yükleniyor...",
     "learningRoadmap": "Öğrenme Yol Haritası",
+    "progressSummary": "{total} dersin {completed} tanesi tamamlandı",
     "level": "Seviye",
     "duration": "Süre",
     "durationDetail": "{weeks} hafta · haftada {days} gün",
@@ -815,7 +1113,7 @@
     "feedback": "Geri bildirim",
     "corrections": "Düzeltmeler",
     "completeLesson": "Dersi Tamamla",
-    "completing": "Tamamlanıyor...",
+    "completing": "İlerlemeniz kaydediliyor ve sonraki ders hazırlanıyor...",
     "relatedGrammar": "İlgili Dil Bilgisi",
     "explanation": "Açıklama",
     "exercises": "Alıştırmalar",
@@ -828,7 +1126,14 @@
     "showNativeExplanation": "Şu dilde göster:",
     "hint": "İpucu",
     "showNativeHint": "İpucunu şu dilde göster:",
+    "showQuestionTranslation": "Sorunun {language} çevirisini göster",
+    "hideQuestionTranslation": "Sorunun çevirisini gizle",
+    "translatingQuestion": "Soru çevriliyor...",
+    "questionTranslationError": "Soru çevrilemedi. Lütfen tekrar dene.",
+    "retryQuestionTranslation": "Soruyu çevirmeyi tekrar dene",
     "regenerateExercise": "Alıştırmayı yeniden oluştur",
+    "listeningIncomplete": "Bu dinleme alıştırması eksik. Yanıtlamadan önce yeniden oluştur.",
+    "listeningUnavailable": "Bu kayıtlı alıştırma için ses mevcut değil. Kayıtlı yanıtın ve puanın korunur.",
     "regeneratingExercise": "Yeniden oluşturuluyor...",
     "regenerateError": "Alıştırma yeniden oluşturulamadı. Tekrar deneyin.",
     "regenerateNotNeeded": "Bu alıştırmanın yeniden oluşturulmasına gerek yok.",
@@ -1277,6 +1582,12 @@
   "faq": {
     "title": "SSS",
     "subtitle": "Sıkça Sorulan Sorular",
+    "sectionGettingStarted": "İlk adımlar ve diller",
+    "sectionPractice": "Kaynaklar ve pratik",
+    "sectionLingu": "Lingu ile konuşmalar",
+    "sectionSubscription": "Planlar ve kullanım sınırları",
+    "sectionAccount": "Hesap ve yardım",
+    "sectionAdmin": "Yönetim",
     "q_start": "Nereden başlamalıyım?",
     "a_start": "Öğrenmek istediğiniz dili seçin ve seviyenizi tahmin etmek için <strong>Seviye Tespiti</strong> bölümünü açın. Sıfırdan başlayanlar testi çözmeden A1 seçebilir. O dil için <strong>Çalışma Planı</strong> oluşturmak üzere seviyeyi ve süreyi onaylayın.",
     "q_workflow": "Adım adım süreç nasıl işliyor?",
@@ -1287,7 +1598,7 @@
     "workflowStep5": "Kelime bilginizi geliştirmek için paralel olarak Bilgi Kartlarını kullanın",
     "workflowStep6": "Lingu ile serbest konuşma pratiği yapın",
     "q_language": "Hangi dili öğreneceğim?",
-    "a_language": "FreeLingo şu anda birçok dili destekliyor (Amerikan İngilizcesi, İngiliz İngilizcesi, Fransızca, Almanca, İtalyanca, Japonca, Korece, Çince (Çin anakarası), Portekizce, İspanyolca) ve zamanla yenilerini eklemeye devam edeceğiz. Yeni bir dil kullanıma sunulduğunda onu Ayarlar → Dillerim bölümünde bulacaksınız — ekleyin ve hemen öğrenmeye başlayın.",
+    "a_language": "FreeLingo şu anda birçok dili destekliyor ({languages}) ve zamanla yenilerini eklemeye devam edeceğiz. Yeni bir dil kullanıma sunulduğunda onu Ayarlar → Dillerim bölümünde bulacaksınız — ekleyin ve hemen öğrenmeye başlayın.",
     "q_assessment": "Seviye Tespiti nedir?",
     "a_assessment": "Öğrendiğiniz dile özel soru bankasından en fazla 15 soruluk uyarlanabilir bir testtir. A1–C2 düzeylerinde dil bilgisi, kelime bilgisi ve okuduğunu anlamayı kapsar. Sonuç CEFR seviyenizi tahmin eder, güçlü yönleri ve pratik gerektiren alanları gösterir; planı oluşturmadan önce önerilen seviyeyi değiştirebilirsiniz.",
     "q_studyPlan": "Çalışma Planı nedir ve nasıl oluşturulur?",
@@ -1301,11 +1612,11 @@
     "q_tutor": "Lingu ile nasıl pratik yapabilirim?",
     "a_tutor": "Lingu yanıtlarını aktif öğrenme dilinize ve planınızın bağlamına uyarlar. Dil bilgisi soruları sorun, açıklama isteyin, o dilde yazma pratiği yapın veya sohbet edin. Konuşmalar dile göre kaydedilir ve geçmişten devam ettirilebilir.",
     "q_voice": "Sesli konuşma nasıl çalışır?",
-    "a_voice": "<strong>Sesli Konuşma</strong> modu, Lingu ile gerçek zamanlı konuşmanızı sağlar. Başlamak için Başla'ya basın — uygulama ses etkinliği algılama (VAD) ile sesinizi otomatik olarak dinler ve eğitmen sentezlenmiş sesle yanıt verir. Eğitmenin sözünü istediğiniz an kesebilirsiniz. Oturum, süre sınırına ulaştığınızda veya Durdur'a bastığınızda sona erer. Tarayıcınızda mikrofon izninin açık olduğundan emin olun.",
+    "a_voice": "<strong>Sesli Konuşma</strong> bölümünde Oturumu Başlat düğmesine basın ve mikrofon erişimine izin verin. Uygulama ne zaman konuştuğunuzu algılar ve Lingu sesli yanıt verir. Tekrar konuşmadan önce Lingu'nun bitirmesini bekleyin: eğitmen konuşurken konuşmanız yanıtını kesmez. <settingsLink>Ayarlar</settingsLink> bölümünde sözünüz gönderilmeden önce beklenecek duraklama süresini, oturum süresini ve hareketsizlik zaman aşımını ayarlayabilirsiniz. Oturum, Durdur düğmesine bastığınızda veya geçerli sınırlardan birine ulaştığınızda sona erer.",
     "q_listening": "Dinleme alıştırmaları nasıl çalışır?",
-    "a_listening": "<strong>Dinleme</strong> bölümünde Lingu, CEFR seviyenize uygun dinleme alıştırmaları hazırlar. Sesi dinleyin, ardından 5 anlama sorusunu cevaplayın. Gönderdikten sonra puanınızı (0–5), XP'nizi, doğru cevapları ve deşifrenin tamamını görürsünüz. İstediğiniz zaman yeni alıştırmalar oluşturabilirsiniz.",
+    "a_listening": "<strong>Dinleme</strong> bölümünde Lingu, CEFR seviyenize uygun dinleme alıştırmaları hazırlar. Ses kaydını dinleyin, ardından 5 anlama sorusunu cevaplayın. Cevaplarınızı gönderdikten sonra puanınızı (0–5), kazandığınız XP'yi, doğru cevapları ve kaydın tam dökümünü inceleyebilirsiniz. Ana dilinizde, dökümden destekleyici bir alıntı içeren açıklama istemek için <strong>Neden bu cevap</strong> seçeneğine basın. Hesabınızın kullanım sınırları dâhilinde yeni alıştırmalar isteyebilirsiniz.",
     "q_reading": "Okuma alıştırmaları nasıl çalışır?",
-    "a_reading": "<strong>Okuma</strong> bölümü, CEFR seviyenize uygun metinler oluşturur — duyurular, e-postalar, makaleler, blog yazıları ve daha fazlası. Metni okuyun ve 5 çoktan seçmeli soruyu cevaplayın. Gönderdikten sonra puanınızı (0–5) ve XP'nizi görürsünüz. İstediğiniz zaman yeni alıştırmalar oluşturulabilir.",
+    "a_reading": "<strong>Okuma</strong> bölümünde Lingu, CEFR seviyenize uygun duyuru, e-posta ve makale gibi metinler hazırlar. Metni okuyun ve 5 çoktan seçmeli soruyu cevaplayın. Cevaplarınızı gönderdikten sonra puanınızı (0–5), kazandığınız XP'yi ve doğru cevapları inceleyebilirsiniz. Ana dilinizde, metinden destekleyici bir alıntı içeren açıklama istemek için <strong>Neden bu cevap</strong> seçeneğine basın. Hesabınızın kullanım sınırları dâhilinde yeni alıştırmalar isteyebilirsiniz.",
     "q_providers": "FreeLingo hangi yapay zekâ sağlayıcılarını destekliyor?",
     "a_providers_intro": "<code>.env</code> dosyasında <code>LLM_PROVIDER</code> ile ayarlanabilir:",
     "provider_ollama": "Yerel, ücretsiz. Sunucuda çalışan bir Ollama gerektirir. Önerilen model: gemma4:e4b. GPU olmadan yavaş olabilir.",
@@ -1313,11 +1624,25 @@
     "provider_anthropic": "Anthropic Claude. ANTHROPIC_API_KEY gerektirir.",
     "provider_deepseek": "DeepSeek API. DEEPSEEK_API_KEY gerektirir.",
     "q_invite": "Başka kişileri davet edebilir miyim?",
-    "a_invite": "Evet. Yönetici, <adminLink>Yönetim → Kullanıcılar</adminLink> bölümünden doğrudan kullanıcı oluşturabilir veya 48 saat içinde geçerliliğini yitiren tek kullanımlık davet bağlantıları oluşturabilir. Herkese açık kayıt varsayılan olarak kapalıdır (<code>ALLOW_REGISTRATION=false</code>).",
+    "a_invite": "Evet. Yöneticiler, <adminLink>Yönetim → Kullanıcılar</adminLink> bölümünden doğrudan kullanıcı oluşturabilir veya 48 saat sonra geçerliliğini yitiren tek kullanımlık davet bağlantıları oluşturabilir. Herkese açık kayıt, sunucunun <code>ALLOW_REGISTRATION</code> ayarına bağlıdır.",
     "q_password": "Parolamı veya ana dilimi nasıl değiştiririm?",
     "a_password": "<settingsLink>Ayarlar</settingsLink>'a gidin. Görünen adınızı, ana dilinizi ve parolanızı oradan güncelleyebilirsiniz.",
     "q_uiLanguage": "Platformun dilini nasıl değiştiririm?",
-    "a_uiLanguage": "<settingsLink>Ayarlar</settingsLink>'a gidin ve Profil bölümündeki <strong>Arayüz Dili</strong> açılır listesini bulun. Tercih ettiğiniz dili seçtiğinizde tüm arayüz hemen değişir.",
+    "a_uiLanguage": "<settingsLink>Ayarlar</settingsLink> bölümüne gidin ve profilinizdeki <strong>Arayüz Dili</strong> açılır listesini bulun. Tercih ettiğiniz dili seçin ve <strong>Değişiklikleri Kaydet</strong> düğmesine basın. Kaydettikten sonra sayfa seçtiğiniz dilde yeniden yüklenir. Bu işlem, öğrendiğiniz dili değiştirmez.",
+    "q_multiLanguage": "İlerlememi kaybetmeden birden fazla dil öğrenebilir miyim?",
+    "a_multiLanguage": "Evet. <languagesLink>Ayarlar → Dillerim</languagesLink> bölümünden bir dil ekleyin ve diller arasında geçiş yapmak için dil seçiciyi kullanın. Her dilin kendi planı, ilerlemesi, bilgi kartları ve konuşma geçmişi korunur. Dil değiştirmek kayıtlı ilerlemenizi silmez. Hesap ayarları, abonelik, kullanım kotaları ve Lingu'nun anıları tüm diller arasında ortaktır.",
+    "q_grammarPractice": "Belirli bir dil bilgisi konusunu nasıl çalışabilirim?",
+    "a_grammarPractice": "<grammarLink>Kaynaklar → Dil Bilgisi</grammarLink> bölümünde bir konu açın ve kişisel dil bilgisi pratiği kitaplığınıza eklemek için <strong>Pratik yap</strong> seçeneğine basın. Etkin bir planla beş alıştırmalık setler oluşturabilirsiniz: üç çoktan seçmeli soru ve iki boşluk doldurma sorusu. Pratiğinizi takip edebilmeniz için cevaplarınız ve sonuçlarınız kaydedilir. Bu etkinlik XP kazandırmaz.",
+    "q_games": "Hangi oyunlar var ve hangi modu seçmeliyim?",
+    "a_games": "<gamesLink>Oyunlar</gamesLink> bölümünde Hata Dedektifi ile hataları bulup düzeltebilir, Cümleyi sırala ile parçaları sıraya koyabilir veya Kelime çiftleri ile kelimeleri anlamlarıyla eşleştirebilirsiniz. Tamamladığınız derslere dönmek için tekrar modunu, sıradaki dersinizle ilgili bildiğiniz konuları pekiştirmek için hazırlık modunu veya planınızın seviyesinde çalışmak için serbest pratiği seçin. Yeterli kaynak materyali olmayan modlar, nedenini belirten bir açıklamayla devre dışı gösterilir.",
+    "q_plans": "Ücretsiz plan, Premium ve deneme süresi arasındaki fark nedir?",
+    "a_plans": "Ücretsiz plan, kullanım kotalarıyla öğrenmenizi sağlar. Premium, ücretsiz planın bu kotalarını kaldırır ancak genel hesap sınırları geçerli olmaya devam eder. Hesabınız kart gerektirmeyen bir başlangıç denemesi içeriyorsa bu süre bittiğinde otomatik ücret alınmadan ücretsiz planla devam edebilirsiniz. Abone olurken sunulan deneme süresi ayrıdır ve kart gerektirebilir. Durumunuzu ve güncel abonelik koşullarını <billingLink>Ayarlar → Plan ve abonelik</billingLink> bölümünden kontrol edin.",
+    "q_quotas": "Neden bir sınıra ulaştım ve bu sınır ne zaman sıfırlanır?",
+    "a_quotas": "Kullanım kotaları hesabınıza aittir ve öğrendiğiniz tüm diller arasında ortaktır. Ücretsiz günlük kotalar saat 00:00 UTC'de, ücretsiz haftalık kotalar ise pazartesi günleri saat 00:00 UTC'de sıfırlanır. Her etkinlikte kalan kotanızı, <billingLink>Ayarlar</billingLink> bölümünde ise genel hesap sınırlarınızı kontrol edebilirsiniz. Premium'a özel özellikler, kotanın sıfırlanmasını bekleyerek açılmaz. Genel hesap sınırları Premium ve deneme süreleri için de geçerlidir.",
+    "q_cancelSubscription": "Aboneliğimin yenilenmesini nasıl iptal ederim?",
+    "a_cancelSubscription": "<billingLink>Ayarlar → Plan ve abonelik</billingLink> bölümüne gidin, <strong>Aboneliği yönet</strong> seçeneğine basın ve açılan portalda iptal işlemini tamamlayın. Yenilemeyi mevcut dönemin sonunda geçerli olacak şekilde iptal ederseniz dönem bitene kadar erişiminiz devam eder. Hesabınızı silmek, ücretlendirmeyi iptal etmez: önce yenilemeyi iptal etmelisiniz.",
+    "q_memories": "Lingu benim hakkımda neleri hatırlar ve bunları nasıl silebilirim?",
+    "a_memories": "Lingu, gelecekteki yanıtlarını kişiselleştirmek için yazılı ve sesli konuşmalardan yararlı kişisel bilgiler kaydedebilir. Bu anılar, öğrendiğiniz tüm diller arasında ortaktır. <memoriesLink>Ayarlar → Anılar</memoriesLink> bölümünde bunları görüntüleyebilir, kendi anılarınızı ekleyebilir, anıları tek tek silebilir veya tümünü temizleyebilirsiniz.",
     "q_feedback": "Nasıl yeni bir özellik önerebilir veya hata bildirebilirim?",
     "a_feedback": "Kenar çubuğundaki <feedbackLink>Geri Bildirim</feedbackLink> bölümünü kullanın. Yeni özellikler için öneri oluşturabilir veya hata bildirebilirsiniz. Diğer kullanıcıların fikirlerine oy verin, yorum bırakın ve her isteğin durumunu takip edin. Tüm gönderimler herkese açıktır ve yönetici tarafından incelenir."
   },
@@ -1361,14 +1686,14 @@
     "statusSpeaking": "Konuşuyor...",
     "statusThinking": "Yanıt hazırlanıyor...",
     "statusError": "Hata",
-    "errorServicesDisabled": "Bu sunucuda ses hizmetleri etkin değil.",
+    "errorServicesDisabled": "Sesli konuşmalar kullanılamıyor. Yardıma ihtiyacınız varsa destek ekibiyle iletişime geçin.",
     "errorConnection": "Bağlantı hatası. Lütfen tekrar deneyin.",
     "errorTranscription": "Söyledikleriniz yazıya dökülemedi. Lütfen yeniden konuşmayı deneyin.",
     "errorResponse": "Lingu yanıt veremedi. Lütfen tekrar deneyin.",
     "errorSpeech": "Lingu'nun yanıtı seslendirilemedi. Lütfen tekrar deneyin.",
     "errorUnauthorized": "Oturumun süresi doldu. Lütfen sayfayı yenileyin.",
-    "errorMic": "Mikrofon erişimi reddedildi.",
-    "errorVadInit": "Ses tanıma başlatılamadı. Tarayıcınızın WebAssembly desteklediğinden emin olun.",
+    "errorMic": "Mikrofonunuza erişemiyoruz. Tarayıcınızdaki izinleri kontrol edip tekrar deneyin.",
+    "errorVadInit": "Sesli konuşmayı başlatamadık. Sayfayı yenileyin veya güncel bir tarayıcıyla deneyin.",
     "warningTimeout": "Oturum {seconds} sn içinde sona eriyor",
     "sessionEnded": "Oturum sona erdi",
     "tapToStart": "Hazır olduğunuzda konuşun",
@@ -1379,14 +1704,14 @@
     "quotaUnlimited": "Sınırsız",
     "quotaExceededSessions": "Bu haftaki tüm oturumlarınızı kullandınız.",
     "quotaExceededTime": "Günlük pratik sürenizin tamamını kullandınız.",
-    "quotaExceededTokens": "Aylık yapay zekâ token'larınızın tamamını kullandınız.",
+    "quotaExceededTokens": "Aylık yapay zekâ kullanım sınırınıza ulaştınız. Sınır yenilendiğinde devam edebilirsiniz.",
     "freemiumVoiceRemaining": "Ücretsiz sesli konuşma: bu hafta {remaining}/{limit} dk",
     "quotaTokens": "Bu ayki token'lar",
     "memoryUpdated": "Anı güncellendi",
     "trialBanner": "Ücretsiz seviye tespiti konuşması · {minutes} dk",
     "trialCtaLabel": "Konuşmaya devam edin",
     "trialCtaTitle": "Lingu ile pratik yapmaya devam edin",
-    "trialCtaDesc": "Premium ile sesli konuşmaların, eğitmen sohbetinin, dinleme ve okuma pratiğinin tamamının kilidini açın.",
+    "trialCtaDesc": "Premium ile sesli konuşma, eğitmen sohbeti, dinleme ve okumada daha fazla pratik yapın.",
     "startersHint": "Ya da bir konuyla başlayın",
     "starters": [
       "Sanat ve yaratıcılık",
@@ -1430,6 +1755,8 @@
     "ariaStop": "Kaydı durdur"
   },
   "audioPlayer": {
+    "ariaPause": "Sesi duraklat",
+    "ariaSeek": "Ses konumu",
     "listen": "Dinle",
     "stop": "Durdur",
     "ariaListen": "Telaffuzu dinle",
@@ -1474,13 +1801,39 @@
     "supportedLanguages": "Kullanılabilir diller"
   },
   "targetLanguages": {
+    "ro-RO": "Rumence (Romanya)",
+    "ro": "Rumence",
+    "ro-RO-description": "Romanya'da konuşulan Rumence.",
+    "fi-FI": "Fince",
+    "fi": "Fince",
+    "fi-FI-description": "Finlandiya'da konuşulan Fince.",
+    "hr-HR": "Hırvatça",
+    "hr": "Hırvatça",
+    "hr-HR-description": "Hırvatistan'da konuşulan Hırvatça.",
+    "cs-CZ": "Çekçe",
+    "cs": "Çekçe",
+    "cs-CZ-description": "Çekya'da konuşulan Çekçe.",
+    "da-DK": "Danca",
+    "da": "Danca",
+    "da-DK-description": "Danimarka'da konuşulan Danca.",
+    "sv-SE": "İsveççe",
+    "sv": "İsveççe",
+    "sv-SE-description": "İsveç'te konuşulan İsveççe.",
+    "ru-RU": "Rusça",
+    "ru": "Rusça",
+    "ru-RU-description": "Rusya'da konuşulan, Kiril alfabesiyle yazılan Rusça.",
+    "nl-NL": "Felemenkçe (Hollanda)",
+    "nl": "Felemenkçe",
+    "nl-NL-description": "Hollanda'da konuşulan Felemenkçe.",
     "en-US": "Amerikan İngilizcesi",
     "en-GB": "İngiliz İngilizcesi",
     "es-ES": "İspanyolca",
     "it-IT": "İtalyanca",
-    "pt-PT": "Portekizce",
+    "pt-BR": "Portekizce (Brezilya)",
+    "pt-PT": "Portekizce (Portekiz)",
     "fr-FR": "Fransızca",
     "de-DE": "Almanca",
+    "pl-PL": "Lehçe",
     "ja-JP": "Japonca",
     "ko-KR": "Korece",
     "zh-CN": "Çince (Çin anakarası)",
@@ -1490,16 +1843,19 @@
     "pt": "Portekizce",
     "fr": "Fransızca",
     "de": "Almanca",
+    "pl": "Lehçe",
     "ja": "Japonca",
     "ko": "Korece",
     "zh": "Çince",
     "es-ES-description": "İspanya'da konuşulan İspanyolca.",
     "it-IT-description": "İtalya'da konuşulan İtalyanca.",
+    "pt-BR-description": "Brezilya'da konuşulan Portekizce.",
     "pt-PT-description": "Portekiz'de konuşulan Portekizce.",
     "en-US-description": "Amerika Birleşik Devletleri'nde konuşulan İngilizce.",
     "en-GB-description": "Birleşik Krallık'ta konuşulan İngilizce.",
     "fr-FR-description": "Fransa'da konuşulan Fransızca.",
     "de-DE-description": "Almanya'da konuşulan Almanca.",
+    "pl-PL-description": "Polonya'da konuşulan Lehçe.",
     "ja-JP-description": "Japonya'da konuşulan Japonca.",
     "ko-KR-description": "Güney Kore'de konuşulan Korece.",
     "zh-CN-description": "Çin anakarasında konuşulan, basitleştirilmiş karakterlerle yazılan Mandarin Çincesi."
@@ -1527,18 +1883,18 @@
     "trialHeadlineTrialUsed": "Premium",
     "trialTitle": "{days} gün ücretsiz başlayın",
     "trialTitleTrialUsed": "FreeLingo Premium'u etkinleştirin",
-    "trialDesc": "İlk ödemenizden önce Lingu'ya, sesli pratiğe, dinleme ve okumaya tam erişim elde edin.",
-    "trialDescTrialUsed": "Lingu'nun, sesli pratiğin, dinleme ve okumanın kilidini açmak için bir plan seçin.",
+    "trialDesc": "İlk ödemenizden önce Lingu ile pratik, sesli alıştırma, dinleme ve okuma için Premium erişimini deneyin.",
+    "trialDescTrialUsed": "Lingu ile daha fazla pratik, sesli alıştırma, dinleme ve okuma için bir plan seçin.",
     "trialCtaMonthly": "Ücretsiz deneyin, ardından aylık €{price}",
     "trialCtaMonthlyTrialUsed": "Esnek aylık · aylık €{price}",
     "trialCtaYearly": "Ücretsiz deneyin, ardından yıllık €{price} · 2 ay ücretsiz",
     "trialCtaYearlyTrialUsed": "En avantajlı · yıllık €{price} · 2 ay ücretsiz",
     "trialSkip": "Ücretsiz özelliklerle devam et",
-    "trialNoCharge": "Bugün ücret alınmaz. Kart gereklidir, istediğiniz zaman iptal edebilirsiniz.",
-    "trialNoChargeTrialUsed": "Abone olmadan önce tutarı gözden geçirin. İstediğiniz zaman iptal edebilirsiniz.",
+    "trialNoCharge": "Abone olduğunuzda bağımsız bir {days} günlük deneme başlar; başlangıç denemesinden kalan günler eklenmez. Kart gereklidir; önceden iptal etmezseniz ilk ücret deneme sonunda alınır.",
+    "trialNoChargeTrialUsed": "Ücretli abonelik, abone olduğunuz anda başlar. Abone olmadan önce tutarı gözden geçirin. İstediğiniz zaman iptal edebilirsiniz.",
     "trialError": "Ödeme başlatılamadı. Lütfen tekrar deneyin.",
     "freemiumTrialTitle": "Ücretsiz denemeniz başladı",
-    "freemiumTrialDesc": "7 gün boyunca tüm özelliklere sınırsız erişimin keyfini çıkarın. Kart gerekmez. İstediğiniz zaman panodan Premium'a geçebilirsiniz.",
+    "freemiumTrialDesc": "Deneme süreniz boyunca kart gerekmeden Premium erişiminin keyfini çıkarın. Hesabınızın genel sınırları geçerli olmaya devam eder. İstediğiniz zaman panodan Premium'a abone olabilirsiniz.",
     "freemiumChatLabel": "Lingu ile sohbet",
     "freemiumVoiceLabel": "Sesli konuşmalar",
     "freemiumListeningLabel": "Dinleme alıştırmaları",
@@ -1592,14 +1948,18 @@
     }
   },
   "billing": {
+    "paywallSituationsTitle": "Gerçek yaşam durumlarını çalışmaya devam et",
+    "paywallSituationsDesc": "Bu haftanın ücretsiz durum pratiklerini kullandın veya bu özellik Premium gerektiriyor. Premium ile daha fazla pratik yapabilirsin; genel ses kullanım sınırları geçerli olmaya devam eder.",
+    "paywallGrammarPracticeTitle": "Dil bilgisi pratiğine devam et",
+    "paywallGrammarPracticeDesc": "Bugünkü ücretsiz setlerini kullandın. Premium ile daha fazlasını oluşturabilirsin; kayıtlı oturumlar kullanılabilir.",
     "planFreeTrialDesc": "Kayıt sırasında kart veya abonelik olmadan Premium erişimini deneyin. Ardından kullanım sınırlarıyla ücretsiz devam edin.",
     "paywallGamesTitle": "Oyunlarla pratiğe devam et",
     "paywallGamesDesc": "Ücretsiz oyun kotan bitti veya oyunlar Premium gerektiriyor. Mevcut oyunlara devam edebilirsin.",
     "paywallLabel": "Premium gerekli",
     "paywallTitle": "FreeLingo Premium'un kilidini açın",
-    "paywallDesc": "{days} günlük ücretsiz denemenizi başlatın ve ilk ödemenizden önce tüm Premium pratik modlarının kilidini açın.",
-    "paywallDescTrialUsed": "Tüm Premium pratik modlarının kilidini açın ve onaylamadan önce tutarı gözden geçirin.",
-    "paywallChatTitle": "Lingu ile sınırsız pratik yapın",
+    "paywallDesc": "{days} günlük ücretsiz denemenizi başlatın ve ilk ödemenizden önce Premium ile daha fazla pratik yapın.",
+    "paywallDescTrialUsed": "Premium ile daha fazla pratik yapın ve onaylamadan önce tutarı gözden geçirin.",
+    "paywallChatTitle": "Lingu ile daha fazla pratik",
     "paywallChatDesc": "Sorular sorun, düzeltmeler alın ve Lingu ile yazılı sohbet edin.",
     "paywallLessonsTitle": "Sınırsız ders tamamlayın",
     "paywallLessonsDesc": "Dil bilgisi, kelime bilgisi, okuma ve yazma — her gün istediğiniz kadar ders bitirin.",
@@ -1626,7 +1986,7 @@
     "month": "ay",
     "year": "yıl",
     "planFeature": {
-      "feature1": "Sınırsız erişim — günlük veya haftalık sınır yok",
+      "feature1": "Ücretsiz plan kotaları uygulanmaz; genel hesap sınırları geçerlidir",
       "feature2": "2 ay ücretsiz"
     },
     "planFreeName": "Ücretsiz",
@@ -1635,6 +1995,7 @@
     "ctaRegister": "Ücretsiz denemeyi başlat",
     "ctaRegisterTrialUsed": "Plan seç",
     "freeFeature": {
+      "situations": "Sesli durum pratiği",
       "f1": "Seviye testi ve seviye tespiti",
       "f2": "Kişiselleştirilmiş çalışma planı",
       "lessons": "Ders tamamlama",
@@ -1648,9 +2009,9 @@
       "l4": "Okuma alıştırmaları",
       "l5": "7 günlük tam erişimli deneme"
     },
-    "successLabel": "Ödeme onaylandı",
+    "successLabel": "Abonelik onaylandı",
     "successTitle": "FreeLingo Premium'a hoş geldiniz!",
-    "successDesc": "Aboneliğiniz artık etkin. Tüm özelliklere sınırsız erişimin keyfini çıkarın.",
+    "successDesc": "Aboneliğiniz artık etkin. Hesabınızın genel sınırları dâhilinde Premium erişiminin keyfini çıkarın.",
     "successCheckingLabel": "Abonelik onaylanıyor",
     "successCheckingTitle": "Aboneliğiniz kontrol ediliyor",
     "successCheckingDesc": "Bu genellikle birkaç saniye sürer.",
@@ -1662,12 +2023,12 @@
     "successErrorDesc": "Panoya gidip birazdan sayfayı yenileyin veya faturalandırma ayarlarınızı kontrol edin.",
     "successRedirect": "{seconds} sn içinde panoya yönlendiriliyorsunuz...",
     "successCta": "Panoya git",
-    "canceledLabel": "Ödeme iptal edildi",
-    "canceledTitle": "Herhangi bir ücret alınmadı",
-    "canceledDesc": "Herhangi bir ücret alınmadı. İlerlemeniz güvende; daha sonra ayarlarınızdan bir plan seçebilirsiniz.",
+    "canceledLabel": "Abonelik işlemi yarıda kaldı",
+    "canceledTitle": "Abonelik işleminden ayrıldınız",
+    "canceledDesc": "İlerlemeniz kaydedildi. Ayarlar'dan aboneliğinizi kontrol edebilir veya bir plan seçebilirsiniz.",
     "canceledCtaDashboard": "Panoya git",
     "canceledCtaSettings": "Planları görüntüle",
-    "canceledNoCharge": "Bu oturumda herhangi bir ücret alınmadı · İstediğiniz zaman bir plan seçin",
+    "canceledNoCharge": "Aboneliğinizi Ayarlar'dan kontrol edin",
     "section": "Abonelik",
     "status": "Durum",
     "statusActive": "Etkin",
@@ -1687,7 +2048,7 @@
     "pastDueTitle": "Ödeme bekleniyor",
     "pastDueDesc": "Premium erişiminizi geri kazanmak için ödeme yönteminizi güncelleyin.",
     "subscribe": "Abone ol",
-    "portalError": "Faturalandırma portalı açılamadı. Lütfen tekrar deneyin.",
+    "portalError": "Abonelik yönetimini açamadık. Lütfen tekrar deneyin.",
     "openSourceTitle": "Açık kaynak",
     "openSourceDesc": "Kendi sunucunuzda ücretsiz olarak barındırın",
     "openSourceCta": "GitHub'da görüntüle",
@@ -1699,7 +2060,47 @@
     "planFreeCta": "Başla",
     "limitedLabel": "Sınırlı"
   },
+  "premiumOffer": {
+    "navLabel": "Premium",
+    "viewPremium": "Premium'u keşfet",
+    "planSection": "Plan ve abonelik",
+    "viewPlans": "Planları görüntüle",
+    "stayFree": "Ücretsiz planla devam et",
+    "expiredTitle": "Premium deneme süreniz sona erdi",
+    "expiredDescription": "İlerlemeniz kaydedildi. Kullanım sınırlarıyla ücretsiz öğrenmeye devam edebilir veya Lingu, dersler, oyunlar, okuma ve dinleme ile daha fazla pratik yapmak için Premium'u seçebilirsiniz. Hesabınızın genel sınırları geçerliliğini korur.",
+    "resultTitle": "Öğrendiklerinizin üzerine koyarak ilerleyin",
+    "exhaustedTitle": "Premium ile pratik yapmaya devam edin",
+    "continuePremium": "Premium ile devam et",
+    "dailyReset": "Ücretsiz kullanım hakkınız her gün 00:00 UTC'de yenilenir.",
+    "weeklyReset": "Ücretsiz kullanım hakkınız pazartesi günleri 00:00 UTC'de yenilenir.",
+    "trialResultNote": "Ücretsiz deneme süreniz devam ediyor. Sona erdiğinde kullanabileceğiniz planları inceleyin.",
+    "result": {
+      "situations": "Premium ile Lingu'yla gerçek yaşam durumlarını sesli olarak çalışmaya devam et.",
+      "voice": "Premium ile bu konuşmayı temel alarak daha fazla konuşma pratiği yapın ve Lingu'dan geri bildirim alın.",
+      "lessons": "Premium ile dersleri tamamlamaya ve öğrendiklerinizi Lingu ile uygulamaya devam edin.",
+      "listening": "Premium ile seviyenize uygun daha fazla dinleme alıştırması yaparak dinleme becerinizi geliştirmeye devam edin.",
+      "reading": "Premium ile seviyenize uygun daha fazla okuma alıştırması yaparak anlama becerinizi geliştirmeye devam edin.",
+      "games": "Premium ile daha fazla öğrenme oyunuyla pratik yapmaya devam edin.",
+      "flashcards": "Tekrar ettiğiniz kelimeleri Lingu ile konuşmalarınızda kullanın. Premium, yazılı ve sesli pratik imkânlarınızı artırır."
+    },
+    "benefitsTitle": "Premium neler sunar?",
+    "benefitsDescription": "Ücretsiz planın kotaları olmadan pratik yapmaya devam edin.",
+    "benefitsVoice": "Lingu ile sesli konuşmalar",
+    "benefitsChat": "Düzeltmeler ve açıklamalar içeren yazılı sohbet",
+    "benefitsComprehension": "Okuduğunu ve dinlediğini anlama pratiği",
+    "benefitsLessonsGames": "Dersleri tamamlama ve öğrenme oyunları",
+    "benefitsLanguages": "Mevcut tüm öğrenme dilleri tek abonelikte",
+    "generalLimits": "Genel kullanım ve konuşma sınırları geçerliliğini korur.",
+    "noCardTrialStatus": "Premium denemesi · kart gerekmez",
+    "noCardTrialDescription": "Premium denemeniz {date} tarihine kadar sürer; kart gerekmez ve otomatik ücret alınmaz. Sonrasında abone olmadığınız sürece ücretsiz planın sınırları geçerli olur.",
+    "monthlyCommitment": "Daha düşük bir başlangıç ödemesiyle aylık ödeme yapın.",
+    "yearlyCommitment": "Tüm yıl için tek ödeme.",
+    "cardTrialTerms": "Abone olduğunuzda ayrı bir {days} günlük deneme başlar; mevcut denemenizin kalan günlerine eklenmez. Kart gerekir. Abonelik denemesi sona ermeden iptal etmezseniz ardından seçtiğiniz planın ücreti alınır.",
+    "paidTerms": "Kart gerekir. Ücretli aboneliğiniz satın aldığınızda başlar. İptal etmediğiniz sürece seçtiğiniz ödeme döneminde yenilenir."
+  },
   "freemium": {
+    "situationsLabel": "Bu haftaki durumlar",
+    "grammarPracticeLabel": "Bugünkü dil bilgisi setleri",
     "gamesLabel": "Bugünkü oyunlar",
     "chatLabel": "Sohbet",
     "lessonsLabel": "Dersler",
@@ -1708,7 +2109,7 @@
     "voiceLabel": "Ses (dk)",
     "freeLimit": "Premium'a geç",
     "trialDaysLeft": "{days, plural, one {# günlük ücretsiz deneme} other {# günlük ücretsiz deneme}}",
-    "trialUnlimited": "Sınırsız erişim",
+    "trialUnlimited": "Premium erişimi",
     "requiresSubscription": "Yalnızca Premium"
   },
   "lessonPractice": {
@@ -1760,13 +2161,29 @@
   },
   "whatsNew": {
     "title": "Yenilikler",
-    "version": "v1.10.50",
+    "version": "v1.14.10",
     "cta": "Anladım",
     "entry1": {
-      "label": "Daha akıcı sesli konuşmalar",
-      "desc": "Daha akıcı ses oynatımı ve konuşma sırasını daha net gösteren işaretler için Lingu ile sohbetleri iyileştirdik."
+      "label": "Günlük konuşmalar için pratik yap",
+      "desc": "Günlük yaşam, seyahat, alışveriş, sosyal yaşam ve iş konularındaki 50 senaryoyla gerçek durumlara hazırlan. Konuştuğun kişinin rolünü üstlenip konuşmayı seviyene uyarlayacak Lingu ile sesli pratik yap."
     },
     "entry2": {
+      "label": "Planın, adım adım",
+      "desc": "Planım artık öğrenme sürecini bir rota olarak gösteriyor: ilerlemeni takip et, mevcut üniteni bul ve sıradaki aşamaları keşfet. Dersleri görmek, öğrenmeye devam etmek veya tamamladıklarını tekrar etmek için her üniteyi açabilirsin."
+    },
+    "entry3": {
+      "label": "Kendi hızında dil bilgisi pratiği yap",
+      "desc": "Dil bilgisi kaynaklarından konuları kişisel kitaplığına ekle ve düzeltmeler ile açıklamalar içeren beşer alıştırmalık setlerle pratik yap. Sonuçlarını incele ve bitirdiğinde konu ile yanıtların üzerinden Lingu ile sesli pratiğe devam et."
+    },
+    "entry4": {
+      "label": "Yeni diller: Hırvatça, Çekçe, Danca, Fince ve Rumence",
+      "desc": "A1'den C2'ye kadar içeriklerle Hırvatçayı, Çekçeyi, Dancayı, Finceyi ve Rumenceyi öğrenebileceğin diller arasına ekledik. Başlarken seçebilir veya Ayarlar → Dillerim bölümünden ekleyebilirsin."
+    },
+    "entry5": {
+      "label": "Lingu, ihtiyaç duyduğunda yanında",
+      "desc": "Sesli bir konuşma sırasında bir şeyi anlamazsan Lingu'dan yardım iste. Sana ana dilinde kısaca açıklayabilir, ardından öğrendiğin dilde pratiğe devam edebilir."
+    },
+    "entry6": {
       "label": "Daha akıcı bir deneyim",
       "desc": "FreeLingo ile günlük öğreniminizi daha keyifli hâle getirmek için küçük hataları da düzelttik ve bazı ayrıntıları iyileştirdik."
     }

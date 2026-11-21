@@ -96,6 +96,8 @@ vi.mock('@/components/conversation/StatusIndicator', async (importOriginal) => {
 
 import ConversationMode from '@/components/conversation/ConversationMode'
 import { useAuthStore } from '@/store/auth'
+import { useConfigStore } from '@/store/config'
+import { useFreemiumStore } from '@/store/freemium'
 import { useSpeechSessionStore } from '@/home/store/speech-session'
 import { mapUser } from '@/lib/mappers'
 
@@ -147,6 +149,10 @@ function speak(audio = new Float32Array(24000).fill(0.05)) {
 }
 
 beforeEach(() => {
+  useConfigStore.setState(
+    { ...useConfigStore.getInitialState(), loaded: true },
+    true
+  )
   vi.clearAllMocks()
   MockWebSocket.instances = []
   mocks.starters = []
@@ -172,6 +178,7 @@ beforeEach(() => {
   })
   Element.prototype.scrollIntoView = vi.fn()
   useAuthStore.setState({ accessToken: 'token', user: null })
+  useFreemiumStore.setState(useFreemiumStore.getInitialState(), true)
   useSpeechSessionStore.setState({ state: 'ready' })
 })
 

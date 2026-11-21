@@ -1,4 +1,276 @@
 {
+  "situations": {
+    "title": "Harjoittele tosielämän tilanteita",
+    "description": "Valitse tilanne ja harjoittele puhumista Lingun kanssa. Lingu esittää keskustelukumppaniasi.",
+    "search": "Etsi tilanteita",
+    "allCategories": "Kaikki kategoriat",
+    "noResults": "Hakuasi vastaavia tilanteita ei löytynyt.",
+    "loadError": "Tilanteiden lataaminen epäonnistui.",
+    "retry": "Yritä uudelleen",
+    "start": "Aloita harjoitus",
+    "unavailable": "Tämä tilanne ei ole käytettävissä. Yritä uudelleen.",
+    "back": "Takaisin tilanteisiin",
+    "contextChanged": "Opiskelutilanteesi on muuttunut. Päivitä sivu ja aloita harjoitus uudelleen.",
+    "categories": {
+      "daily_life": "Arki",
+      "travel": "Matkailu",
+      "shopping_services": "Ostokset ja palvelut",
+      "social": "Sosiaalinen elämä",
+      "work": "Työ"
+    },
+    "items": {
+      "bakery_purchase": {
+        "title": "Asioi leipomossa",
+        "description": "Lingu esittää leipomon myyjää. Pyydä leipää tai aamupalaa, kerro haluamasi määrä ja kysy hintaa."
+      },
+      "clothes_shopping": {
+        "title": "Osta vaatteita",
+        "description": "Keskustele myyjää esittävän Lingun kanssa koosta ja väristä ja kysy, voitko sovittaa vaatetta."
+      },
+      "cafe_order": {
+        "title": "Tilaa kahvilassa",
+        "description": "Lingu esittää kahvilan tarjoilijaa. Tilaa juoma ja jotain syötävää."
+      },
+      "haircut_appointment": {
+        "title": "Käy parturissa tai kampaajalla",
+        "description": "Lingu esittää parturi-kampaajaa. Pyydä yksinkertaista hiustenleikkausta ja kerro toiveistasi."
+      },
+      "supermarket_help": {
+        "title": "Kysy apua ruokakaupassa",
+        "description": "Kysy kaupan työntekijää esittävältä Lingulta, mistä löydät etsimäsi tuotteet."
+      },
+      "buy_ticket": {
+        "title": "Osta matkalippu",
+        "description": "Lingu työskentelee lipunmyynnissä. Kerro määränpääsi, kysy lähtöaikoja ja hintaa ja osta lippu."
+      },
+      "hotel_check_in": {
+        "title": "Kirjaudu hotelliin",
+        "description": "Lingu esittää vastaanottovirkailijaa. Vahvista varauksesi ja kysy majoittumisen perustietoja."
+      },
+      "taxi_ride": {
+        "title": "Tilaa taksi",
+        "description": "Soita taksikeskuksen työntekijää esittävälle Lingulle. Kerro noutopaikka ja määränpää ja kysy, milloin taksi saapuu."
+      },
+      "collect_key": {
+        "title": "Nouda avain",
+        "description": "Nouda loma-asunnon avain majoittajaa esittävältä Lingulta ja kysy, miten pääset asuntoon sisään."
+      },
+      "local_recommendations": {
+        "title": "Kysy käyntikohteista",
+        "description": "Lingu esittää paikallista asukasta. Kerro kiinnostuksenkohteistasi ja pyydä vinkkejä sopivista käyntikohteista."
+      },
+      "congratulate_friend": {
+        "title": "Onnittele ystävää",
+        "description": "Lingu esittää ystävää, jolla on syntymäpäivä tai iloisia uutisia. Onnittele ja juttele hetki."
+      },
+      "hobbies_chat": {
+        "title": "Puhu harrastuksista",
+        "description": "Juttele ystävää esittävän Lingun kanssa vapaa-ajan tekemisistä ja löytäkää yhteisiä kiinnostuksenkohteita."
+      },
+      "family_chat": {
+        "title": "Puhu perheestä",
+        "description": "Lingu esittää tuttavaa. Kerro perheestäsi ja kysy Lingun perheestä."
+      },
+      "invite_friend": {
+        "title": "Kutsu ystävä mukaan",
+        "description": "Kutsu ystävää esittävä Lingu syömään tai juomaan jotain ja sopikaa tapaamisaika."
+      },
+      "choose_gift": {
+        "title": "Valitse lahja",
+        "description": "Valitse yhteinen lahja ystävää esittävän Lingun kanssa. Miettikää, mistä lahjan saaja pitää, ja päättäkää yhdessä."
+      },
+      "late_arrival": {
+        "title": "Ilmoita myöhästymisestä",
+        "description": "Kerro työkaveria esittävälle Lingulle, että myöhästyt, ja arvioi, milloin saavut."
+      },
+      "work_update": {
+        "title": "Kerro työsi etenemisestä",
+        "description": "Kerro työkaveria esittävälle Lingulle tavallisesta työtehtävästäsi ja siitä, miten se etenee."
+      },
+      "arrange_meeting": {
+        "title": "Sovi palaveri",
+        "description": "Sovi palaverista työkaveria esittävän Lingun kanssa ja etsikää molemmille sopiva päivä ja kellonaika."
+      },
+      "colleague_help": {
+        "title": "Pyydä työkaverilta apua",
+        "description": "Lingu esittää työkaveriasi. Kerro, mihin tarvitset apua, ja pyydä neuvoja."
+      },
+      "break_chat": {
+        "title": "Juttele tauolla",
+        "description": "Lingu esittää työkaveriasi. Juttele rennosti arkisista asioista työtauolla."
+      },
+      "recount_day": {
+        "title": "Kerro päivästäsi",
+        "description": "Kerro ystävää esittävälle Lingulle, mitä olet tänään tehnyt ja mitä päivän aikana on tapahtunut."
+      },
+      "weather_chat": {
+        "title": "Puhu säästä",
+        "description": "Lingu esittää naapuriasi. Jutelkaa säästä ja siitä, mitä aiotte tehdä."
+      },
+      "daily_routine": {
+        "title": "Puhu arkirutiineista",
+        "description": "Lingu esittää tuttavaa. Kuvaile tavallista päivääsi ja kysy Lingun arkirutiineista."
+      },
+      "household_chores": {
+        "title": "Sovi kotitöistä",
+        "description": "Lingu esittää kämppäkaveriasi. Jakakaa kotityöt ja sopikaa, milloin teette ne."
+      },
+      "plan_dinner": {
+        "title": "Suunnittele päivällinen",
+        "description": "Lingu esittää kämppäkaveriasi. Päättäkää, mitä kokkaatte, ja käykää läpi, mitä aineksia on valmiina ja mitä puuttuu."
+      },
+      "medical_appointment": {
+        "title": "Varaa lääkäriaika",
+        "description": "Soita lääkäriasemalle. Lingu hoitaa ajanvarauksen: kerro käynnin syy ja sovi sopiva aika."
+      },
+      "neighbour_problem": {
+        "title": "Keskustele naapurin kanssa",
+        "description": "Lingu esittää naapuriasi. Kerro kotona kokemastasi häiriöstä ja etsikää yhdessä toiset huomioiva ratkaisu."
+      },
+      "flat_viewing": {
+        "title": "Käy asuntonäytössä",
+        "description": "Tutustu asuntoon Lingun esittäessä kiinteistönvälittäjää. Kysy vuokrasta, muista kuluista ja vuokraehdoista."
+      },
+      "school_meeting": {
+        "title": "Tapaaminen koulussa",
+        "description": "Lingu esittää lapsesi opettajaa. Keskustelkaa koulun käytännöistä ja sopikaa, miten tuette lapsen oppimista."
+      },
+      "household_repair": {
+        "title": "Sovi korjauksesta",
+        "description": "Kuvaile kodin vika Lingulle, joka esittää korjaajaa. Kysy hinnasta ja sovi käynnistä."
+      },
+      "change_reservation": {
+        "title": "Muuta varausta",
+        "description": "Keskustele Lingun kanssa varauspalvelussa. Kerro, mitä haluat muuttaa, ja varmista uudet ehdot."
+      },
+      "hotel_problem": {
+        "title": "Ongelma hotellissa",
+        "description": "Lingu työskentelee vastaanotossa. Kerro huoneesi ongelmasta ja pyydä sopivaa ratkaisua."
+      },
+      "ask_directions": {
+        "title": "Kysy tietä",
+        "description": "Kysy paikallista asukasta esittävältä Lingulta reittiä määränpäähäsi ja varmista, että ymmärsit ohjeet."
+      },
+      "missed_connection": {
+        "title": "Myöhästy jatkoyhteydestä",
+        "description": "Olet myöhästynyt jatkoyhteydestä. Keskustele Lingun kanssa liikennöitsijän palvelupisteessä ja etsi uusi tapa päästä perille."
+      },
+      "lost_luggage": {
+        "title": "Kadonnut matkatavara",
+        "description": "Matkalaukkusi ei saapunut. Kuvaile sitä Lingulle matkatavarapalvelussa ja kysy, miten saat sen takaisin."
+      },
+      "return_purchase": {
+        "title": "Palauta ostos",
+        "description": "Kerro myyjää esittävälle Lingulle, miksi haluat palauttaa tuotteen, ja kysy rahojen palautuksesta."
+      },
+      "restaurant_order": {
+        "title": "Tilaa ravintolassa",
+        "description": "Lingu esittää tarjoilijaasi. Kysy annoksista, kerro toiveistasi ja tee tilaus."
+      },
+      "phone_contract": {
+        "title": "Valitse puhelinliittymä",
+        "description": "Keskustele liittymämyyjää esittävän Lingun kanssa. Vertaa liittymiä ja selvitä hinnat ja ehdot ennen päätöstä."
+      },
+      "bank_appointment": {
+        "title": "Tapaaminen pankissa",
+        "description": "Lingu esittää pankkivirkailijaa. Kerro, mitä asiaa hoidat, ja kysy tarvittavista asiakirjoista ja seuraavista vaiheista."
+      },
+      "delivery_problem": {
+        "title": "Ongelma toimituksessa",
+        "description": "Ota yhteyttä Linguun asiakaspalvelussa. Kerro pakettisi ongelmasta ja sopikaa ratkaisusta."
+      },
+      "meet_someone": {
+        "title": "Tutustu uuteen ihmiseen",
+        "description": "Lingu esittää henkilöä, jonka juuri tapasit tilaisuudessa. Esittele itsesi ja etsikää yhteisiä kiinnostuksenkohteita."
+      },
+      "make_plans": {
+        "title": "Suunnitelkaa yhteistä tekemistä",
+        "description": "Suunnittele retki ystävää esittävän Lingun kanssa. Ehdota tekemistä ja sopikaa tapaamispaikka ja -aika."
+      },
+      "decline_invitation": {
+        "title": "Kieltäydy kutsusta",
+        "description": "Lingu esittää ystävää, joka kutsuu sinut mukaan. Kieltäydy ystävällisesti ja ehdota toista tapaamiskertaa."
+      },
+      "resolve_misunderstanding": {
+        "title": "Selvitä väärinkäsitys",
+        "description": "Selvitä väärin ymmärretty viesti ystävää esittävän Lingun kanssa ja palauttakaa keskusteluun hyvä tunnelma."
+      },
+      "host_visitors": {
+        "title": "Ota vieraita vastaan",
+        "description": "Lingu esittää vierasta kotonasi. Toivota hänet tervetulleeksi, tarjoa juotavaa ja kerro suunnitelmistasi."
+      },
+      "introduce_yourself": {
+        "title": "Esittäydy työpaikalla",
+        "description": "Lingu esittää uutta työkaveria. Esittele itsesi, kerro tehtävästäsi ja kysy tiimistä."
+      },
+      "explain_task": {
+        "title": "Selitä työtehtävä",
+        "description": "Selitä tehtävä työkaveria esittävälle Lingulle. Kuvaile vaiheet ja varmista, että ohjeesi ovat selkeät."
+      },
+      "clarify_instructions": {
+        "title": "Tarkenna ohjeita",
+        "description": "Lingu esittää esihenkilöäsi. Kysy epäselvistä ohjeista ja varmista, mitä sinun pitää tehdä."
+      },
+      "negotiate_deadline": {
+        "title": "Neuvottele määräajasta",
+        "description": "Keskustele projektipäällikköä esittävän Lingun kanssa. Kerro haasteesta ja sopikaa realistinen määräaika."
+      },
+      "share_proposal": {
+        "title": "Esittele ehdotus",
+        "description": "Esittele parannusidea tiimikaveria esittävälle Lingulle. Kerro sen hyödyistä ja vastaa kysymyksiin."
+      }
+    }
+  },
+  "grammarPractice": {
+    "retryCreation": "Yritä alkuperäistä pyyntöä uudelleen",
+    "voiceAction": "Harjoittele tätä kielioppiaihetta puhumalla",
+    "voiceDescription": "Aloita äänikeskustelu Lingun kanssa tästä aiheesta ja suorittamistasi harjoituksista. Mikrofonin käyttöoikeus vaaditaan ja äänen käytön rajoitukset ovat voimassa.",
+    "title": "Kielioppiharjoittelu",
+    "description": "Tallenna aiheita materiaaleista ja harjoittele viiden tehtävän sarjoissa: kolme monivalintakysymystä ja kaksi aukkotehtävää. Edistyminen tallennetaan; XP-pisteitä ei anneta.",
+    "add": "Harjoittele",
+    "back": "Takaisin kielioppiharjoitteluun",
+    "voiceUnavailable": "Tämä kielioppiharjoitus ei ole käytettävissä.",
+    "noPlan": "Aiheiden lisääminen ja harjoitusten luominen vaativat aktiivisen opintosuunnitelman tällä kielellä. Tallennetut harjoituskerrat pysyvät käytettävissä.",
+    "assessment": "Luo opintosuunnitelma",
+    "contextChanged": "Opiskelukontekstisi muuttui. Päivitä ja yritä sitten uudelleen itse.",
+    "explore": "Tutustu kielioppiin",
+    "empty": "Harjoittelukirjastosi on tyhjä. Valitse aihe kielioppimateriaaleista.",
+    "answered": "{count} vastattu",
+    "accuracy": "{percent}% oikein",
+    "lastPracticed": "Viimeksi harjoiteltu",
+    "never": "Ei vielä",
+    "theory": "Näytä teoria",
+    "continue": "Jatka harjoitusta",
+    "recover": "Palauta harjoitus",
+    "generate": "Luo viisi harjoitusta",
+    "history": "Harjoitteluhistoria",
+    "noHistory": "Ei vielä harjoituskertoja.",
+    "score": "{correct}/{answered} oikein",
+    "generating": "Valmistellaan harjoituksia…",
+    "ready": "Valmis jatkettavaksi",
+    "completed": "Harjoitus valmis",
+    "failed": "Luominen epäonnistui",
+    "abandoned": "Harjoitus keskeytetty",
+    "recoveryError": "Tallennettua tilaa ei voitu vahvistaa. Yritä hakea se uudelleen lähettämättä vastausta toistamiseen.",
+    "another": "Uusi sarja",
+    "correct": "Oikein",
+    "incorrect": "Ei aivan",
+    "yourAnswer": "Vastauksesi",
+    "solution": "Oikea vastaus",
+    "abandon": "Keskeytä harjoitus",
+    "abandonDescription": "Suljetaanko tämä harjoitus? Tallennetut vastaukset jäävät historiaan. Luomiskiintiötä ei palauteta.",
+    "choose": "Valitse vastaus",
+    "fillBlank": "Täytä aukko",
+    "check": "Tarkista vastaus"
+  },
+  "questionExplanation": {
+    "show": "Miksi tämä vastaus",
+    "hide": "Piilota selitys",
+    "loading": "Valmistellaan selitystä...",
+    "error": "Selitys ei ole saatavilla. Yritä uudelleen.",
+    "evidence": "Ote alkuperäisestä tekstistä",
+    "language": "Selityksen kieli: {language}"
+  },
   "landing": {
     "freeTrialNote": "Alkuvaiheen Premium-käyttö rekisteröityessä ilman korttia. Sen jälkeen maksuton käyttö rajoituksin, ellet tilaa.",
     "modes": {
@@ -42,7 +314,7 @@
       },
       "languages": {
         "question": "Mitä kieliä voin opiskella?",
-        "answer": "Britti- ja amerikanenglantia, espanjaa, italiaa, portugalia, saksaa, ranskaa, japania, koreaa ja Manner-Kiinan kiinaa. Voit opiskella useita samanaikaisesti, ja jokaisella kielellä on oma suunnitelma ja edistyminen."
+        "answer": "{languages}. Voit opiskella useita samanaikaisesti, ja jokaisella kielellä on oma suunnitelma ja edistyminen."
       },
       "start": {
         "question": "Miten aloitan opiskelun?",
@@ -92,12 +364,22 @@
     "footerProduct": "Tuote",
     "footerLegal": "Oikeudelliset tiedot",
     "languageGreetings": {
+      "ru-RU": "Привет!",
+      "sv-SE": "Hej!",
+      "da-DK": "Hej!",
+      "cs-CZ": "Ahoj!",
+      "hr-HR": "Bok!",
+      "fi-FI": "Hei!",
+      "ro-RO": "Bună!",
       "en-US": "Hello!",
       "en-GB": "Hello!",
       "de-DE": "Hallo!",
+      "pl-PL": "Cześć!",
       "es-ES": "¡Hola!",
       "fr-FR": "Bonjour !",
       "it-IT": "Ciao!",
+      "pt-BR": "Oi!",
+      "nl-NL": "Hallo!",
       "pt-PT": "Olá!",
       "ja-JP": "こんにちは！",
       "ko-KR": "안녕하세요!",
@@ -181,7 +463,7 @@
     "failed": "Luonti epäonnistui",
     "abandoned": "Peli keskeytetty",
     "generatingDescription": "Lingu valmistelee ja tarkistaa viisi haastetta. Voit poistua sivulta ja palata myöhemmin.",
-    "failedDescription": "Kelvollista peliä ei voitu valmistella. Pelikiintiötä ei kulutettu. Palaa valikkoon ja yritä uudelleen.",
+    "failedDescription": "Emme voineet valmistella peliä. Sitä ei lasketa pelirajaasi. Palaa valikkoon ja yritä uudelleen.",
     "contextChanged": "Oppimiskontekstisi muuttui tai tila ei ole käytettävissä. Päivitä ennen aloittamista.",
     "challenge": "Haaste {current}/{total}",
     "detect": "Valitse osa, jossa virhe on.",
@@ -242,12 +524,17 @@
     "goToPlan": "Siirry omaan suunnitelmaan"
   },
   "nav": {
+    "situations": "Arjen tilanteet",
+    "practiceGrammar": "Kielioppiharjoittelu",
+    "learning": "Oma oppiminen",
+    "practice": "Harjoittele",
+    "help": "Ohjeet",
     "games": "Pelit",
     "home": "Etusivu",
     "myPlan": "Oma suunnitelma",
     "progress": "Edistyminen",
     "flashcards": "Muistikortit",
-    "tutor": "Keskustele opettajan kanssa",
+    "tutor": "Keskustele Lingun kanssa",
     "assessment": "Tasoarvio",
     "resources": "Materiaalit",
     "grammar": "Kielioppi",
@@ -256,7 +543,7 @@
     "settings": "Asetukset",
     "faq": "Usein kysytyt kysymykset",
     "admin": "Ylläpito",
-    "conversation": "Keskustelu",
+    "conversation": "Äänikeskustelu",
     "listening": "Kuuntelu",
     "reading": "Lukeminen",
     "contact": "Yhteystiedot",
@@ -349,6 +636,13 @@
       "backToLogin": "Takaisin kirjautumiseen"
     }
   },
+  "accountDeletion": {
+    "cancellationRequired": "Ennen tilin poistamista tilin omistajan on peruttava tilauksen uusiutuminen tilausten hallinnassa. Tilin poistaminen ei peru tilausta.",
+    "checkoutPending": "Osto on kesken tai sen tilaa ei voida vielä vahvistaa. Selvitä tilanne ennen tilin poistamista. Mitään ostoa ei ole peruttu automaattisesti.",
+    "verificationUnavailable": "Laskutuksen tilaa ei voitu vahvistaa. Tiliä ei ole poistettu. Yritä myöhemmin uudelleen.",
+    "failed": "Tiliä ei voitu poistaa. Yritä uudelleen.",
+    "manageSubscription": "Hallinnoi tilausta"
+  },
   "settings": {
     "title": "Asetukset",
     "sectionAccount": "Tili",
@@ -411,9 +705,12 @@
     "deleteAccountMessage": "Tämä poistaa tilisi ja kaikki tietosi pysyvästi. Toimintoa ei voi perua.",
     "deleteAccountConfirm": "Poista tili",
     "sectionUsageLimits": "Käyttörajat",
-    "sectionVoice": "Ääni",
-    "voiceHint": "Valitse Lingun ääni ja kuuntele sitä painamalla toistopainiketta.",
-    "voicePlay": "Toista",
+    "sectionVoice": "Lingun ääni",
+    "voiceFemale": "Naisääni",
+    "voiceMale": "Miesääni",
+    "voiceHint": "Valitse, miltä haluat Lingun kuulostavan.",
+    "voiceCharacter": "Lämmin ja ystävällinen",
+    "voicePlay": "Kuuntele",
     "voiceStop": "Pysäytä",
     "quotaSessions": "Keskustelua / viikko",
     "quotaMinutesDay": "Minuuttia / päivä",
@@ -456,7 +753,7 @@
     "cardSessionSecurity": "Istunto ja turvallisuus",
     "cardTheme": "Teema",
     "cardConversationTiming": "Keskustelun ajoitus",
-    "cardTutorVoice": "Opettajan ääni",
+    "cardTutorVoice": "Lingun ääni",
     "cardCurrentUsage": "Nykyinen käyttö",
     "cardProductReview": "Tuotearvostelu",
     "cardLegalDocuments": "Oikeudelliset asiakirjat",
@@ -490,9 +787,9 @@
       "s4Title": "4. Sisältö ja tekoälyvuorovaikutus",
       "s4Body": "Keskustelut AI-opettajan kanssa tallennetaan tietokantaan, jotta opiskelu voi jatkua myöhemmin. Ylläpidetyssä palvelussa AI-chat ja äänitoiminnot käsitellään OpenAI:n rajapinnan kautta, ja sisältöösi sovelletaan OpenAI:n käyttökäytäntöjä. Tekoäly voi antaa virheellisiä vastauksia – käytä aina omaa harkintaasi. FreeLingo ei vastaa taustalla olevien kielimallien tuottamasta sisällöstä. AI-opettajan luoma sisältö (harjoitukset, korjaukset, selitykset ja muu materiaali) kuuluu sinulle henkilökohtaiseen käyttöösi. FreeLingo ei vaadi omistusoikeutta keskusteluihisi tai niistä tuotettuun sisältöön.",
       "s5Title": "5. Palvelun käyttötavat",
-      "s5Body": "Itse ylläpidetyt asennukset ovat maksuttomia, ja ylläpitäjä hallitsee täysin tietojaan ja infrastruktuuriaan. FreeLingo-tiimin ylläpitämässä palvelussa on käyttörajoituksia sisältävä ilmainen suunnitelma sekä kuukausittaisia ja vuosittaisia maksullisia tilauksia rajattomaan käyttöön. Ilmaiseen suunnitelmaan sisältyy seitsemän päivän kokeilujakso täydellä käyttöoikeudella (maksutapaa ei vaadita), jonka jälkeen oppitunneille ja AI-chatille on päivittäiset sekä kuuntelu- ja lukuharjoituksille ja äänikeskusteluille viikoittaiset kiintiöt. Maksullisissa tilauksissa nämä käyttörajat poistuvat. Ylläpidetyssä palvelussa tietosi tallennetaan FreeLingo-tiimin ylläpitämille palvelimille. Tilisi nykyiset käyttörajat näkyvät koontinäytössä.",
+      "s5Body": "Itse ylläpidetyt asennukset ovat maksuttomia, ja ylläpitäjä hallitsee täysin tietojaan ja infrastruktuuriaan. FreeLingo-tiimin ylläpitämässä palvelussa on käyttörajoituksia sisältävä ilmainen suunnitelma sekä kuukausittaisia ja vuosittaisia maksullisia Premium-tilauksia. Ilmaisessa suunnitelmassa oppitunneille ja AI-chatille on päivittäiset sekä kuuntelu- ja lukuharjoituksille ja äänikeskusteluille viikoittaiset kiintiöt. Jos aloituskokeilu on tarjolla, se antaa Premium-käyttöoikeuden ilman maksutapaa tililläsi ilmoitetuksi ajaksi. Maksulliset tilaukset ja kokeilu poistavat ilmaisen suunnitelman kiintiöt, mutta tilin yleiset rajoitukset, kuten tekoälyn käytön ja äänikeskustelujen rajat, ovat edelleen voimassa. Ylläpidetyssä palvelussa tietosi tallennetaan FreeLingo-tiimin ylläpitämille palvelimille. Tilisi nykyiset käyttörajat näkyvät koontinäytössä.",
       "s6Title": "6. Tilaus ja laskutus",
-      "s6Body": "Ilmainen suunnitelma tarjoaa rajoitetun pääsyn tekoälytoimintoihin ja uusille käyttäjille seitsemän päivän kokeilujakson täydellä käyttöoikeudella (maksutapaa ei vaadita). Maksulliset tilaukset ovat kuukausittaisia tai vuosittaisia ja uusiutuvat automaattisesti, ellei niitä peruta etukäteen. Voit perua tilauksesi milloin tahansa Asetuksissa; peruutus tulee voimaan nykyisen kauden päättyessä. Ylläpitäjä voi myös päättää tilausten uusiutumisen tai tilaukset, jos palvelu muuttuu tai suljetaan. Jos palvelu päättyy ennen maksetun kauden loppua, kuluttajalainsäädännön vaatima hyvitys maksetaan. Peruuttamisoikeudet ja voimassa olevat hinnat näytetään ja käsitellään sovellettavan lain mukaisesti.",
+      "s6Body": "Ilmainen suunnitelma tarjoaa rajoitetun pääsyn tekoälytoimintoihin ja, jos se on tarjolla, uusille käyttäjille Premium-aloituskokeilun ilman maksutapaa tililläsi ilmoitetuksi ajaksi. Premium poistaa ilmaisen suunnitelman kiintiöt; tilin yleiset rajoitukset ovat edelleen voimassa myös kokeilun aikana. Maksulliset tilaukset ovat kuukausittaisia tai vuosittaisia ja uusiutuvat automaattisesti, ellei niitä peruta etukäteen. Voit perua tilauksesi milloin tahansa Asetuksissa; peruutus tulee voimaan nykyisen kauden päättyessä. Ylläpitäjä voi myös päättää tilausten uusiutumisen tai tilaukset, jos palvelu muuttuu tai suljetaan. Jos palvelu päättyy ennen maksetun kauden loppua, kuluttajalainsäädännön vaatima hyvitys maksetaan. Peruuttamisoikeudet ja voimassa olevat hinnat näytetään ja käsitellään sovellettavan lain mukaisesti.",
       "s7Title": "7. Saatavuus",
       "s7Body": "Ylläpidetty palvelu tarjotaan ilman takuuta jatkuvuudesta tai saatavuudesta. Ylläpitäjä voi milloin tahansa muuttaa palvelua, keskeyttää sen tai sulkea sen teknisistä, taloudellisista tai muista syistä. Suunnitelluista sulkemisista ilmoitetaan sovelluksessa tai sähköpostitse, kun se on kohtuudella mahdollista. Ilmoitetun päivän jälkeen tilit ja palvelun tiedot voidaan poistaa ilman palautusmahdollisuutta. FreeLingo ei tarjoa varmuuskopiointipalvelua eikä automaattista vientityökalua.",
       "s8Title": "8. Vastuunrajoitus",
@@ -599,16 +896,16 @@
     "performanceNeedsPractice": "Vaatii harjoittelua",
     "performanceInProgress": "Kesken",
     "performanceStrong": "Vahva",
-    "premiumBannerTitle": "Avaa keskustelu-, kuuntelu- ja lukuharjoitukset",
+    "premiumBannerTitle": "Harjoittele enemmän keskustelua, kuuntelua ja lukemista",
     "premiumBannerDesc": "Aloita ilmaisella kokeilulla ja harjoittele Lingun kanssa tekstillä, puheella ja tasoosi sopivilla tehtävillä.",
-    "premiumBannerDescTrialUsed": "Ota Premium käyttöön avataksesi tekstikeskustelut Lingun kanssa sekä ääni-, luku- ja kuunteluharjoitukset.",
+    "premiumBannerDescTrialUsed": "Ota Premium käyttöön ja harjoittele enemmän tekstikeskusteluilla Lingun kanssa sekä ääni-, luku- ja kuunteluharjoituksilla.",
     "premiumBannerCta": "Ilmainen kokeilu",
     "premiumBannerCtaTrialUsed": "Näytä tilaukset",
     "premiumBannerPastDueTitle": "Maksu odottaa",
     "premiumBannerPastDueDesc": "Päivitä maksutapasi saadaksesi Premium-keskustelut ja ääni-, luku- ja kuunteluharjoitukset jälleen käyttöösi.",
     "premiumBannerPastDueCta": "Palauta Premium",
     "freemiumTrialTitle": "{days, plural, one {# päivä ilmaista kokeilua} other {# päivää ilmaista kokeilua}}",
-    "freemiumTrialDesc": "Käytä rajattomasti chat-, ääni-, kuuntelu- ja lukutoimintoja. Kokeile kaikkia Premium-ominaisuuksia ilmaiseksi.",
+    "freemiumTrialDesc": "Kokeile ilmaiseksi Premium-käyttöoikeutta chat-, ääni-, kuuntelu- ja lukutoimintoihin. Tilisi yleiset rajoitukset ovat edelleen voimassa.",
     "announcementDismiss": "Sulje ilmoitus",
     "announcementDismissError": "Ilmoitusta ei voitu sulkea. Yritä uudelleen."
   },
@@ -757,6 +1054,7 @@
     "generatingError": "Oppituntia ei voitu luoda",
     "loading": "Ladataan suunnitelmaa...",
     "learningRoadmap": "Oppimispolku",
+    "progressSummary": "{completed}/{total} oppituntia suoritettu",
     "level": "Taso",
     "duration": "Kesto",
     "durationDetail": "{weeks} viikkoa · {days} päivää viikossa",
@@ -815,7 +1113,7 @@
     "feedback": "Palaute",
     "corrections": "Korjaukset",
     "completeLesson": "Suorita oppitunti",
-    "completing": "Suoritetaan...",
+    "completing": "Tallennetaan edistymistäsi ja valmistellaan seuraavaa oppituntia...",
     "relatedGrammar": "Aiheeseen liittyvä kielioppi",
     "explanation": "Selitys",
     "exercises": "Tehtävät",
@@ -828,7 +1126,14 @@
     "showNativeExplanation": "Näytä kielellä",
     "hint": "Vihje",
     "showNativeHint": "Näytä vihje kielellä",
+    "showQuestionTranslation": "Näytä kysymyksen käännös kielellä {language}",
+    "hideQuestionTranslation": "Piilota kysymyksen käännös",
+    "translatingQuestion": "Käännetään kysymystä...",
+    "questionTranslationError": "Kysymyksen kääntäminen epäonnistui. Yritä uudelleen.",
+    "retryQuestionTranslation": "Yritä kääntää kysymys uudelleen",
     "regenerateExercise": "Luo tehtävä uudelleen",
+    "listeningIncomplete": "Tämä kuuntelutehtävä on puutteellinen. Luo se uudelleen ennen vastaamista.",
+    "listeningUnavailable": "Tämän tallennetun tehtävän ääni ei ole saatavilla. Tallennettu vastauksesi ja pistemääräsi säilyvät.",
     "regeneratingExercise": "Luodaan uudelleen...",
     "regenerateError": "Tehtävää ei voitu luoda uudelleen. Yritä uudelleen.",
     "regenerateNotNeeded": "Tätä tehtävää ei tarvitse luoda uudelleen.",
@@ -1277,6 +1582,12 @@
   "faq": {
     "title": "Usein kysytyt kysymykset",
     "subtitle": "Kysymyksiä ja vastauksia",
+    "sectionGettingStarted": "Aloittaminen ja kielet",
+    "sectionPractice": "Materiaalit ja harjoittelu",
+    "sectionLingu": "Keskustelut Lingun kanssa",
+    "sectionSubscription": "Paketit ja käyttörajat",
+    "sectionAccount": "Tili ja ohjeet",
+    "sectionAdmin": "Ylläpito",
     "q_start": "Mistä aloitan?",
     "a_start": "Valitse opiskelukieli ja avaa <strong>tasoarvio</strong> taitotasosi arvioimiseksi. Aloittelija voi valita A1:n ilman testiä. Vahvista taso ja kesto luodaksesi kielelle oman <strong>opintosuunnitelman</strong>.",
     "q_workflow": "Miten opiskelu etenee alusta loppuun?",
@@ -1287,7 +1598,7 @@
     "workflowStep5": "Harjoittele sanastoa muistikorteilla samalla",
     "workflowStep6": "Harjoittele vapaata keskustelua Lingun kanssa",
     "q_language": "Mitä kieltä voin oppia?",
-    "a_language": "FreeLingo tukee tällä hetkellä useita kieliä (amerikanenglanti, brittienglanti, ranska, saksa, italia, japani, korea, Manner-Kiinan kiina, portugali ja espanja), ja lisäämme kieliä ajan mittaan. Kun uusi kieli tulee saataville, löydät sen kohdasta Asetukset → Omat kielet – lisää se ja aloita opiskelu heti.",
+    "a_language": "FreeLingo tukee tällä hetkellä useita kieliä ({languages}), ja lisäämme kieliä ajan mittaan. Kun uusi kieli tulee saataville, löydät sen kohdasta Asetukset → Omat kielet – lisää se ja aloita opiskelu heti.",
     "q_assessment": "Mikä tasoarvio on?",
     "a_assessment": "Mukautuva testi, jossa on enintään 15 kysymystä opiskelukielen omasta kysymyspankista. Se kattaa kieliopin, sanaston ja luetun ymmärtämisen tasoilla A1–C2. Tulos arvioi CEFR-tasosi ja näyttää vahvuudet ja harjoittelukohteet; voit muuttaa ehdotettua tasoa ennen suunnitelman luomista.",
     "q_studyPlan": "Mikä opintosuunnitelma on ja miten luon sellaisen?",
@@ -1301,11 +1612,11 @@
     "q_tutor": "Miten voin harjoitella Lingun kanssa?",
     "a_tutor": "Lingu mukauttaa vastaukset aktiiviseen opiskelukieleesi ja suunnitelmasi sisältöön. Kysy kieliopista, pyydä selityksiä, harjoittele kirjoittamista kyseisellä kielellä tai keskustele. Keskustelut tallennetaan kielittäin, ja niitä voi jatkaa historiasta.",
     "q_voice": "Miten äänikeskustelu toimii?",
-    "a_voice": "<strong>Äänikeskustelussa</strong> voit puhua Lingun kanssa reaaliajassa. Aloita painamalla Aloita – sovellus kuuntelee automaattisesti puheentunnistuksen (VAD) avulla, ja opettaja vastaa puhesynteesillä. Voit keskeyttää opettajan milloin tahansa. Keskustelu päättyy aikarajaan tai kun painat Pysäytä. Varmista, että selaimella on mikrofonin käyttöoikeus.",
+    "a_voice": "Paina <strong>Äänikeskustelussa</strong> Aloita ja salli mikrofonin käyttö. Sovellus tunnistaa, milloin puhut, ja Lingu vastaa puheella. Odota, että Lingu lopettaa, ennen kuin puhut uudelleen: opettajan päälle puhuminen ei keskeytä vastausta. <settingsLink>Asetuksissa</settingsLink> voit säätää taukoa ennen puheenvuorosi lähettämistä, istunnon kestoa ja toimettomuuden aikarajaa. Istunto päättyy, kun painat Pysäytä tai jokin sovellettava raja täyttyy.",
     "q_listening": "Miten kuunteluharjoitukset toimivat?",
-    "a_listening": "<strong>Kuuntelu</strong>-osiossa Lingu valmistelee taitotasoosi sopivia kuunteluharjoituksia. Kuuntele ja vastaa viiteen ymmärtämiskysymykseen. Saat lähetettyäsi pistemäärän (0–5), XP-pisteet, oikeat vastaukset ja koko litteroinnin. Voit luoda uusia harjoituksia halutessasi.",
+    "a_listening": "<strong>Kuuntelu</strong>-osiossa Lingu valmistelee CEFR-tasoosi sopivia kuunteluharjoituksia. Kuuntele äänite ja vastaa sitten viiteen ymmärtämiskysymykseen. Lähetettyäsi vastaukset voit tarkastella pistemäärääsi (0–5), ansaittuja XP-pisteitä, oikeita vastauksia ja koko litterointia. Valitse <strong>Miksi tämä vastaus</strong> pyytääksesi äidinkielelläsi selityksen, jota tukee ote litteroinnista. Voit pyytää uusia harjoituksia tilisi käyttörajojen puitteissa.",
     "q_reading": "Miten lukuharjoitukset toimivat?",
-    "a_reading": "<strong>Lukeminen</strong> sisältää tasosi mukaisia tekstejä – ilmoituksia, sähköposteja, artikkeleita, blogikirjoituksia ja muuta. Lue teksti ja vastaa viiteen monivalintakysymykseen. Saat lähetettyäsi pistemäärän (0–5) ja XP-pisteet. Voit luoda uusia harjoituksia halutessasi.",
+    "a_reading": "<strong>Lukeminen</strong>-osiossa Lingu valmistelee CEFR-tasoosi sopivia tekstejä, kuten ilmoituksia, sähköposteja ja artikkeleita. Lue teksti ja vastaa viiteen monivalintakysymykseen. Lähetettyäsi vastaukset voit tarkastella pistemäärääsi (0–5), ansaittuja XP-pisteitä ja oikeita vastauksia. Valitse <strong>Miksi tämä vastaus</strong> pyytääksesi äidinkielelläsi selityksen, jota tukee ote tekstistä. Voit pyytää uusia harjoituksia tilisi käyttörajojen puitteissa.",
     "q_providers": "Mitä tekoälypalveluita FreeLingo tukee?",
     "a_providers_intro": "Määritä tiedostossa <code>.env</code> asetuksella <code>LLM_PROVIDER</code>:",
     "provider_ollama": "Paikallinen ja maksuton. Ollaman on oltava käynnissä palvelimella. Suositeltu malli: gemma4:e4b. Ilman GPU:ta toiminta voi olla hidasta.",
@@ -1313,11 +1624,25 @@
     "provider_anthropic": "Anthropic Claude. Vaatii ANTHROPIC_API_KEY-avaimen.",
     "provider_deepseek": "DeepSeek API. Vaatii DEEPSEEK_API_KEY-avaimen.",
     "q_invite": "Voinko kutsua muita?",
-    "a_invite": "Kyllä. <adminLink>Ylläpito → Käyttäjät</adminLink> -osiossa ylläpitäjä voi luoda käyttäjiä suoraan tai tehdä kertakäyttöisiä kutsulinkkejä, jotka vanhenevat 48 tunnissa. Julkinen rekisteröityminen on oletuksena pois käytöstä (<code>ALLOW_REGISTRATION=false</code>).",
+    "a_invite": "Kyllä. <adminLink>Ylläpito → Käyttäjät</adminLink> -osiossa ylläpitäjät voivat luoda käyttäjiä suoraan tai tehdä kertakäyttöisiä kutsulinkkejä, jotka vanhenevat 48 tunnissa. Julkinen rekisteröityminen riippuu palvelimen <code>ALLOW_REGISTRATION</code>-asetuksesta.",
     "q_password": "Miten vaihdan salasanani tai äidinkieleni?",
     "a_password": "Siirry <settingsLink>Asetuksiin</settingsLink>. Voit päivittää näyttönimesi, äidinkielesi ja salasanasi siellä.",
     "q_uiLanguage": "Miten vaihdan palvelun kielen?",
-    "a_uiLanguage": "Siirry <settingsLink>Asetuksiin</settingsLink> ja etsi Profiili-osiosta <strong>Käyttöliittymän kieli</strong>. Valitse kieli, niin koko käyttöliittymä vaihtuu heti.",
+    "a_uiLanguage": "Siirry <settingsLink>Asetuksiin</settingsLink> ja etsi profiilistasi <strong>Käyttöliittymän kieli</strong> -pudotusvalikko. Valitse haluamasi kieli ja paina <strong>Tallenna muutokset</strong>. Tallennuksen jälkeen sivu latautuu uudelleen valitulla kielellä. Tämä ei muuta opiskelemaasi kieltä.",
+    "q_multiLanguage": "Voinko opiskella useita kieliä menettämättä edistymistäni?",
+    "a_multiLanguage": "Kyllä. Lisää kieli kohdassa <languagesLink>Asetukset → Omat kielet</languagesLink> ja vaihda kielten välillä kielivalitsimella. Jokaisella kielellä säilyvät oma suunnitelma, edistyminen, muistikortit ja keskusteluhistoria. Kielen vaihtaminen ei poista tallennettua edistymistäsi. Tilin asetukset, tilaus, käyttökiintiöt ja Lingun muistot ovat yhteisiä kaikille kielille.",
+    "q_grammarPractice": "Miten harjoittelen tiettyä kielioppiaihetta?",
+    "a_grammarPractice": "Avaa aihe kohdassa <grammarLink>Materiaalit → Kielioppi</grammarLink> ja lisää se omaan kielioppiharjoittelukirjastoosi valitsemalla <strong>Harjoittele</strong>. Kun sinulla on aktiivinen suunnitelma, voit luoda viiden harjoituksen sarjoja: kolme monivalintakysymystä ja kaksi aukkotehtävää. Vastauksesi ja tuloksesi tallennetaan, jotta voit seurata harjoitteluasi. Tästä toiminnasta ei saa XP-pisteitä.",
+    "q_games": "Mitä pelejä on saatavilla ja mikä pelitila kannattaa valita?",
+    "a_games": "<gamesLink>Pelit</gamesLink>-osiossa voit etsiä ja korjata virheitä Virhe-etsivä-pelissä, järjestää osia Järjestä lause -pelissä tai yhdistää sanoja ja merkityksiä Sanaparit-pelissä. Valitse kertaus palataksesi suoritettuihin oppitunteihin, valmistautuminen vahvistaaksesi seuraavaan oppituntiin liittyvää tuttua sisältöä tai vapaa harjoittelu harjoitellaksesi suunnitelmasi tasolla. Pelitilat, joihin ei ole riittävästi lähdemateriaalia, eivät ole käytettävissä, ja syy kerrotaan.",
+    "q_plans": "Miten ilmainen paketti, Premium ja kokeilujakso eroavat toisistaan?",
+    "a_plans": "Ilmaisella paketilla voit opiskella käyttökiintiöiden puitteissa. Premium poistaa ilmaisen paketin kiintiöt, mutta tilin yleiset rajat ovat edelleen voimassa. Jos tiliisi kuuluu aluksi kokeilujakso ilman maksukorttia, voit sen päätyttyä jatkaa ilmaisella paketilla ilman automaattista veloitusta. Tilauksen yhteydessä mahdollisesti tarjottava kokeilujakso on erillinen ja voi vaatia maksukortin. Tarkista tilasi ja voimassa olevat tilausehdot kohdasta <billingLink>Asetukset → Paketti ja tilaus</billingLink>.",
+    "q_quotas": "Miksi käyttöraja tuli vastaan ja milloin kiintiö uusiutuu?",
+    "a_quotas": "Käyttökiintiöt kuuluvat tilillesi ja ovat yhteisiä kaikille opiskelukielillesi. Ilmaisen paketin päiväkiintiöt uusiutuvat klo 00:00 UTC ja viikkokiintiöt maanantaisin klo 00:00 UTC. Näet jäljellä olevan kiintiön kussakin toiminnossa ja tilisi yleiset rajat kohdassa <billingLink>Asetukset</billingLink>. Vain Premiumiin kuuluvat ominaisuudet eivät avaudu odottamalla kiintiön uusiutumista, ja tilin yleiset rajat koskevat myös Premiumia ja kokeilujaksoja.",
+    "q_cancelSubscription": "Miten peruutan tilaukseni uusiutumisen?",
+    "a_cancelSubscription": "Siirry kohtaan <billingLink>Asetukset → Paketti ja tilaus</billingLink>, valitse <strong>Hallitse tilausta</strong> ja viimeistele peruutus avautuvassa portaalissa. Jos peruutat uusiutumisen nykyisen kauden loppuun, käyttöoikeutesi säilyy kauden päättymiseen asti. Tilin poistaminen ei peruuta laskutusta: sinun on ensin peruutettava uusiutuminen.",
+    "q_memories": "Mitä Lingu muistaa minusta ja miten voin poistaa muistot?",
+    "a_memories": "Lingu voi tallentaa hyödyllisiä henkilökohtaisia tietoja teksti- ja äänikeskusteluista mukauttaakseen tulevia vastauksia. Nämä muistot ovat yhteisiä kaikille opiskelukielillesi. Kohdassa <memoriesLink>Asetukset → Muistot</memoriesLink> voit tarkastella niitä, lisätä omia sekä poistaa yksittäisiä muistoja tai ne kaikki.",
     "q_feedback": "Miten ehdotan uutta ominaisuutta tai ilmoitan virheestä?",
     "a_feedback": "Käytä sivupalkin <feedbackLink>Palaute</feedbackLink>-osiota. Voit ehdottaa uusia ominaisuuksia tai raportoida virheistä. Äänestä muiden ideoita, jätä kommentteja ja seuraa pyyntöjen tilaa. Kaikki ilmoitukset ovat julkisia ja ylläpitäjä tarkistaa ne."
   },
@@ -1361,14 +1686,14 @@
     "statusSpeaking": "Puhuu...",
     "statusThinking": "Valmistellaan vastausta...",
     "statusError": "Virhe",
-    "errorServicesDisabled": "Äänipalvelut eivät ole käytössä tällä palvelimella.",
+    "errorServicesDisabled": "Äänikeskustelut eivät ole käytettävissä. Ota yhteyttä tukeen, jos tarvitset apua.",
     "errorConnection": "Yhteysvirhe. Yritä uudelleen.",
     "errorTranscription": "Puhettasi ei voitu muuntaa tekstiksi. Yritä puhua uudelleen.",
     "errorResponse": "Lingu ei voinut vastata. Yritä uudelleen.",
     "errorSpeech": "Lingun vastausta ei voitu muuntaa puheeksi. Yritä uudelleen.",
     "errorUnauthorized": "Istunto on vanhentunut. Päivitä sivu.",
-    "errorMic": "Mikrofonin käyttö estetty.",
-    "errorVadInit": "Puheentunnistusta ei voitu käynnistää. Varmista, että selaimesi tukee WebAssemblyä.",
+    "errorMic": "Emme voi käyttää mikrofonia. Tarkista selaimen käyttöoikeudet ja yritä uudelleen.",
+    "errorVadInit": "Emme voineet aloittaa äänikeskustelua. Lataa sivu uudelleen tai kokeile ajan tasalla olevaa selainta.",
     "warningTimeout": "Keskustelu päättyy {seconds} sekunnin kuluttua",
     "sessionEnded": "Keskustelu päättynyt",
     "tapToStart": "Puhu, kun olet valmis",
@@ -1379,14 +1704,14 @@
     "quotaUnlimited": "Rajaton",
     "quotaExceededSessions": "Olet käyttänyt kaikki tämän viikon keskustelusi.",
     "quotaExceededTime": "Olet käyttänyt kaiken päivittäisen harjoitusaikasi.",
-    "quotaExceededTokens": "Olet käyttänyt kaikki tämän kuun AI-tokenisi.",
+    "quotaExceededTokens": "Olet saavuttanut tekoälyn käytön kuukausirajasi. Voit jatkaa, kun raja nollautuu.",
     "freemiumVoiceRemaining": "Ilmainen ääni: {remaining}/{limit} min tällä viikolla",
     "quotaTokens": "Tokenit tässä kuussa",
     "memoryUpdated": "Muisto päivitetty",
     "trialBanner": "Ilmainen tasoarviokeskustelu · {minutes} min",
     "trialCtaLabel": "Jatka puhumista",
     "trialCtaTitle": "Jatka harjoittelua Lingun kanssa",
-    "trialCtaDesc": "Avaa täydet äänikeskustelut, opettajachatti sekä kuuntelu- ja lukuharjoitukset Premiumilla.",
+    "trialCtaDesc": "Harjoittele enemmän äänikeskusteluilla, opettajachatilla sekä kuuntelu- ja lukuharjoituksilla Premiumin avulla.",
     "startersHint": "Tai aloita aiheesta",
     "starters": [
       "Taide ja luovuus",
@@ -1430,6 +1755,8 @@
     "ariaStop": "Lopeta nauhoitus"
   },
   "audioPlayer": {
+    "ariaPause": "Keskeytä ääni",
+    "ariaSeek": "Äänen toistokohta",
     "listen": "Kuuntele",
     "stop": "Pysäytä",
     "ariaListen": "Kuuntele ääntämistä",
@@ -1474,13 +1801,39 @@
     "supportedLanguages": "Saatavilla olevat kielet"
   },
   "targetLanguages": {
+    "ro-RO": "Romania (Romania)",
+    "ro": "Romania",
+    "ro-RO-description": "Romaniassa puhuttu romanian kieli.",
+    "fi-FI": "Suomi",
+    "fi": "Suomi",
+    "fi-FI-description": "Suomessa puhuttu suomi.",
+    "hr-HR": "Kroatia",
+    "hr": "Kroatia",
+    "hr-HR-description": "Kroatiassa puhuttu kroatia.",
+    "cs-CZ": "Tšekki",
+    "cs": "Tšekki",
+    "cs-CZ-description": "Tšekissä puhuttu tšekki.",
+    "da-DK": "Tanska",
+    "da": "Tanska",
+    "da-DK-description": "Tanskassa puhuttu tanska.",
+    "sv-SE": "Ruotsi",
+    "sv": "Ruotsi",
+    "sv-SE-description": "Ruotsissa puhuttu ruotsi.",
+    "ru-RU": "Venäjä",
+    "ru": "Venäjä",
+    "ru-RU-description": "Venäjällä puhuttu venäjä, joka kirjoitetaan kyrillisillä aakkosilla.",
+    "nl-NL": "Hollanti (Alankomaat)",
+    "nl": "Hollanti",
+    "nl-NL-description": "Alankomaissa puhuttu hollanti.",
     "en-US": "Amerikanenglanti",
     "en-GB": "Brittienglanti",
     "es-ES": "Espanja",
     "it-IT": "Italia",
-    "pt-PT": "Portugali",
+    "pt-BR": "Portugali (Brasilia)",
+    "pt-PT": "Portugali (Portugali)",
     "fr-FR": "Ranska",
     "de-DE": "Saksa",
+    "pl-PL": "Puola",
     "ja-JP": "Japani",
     "ko-KR": "Korea",
     "zh-CN": "Kiina (Manner-Kiina)",
@@ -1490,16 +1843,19 @@
     "pt": "Portugali",
     "fr": "Ranska",
     "de": "Saksa",
+    "pl": "Puola",
     "ja": "Japani",
     "ko": "Korea",
     "zh": "Kiina",
     "es-ES-description": "Espanjassa puhuttu espanja.",
     "it-IT-description": "Italiassa puhuttu italia.",
+    "pt-BR-description": "Brasiliassa puhuttu portugali.",
     "pt-PT-description": "Portugalissa puhuttu portugali.",
     "en-US-description": "Yhdysvalloissa puhuttu englanti.",
     "en-GB-description": "Yhdistyneessä kuningaskunnassa puhuttu englanti.",
     "fr-FR-description": "Ranskassa puhuttu ranska.",
     "de-DE-description": "Saksassa puhuttu saksa.",
+    "pl-PL-description": "Puolaa sellaisena kuin sitä puhutaan Puolassa.",
     "ja-JP-description": "Japanissa puhuttu japani.",
     "ko-KR-description": "Etelä-Koreassa puhuttu korea.",
     "zh-CN-description": "Manner-Kiinassa puhuttu mandariinikiina, jossa käytetään yksinkertaistettuja merkkejä."
@@ -1527,18 +1883,18 @@
     "trialHeadlineTrialUsed": "Premium",
     "trialTitle": "Aloita {days} päivän ilmaisella kokeilulla",
     "trialTitleTrialUsed": "Ota FreeLingo Premium käyttöön",
-    "trialDesc": "Saat Lingun, puhe-, kuuntelu- ja lukuharjoitukset kokonaan käyttöösi ennen ensimmäistä maksua.",
-    "trialDescTrialUsed": "Valitse tilaus avataksesi Lingun sekä puhe-, kuuntelu- ja lukuharjoitukset.",
+    "trialDesc": "Kokeile Premium-käyttöoikeutta harjoitteluun Lingun kanssa sekä puhe-, kuuntelu- ja lukuharjoituksiin ennen ensimmäistä maksua.",
+    "trialDescTrialUsed": "Valitse tilaus ja harjoittele enemmän Lingun kanssa sekä puhe-, kuuntelu- ja lukuharjoituksilla.",
     "trialCtaMonthly": "Kokeile ilmaiseksi, sitten €{price}/kk",
     "trialCtaMonthlyTrialUsed": "Joustava kuukausitilaus · €{price}/kk",
     "trialCtaYearly": "Kokeile ilmaiseksi, sitten €{price}/vuosi · 2 kuukautta ilmaiseksi",
     "trialCtaYearlyTrialUsed": "Paras vastine · €{price}/vuosi · 2 kuukautta ilmaiseksi",
     "trialSkip": "Jatka ilmaisilla ominaisuuksilla",
-    "trialNoCharge": "Ei veloitusta tänään. Maksukortti vaaditaan. Peruuta milloin tahansa.",
-    "trialNoChargeTrialUsed": "Tarkista summa ennen tilaamista. Peruuta milloin tahansa.",
+    "trialNoCharge": "Tilaaminen aloittaa erillisen {days} päivän kokeilun; aloituskokeilun jäljellä olevia päiviä ei lisätä siihen. Maksukortti vaaditaan; ensimmäinen veloitus tehdään kokeilun lopussa, ellet peru tilausta sitä ennen.",
+    "trialNoChargeTrialUsed": "Maksullinen tilaus alkaa tilaushetkellä. Tarkista summa ennen tilaamista. Peruuta milloin tahansa.",
     "trialError": "Maksua ei voitu aloittaa. Yritä uudelleen.",
     "freemiumTrialTitle": "Ilmainen kokeilusi on alkanut",
-    "freemiumTrialDesc": "Käytä kaikkia ominaisuuksia rajattomasti seitsemän päivää. Maksukorttia ei tarvita. Voit päivittää Premiumiin milloin tahansa koontinäytöstä.",
+    "freemiumTrialDesc": "Saat kokeilun ajaksi Premium-käyttöoikeuden ilman maksukorttia. Tilisi yleiset rajoitukset ovat edelleen voimassa. Voit tilata Premiumin milloin tahansa koontinäytöstä.",
     "freemiumChatLabel": "Chat Lingun kanssa",
     "freemiumVoiceLabel": "Äänikeskustelut",
     "freemiumListeningLabel": "Kuunteluharjoitukset",
@@ -1592,14 +1948,18 @@
     }
   },
   "billing": {
+    "paywallSituationsTitle": "Jatka tosielämän tilanteiden harjoittelua",
+    "paywallSituationsDesc": "Olet käyttänyt tämän viikon ilmaiset tilanneharjoitukset tai toiminto edellyttää Premiumia. Premiumilla voit harjoitella enemmän; puhekäytön yleiset rajat ovat edelleen voimassa.",
+    "paywallGrammarPracticeTitle": "Jatka kielioppiharjoittelua",
+    "paywallGrammarPracticeDesc": "Olet käyttänyt tämän päivän maksuttomat sarjat. Premiumilla voit luoda lisää; tallennetut harjoituskerrat pysyvät käytettävissä.",
     "planFreeTrialDesc": "Kokeile Premiumia rekisteröityessä ilman korttia tai tilausta. Jatka sitten maksutta käyttörajojen puitteissa.",
     "paywallGamesTitle": "Jatka harjoittelua peleillä",
     "paywallGamesDesc": "Ilmainen pelikiintiösi on käytetty tai pelit vaativat Premiumin. Voit jatkaa olemassa olevia pelejä.",
     "paywallLabel": "Premium vaaditaan",
     "paywallTitle": "Avaa FreeLingo Premium",
-    "paywallDesc": "Aloita {days} päivän ilmainen kokeilu ja avaa kaikki Premium-harjoitukset ennen ensimmäistä maksua.",
-    "paywallDescTrialUsed": "Avaa kaikki Premium-harjoitukset ja tarkista summa ennen vahvistamista.",
-    "paywallChatTitle": "Harjoittele Lingun kanssa rajattomasti",
+    "paywallDesc": "Aloita {days} päivän ilmainen kokeilu ja harjoittele enemmän Premiumilla ennen ensimmäistä maksua.",
+    "paywallDescTrialUsed": "Harjoittele enemmän Premiumilla ja tarkista summa ennen vahvistamista.",
+    "paywallChatTitle": "Lisää harjoittelua Lingun kanssa",
     "paywallChatDesc": "Esitä kysymyksiä, saa korjauksia ja keskustele Lingun kanssa kirjoittamalla.",
     "paywallLessonsTitle": "Suorita rajattomasti oppitunteja",
     "paywallLessonsDesc": "Kielioppia, sanastoa, lukemista ja kirjoittamista – suorita niin monta oppituntia päivässä kuin haluat.",
@@ -1626,7 +1986,7 @@
     "month": "kuukausi",
     "year": "vuosi",
     "planFeature": {
-      "feature1": "Rajaton käyttö – ei päivä- tai viikkorajoituksia",
+      "feature1": "Ilman ilmaisen suunnitelman kiintiöitä; tilin yleiset rajoitukset ovat edelleen voimassa",
       "feature2": "2 kuukautta ilmaiseksi"
     },
     "planFreeName": "Ilmainen",
@@ -1635,6 +1995,7 @@
     "ctaRegister": "Aloita ilmainen kokeilu",
     "ctaRegisterTrialUsed": "Valitse tilaus",
     "freeFeature": {
+      "situations": "Suulliset tilanneharjoitukset",
       "f1": "Tasotesti ja tasoarvio",
       "f2": "Henkilökohtainen opintosuunnitelma",
       "lessons": "Oppituntien suorittaminen",
@@ -1648,9 +2009,9 @@
       "l4": "Lukuharjoitukset",
       "l5": "7 päivän täyden käyttöoikeuden kokeilu"
     },
-    "successLabel": "Maksu vahvistettu",
+    "successLabel": "Tilaus vahvistettu",
     "successTitle": "Tervetuloa FreeLingo Premiumiin!",
-    "successDesc": "Tilauksesi on nyt aktiivinen. Käytä kaikkia ominaisuuksia rajattomasti.",
+    "successDesc": "Tilauksesi on nyt aktiivinen. Käytä Premiumia tilisi yleisten rajoitusten puitteissa.",
     "successCheckingLabel": "Vahvistetaan tilausta",
     "successCheckingTitle": "Tarkistetaan tilaustasi",
     "successCheckingDesc": "Tämä kestää yleensä vain muutaman sekunnin.",
@@ -1662,12 +2023,12 @@
     "successErrorDesc": "Siirry koontinäyttöön ja päivitä sivu hetken kuluttua tai tarkista laskutusasetuksesi.",
     "successRedirect": "Siirryt koontinäyttöön {seconds} sekunnin kuluttua...",
     "successCta": "Siirry koontinäyttöön",
-    "canceledLabel": "Maksu peruutettu",
-    "canceledTitle": "Maksua ei veloitettu",
-    "canceledDesc": "Maksua ei veloitettu. Edistymisesi säilyy ja voit valita tilauksen myöhemmin Asetuksissa.",
+    "canceledLabel": "Tilausprosessi keskeytyi",
+    "canceledTitle": "Poistuit tilausprosessista",
+    "canceledDesc": "Edistymisesi on tallennettu. Voit tarkistaa tilauksesi tai valita tilauksen Asetuksissa.",
     "canceledCtaDashboard": "Siirry koontinäyttöön",
     "canceledCtaSettings": "Näytä tilaukset",
-    "canceledNoCharge": "Maksua ei veloitettu · Valitse tilaus milloin tahansa",
+    "canceledNoCharge": "Tarkista tilauksesi Asetuksissa",
     "section": "Tilaus",
     "status": "Tila",
     "statusActive": "Aktiivinen",
@@ -1687,7 +2048,7 @@
     "pastDueTitle": "Maksu odottaa",
     "pastDueDesc": "Päivitä maksutapasi palauttaaksesi Premium-käyttöoikeutesi.",
     "subscribe": "Tilaa",
-    "portalError": "Laskutusportaalia ei voitu avata. Yritä uudelleen.",
+    "portalError": "Emme voineet avata tilauksesi hallintaa. Yritä uudelleen.",
     "openSourceTitle": "Avoin lähdekoodi",
     "openSourceDesc": "Ylläpidä itse omalla palvelimellasi maksutta",
     "openSourceCta": "Näytä GitHubissa",
@@ -1699,7 +2060,47 @@
     "planFreeCta": "Aloita",
     "limitedLabel": "Rajoitettu"
   },
+  "premiumOffer": {
+    "navLabel": "Premium",
+    "viewPremium": "Tutustu Premiumiin",
+    "planSection": "Paketti ja tilaus",
+    "viewPlans": "Katso paketit",
+    "stayFree": "Jatka ilmaisella paketilla",
+    "expiredTitle": "Premium-kokeilusi on päättynyt",
+    "expiredDescription": "Edistymisesi on tallennettu. Voit jatkaa oppimista ilmaiseksi käyttörajojen puitteissa tai valita Premiumin ja harjoitella enemmän Lingun, oppituntien, pelien sekä luku- ja kuuntelutehtävien avulla. Tilisi yleiset rajoitukset ovat edelleen voimassa.",
+    "resultTitle": "Jatka oppimasi pohjalta",
+    "exhaustedTitle": "Jatka harjoittelua Premiumilla",
+    "continuePremium": "Jatka Premiumilla",
+    "dailyReset": "Ilmainen käyttökiintiösi uusiutuu joka päivä klo 00.00 UTC.",
+    "weeklyReset": "Ilmainen käyttökiintiösi uusiutuu maanantaisin klo 00.00 UTC.",
+    "trialResultNote": "Ilmainen kokeilusi on yhä voimassa. Tutustu paketteihin kokeilun päättymistä varten.",
+    "result": {
+      "situations": "Jatka tosielämän tilanteiden suullista harjoittelua Lingun kanssa Premiumilla.",
+      "voice": "Jatka tämän keskustelun pohjalta: harjoittele puhumista lisää ja saa palautetta Lingulta Premiumilla.",
+      "lessons": "Jatka oppituntien suorittamista ja sovella oppimaasi käytännössä Lingun kanssa Premiumilla.",
+      "listening": "Jatka kuullun ymmärtämisen harjoittelua tasollesi sopivilla lisätehtävillä Premiumilla.",
+      "reading": "Jatka luetun ymmärtämisen kehittämistä tasollesi sopivilla lisätehtävillä Premiumilla.",
+      "games": "Jatka harjoittelua useammilla oppimispeleillä Premiumilla.",
+      "flashcards": "Käytä kertaamiasi sanoja keskusteluissa Lingun kanssa. Premiumilla voit harjoitella enemmän sekä kirjoittamalla että puhumalla."
+    },
+    "benefitsTitle": "Mitä Premium sisältää",
+    "benefitsDescription": "Jatka harjoittelua ilman ilmaisen paketin kiintiöitä.",
+    "benefitsVoice": "Puhekeskustelut Lingun kanssa",
+    "benefitsChat": "Kirjallinen chatti korjauksineen ja selityksineen",
+    "benefitsComprehension": "Luetun ja kuullun ymmärtämisen harjoittelu",
+    "benefitsLessonsGames": "Oppituntien suorittaminen ja oppimispelit",
+    "benefitsLanguages": "Kaikki saatavilla olevat opiskeltavat kielet yhdellä tilauksella",
+    "generalLimits": "Yleiset käyttö- ja keskustelurajoitukset ovat edelleen voimassa.",
+    "noCardTrialStatus": "Premium-kokeilu · ilman korttia",
+    "noCardTrialDescription": "Premium-kokeilusi jatkuu {date} asti ilman korttia tai automaattista veloitusta. Sen jälkeen ilmaisen paketin rajoitukset tulevat voimaan, ellet tee tilausta.",
+    "monthlyCommitment": "Maksa kuukausittain ja sitoudu aluksi pienempään maksuun.",
+    "yearlyCommitment": "Yksi maksu koko vuodeksi.",
+    "cardTrialTerms": "Kun teet tilauksen, alkaa erillinen {days} päivän kokeilu. Sitä ei lisätä nykyisen kokeilusi jäljellä oleviin päiviin. Kortti vaaditaan. Sen jälkeen veloitetaan valitun paketin hinta, ellet peru tilausta ennen tilaukseen liittyvän kokeilun päättymistä.",
+    "paidTerms": "Kortti vaaditaan. Maksullinen tilauksesi alkaa ostohetkellä. Se uusiutuu valitsemasi laskutusvälin mukaisesti, ellet peru tilausta."
+  },
   "freemium": {
+    "situationsLabel": "Tilanteet tällä viikolla",
+    "grammarPracticeLabel": "Kielioppisarjat tänään",
     "gamesLabel": "Pelit tänään",
     "chatLabel": "Chatti",
     "lessonsLabel": "Oppitunnit",
@@ -1708,7 +2109,7 @@
     "voiceLabel": "Ääni (min)",
     "freeLimit": "Hanki Premium",
     "trialDaysLeft": "{days, plural, one {# päivä ilmaista kokeilua jäljellä} other {# päivää ilmaista kokeilua jäljellä}}",
-    "trialUnlimited": "Rajaton käyttö",
+    "trialUnlimited": "Premium-käyttöoikeus",
     "requiresSubscription": "Vain Premium"
   },
   "lessonPractice": {
@@ -1760,13 +2161,29 @@
   },
   "whatsNew": {
     "title": "Uutta",
-    "version": "v1.10.50",
+    "version": "v1.14.10",
     "cta": "Selvä",
     "entry1": {
-      "label": "Sujuvammat puhekeskustelut",
-      "desc": "Olemme parantaneet keskusteluja Lingun kanssa: puhe toistuu sujuvammin ja puheenvuorot ilmaistaan selkeämmin."
+      "label": "Harjoittele arjen keskusteluja",
+      "desc": "Valmistaudu tosielämän tilanteisiin 50 skenaariolla, jotka käsittelevät arkea, matkailua, ostoksia, sosiaalista elämää ja työtä. Harjoittele puhumista Lingun kanssa. Lingu esittää keskustelukumppaniasi ja mukauttaa keskustelun tasollesi."
     },
     "entry2": {
+      "label": "Suunnitelmasi, askel askeleelta",
+      "desc": "Oma suunnitelma näyttää oppimisesi nyt polkuna: seuraa edistymistäsi, löydä nykyinen opintokokonaisuutesi ja tutustu seuraaviin vaiheisiin. Avaa kukin kokonaisuus nähdäksesi sen oppitunnit, jatkaaksesi oppimista tai kerrataksesi jo suorittamasi asiat."
+    },
+    "entry3": {
+      "label": "Harjoittele kielioppia omaan tahtiisi",
+      "desc": "Lisää aiheita kielioppimateriaaleista omaan kirjastoosi ja harjoittele viiden tehtävän sarjoilla, joihin saat korjaukset ja selitykset. Tarkastele tuloksiasi ja jatka lopuksi suullista harjoittelua Lingun kanssa aiheen ja vastaustesi pohjalta."
+    },
+    "entry4": {
+      "label": "Uudet kielet: kroatia, tšekki, tanska, suomi ja romania",
+      "desc": "Kroatia, tšekki, tanska, suomi ja romania ovat nyt saatavilla opiskeltavina kielinä, ja sisältöä on tasoilta A1–C2. Valitse ne aloittaessasi tai lisää ne kohdasta Asetukset → Omat kielet."
+    },
+    "entry5": {
+      "label": "Lingu auttaa, kun tarvitset apua",
+      "desc": "Jos et ymmärrä jotakin puhekeskustelun aikana, pyydä Lingulta apua. Lingu voi selittää asian lyhyesti äidinkielelläsi ja palata sitten harjoittelemaan opiskelemaasi kieltä."
+    },
+    "entry6": {
       "label": "Sujuvampi käyttökokemus",
       "desc": "Korjasimme myös pieniä virheitä ja hioimme yksityiskohtia, jotta FreeLingolla oppiminen olisi joka päivä entistä mukavampaa."
     }

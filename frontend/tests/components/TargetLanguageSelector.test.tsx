@@ -61,7 +61,7 @@ describe('TargetLanguageSelector', () => {
     )
 
     const buttons = screen.getAllByRole('button')
-    expect(buttons).toHaveLength(10)
+    expect(buttons).toHaveLength(20)
   })
 
   it('renders nothing when availableCodes is empty', () => {
@@ -95,6 +95,102 @@ describe('TargetLanguageSelector', () => {
     expect(buttons.map((button) => button.textContent).join(' ')).toContain(
       'ko-KR'
     )
+  })
+
+  it('renders the Polish catalog entry when availableCodes includes it', () => {
+    render(
+      <TargetLanguageSelector
+        value="en-GB"
+        onChange={() => {}}
+        availableCodes={['pl-PL']}
+      />
+    )
+
+    const buttons = screen.getAllByRole('button')
+    expect(buttons).toHaveLength(1)
+    expect(buttons[0].textContent).toContain('pl-PL')
+    expect(screen.getByRole('img').getAttribute('src')).toBe(
+      '/flags/poland.jpg'
+    )
+  })
+
+  it('selects Brazil independently and excludes it when disabled', () => {
+    const onChange = vi.fn()
+    const { rerender } = render(
+      <TargetLanguageSelector
+        value="pt-PT"
+        onChange={onChange}
+        availableCodes={['pt-BR', 'pt-PT']}
+      />
+    )
+    expect(screen.getAllByRole('img').map((img) => img.getAttribute('src'))).toEqual([
+      '/flags/brazil.jpg',
+      '/flags/portugal.jpg',
+    ])
+    fireEvent.click(screen.getByRole('button', { name: /pt-BR/ }))
+    expect(onChange).toHaveBeenCalledWith('pt-BR')
+    rerender(
+      <TargetLanguageSelector
+        value="pt-PT"
+        onChange={onChange}
+        availableCodes={['pt-PT']}
+      />
+    )
+    expect(screen.queryByRole('button', { name: /pt-BR/ })).toBeNull()
+    expect(screen.getAllByRole('button')).toHaveLength(1)
+  })
+
+  it('selects Dutch only when enabled by the backend', () => {
+    const onChange = vi.fn()
+    const { rerender } = render(
+      <TargetLanguageSelector
+        value="en-GB"
+        onChange={onChange}
+        availableCodes={['en-GB', 'nl-NL']}
+      />
+    )
+    fireEvent.click(screen.getByRole('button', { name: /nl-NL/ }))
+    expect(onChange).toHaveBeenCalledWith('nl-NL')
+    rerender(
+      <TargetLanguageSelector
+        value="en-GB"
+        onChange={onChange}
+        availableCodes={['en-GB']}
+      />
+    )
+    expect(screen.queryByRole('button', { name: /nl-NL/ })).toBeNull()
+  })
+
+  it.each([
+    ['ru-RU', '/flags/russia.jpg'],
+    ['sv-SE', '/flags/sweden.jpg'],
+    ['da-DK', '/flags/denmark.jpg'],
+    ['cs-CZ', '/flags/czech_republic.jpg'],
+    ['hr-HR', '/flags/croatia.jpg'],
+    ['fi-FI', '/flags/finland.jpg'],
+    ['ro-RO', '/flags/romania.jpg'],
+  ])('selects %s with its flag only while enabled by the backend', (code, flag) => {
+    const onChange = vi.fn()
+    const { rerender } = render(
+      <TargetLanguageSelector
+        value="en-GB"
+        onChange={onChange}
+        availableCodes={['en-GB', code, 'xx-XX']}
+      />
+    )
+    expect(screen.getAllByRole('button')).toHaveLength(2)
+    expect(screen.getByAltText(code)).toHaveAttribute('src', flag)
+    fireEvent.click(screen.getByRole('button', { name: new RegExp(code) }))
+    expect(onChange).toHaveBeenCalledWith(code)
+    rerender(
+      <TargetLanguageSelector
+        value="en-GB"
+        onChange={onChange}
+        availableCodes={['en-GB']}
+      />
+    )
+    expect(screen.queryByRole('button', { name: new RegExp(code) })).toBeNull()
+    expect(screen.getAllByRole('button')).toHaveLength(1)
   })
 
   it('shows active state for the selected language', () => {
@@ -177,6 +273,13 @@ describe('TargetLanguageSelector', () => {
     expect(srcs).toContain('/flags/portugal.jpg')
     expect(srcs).toContain('/flags/france.jpg')
     expect(srcs).toContain('/flags/germany.jpg')
+    expect(srcs).toContain('/flags/netherlands.jpg')
+    expect(srcs).toContain('/flags/russia.jpg')
+    expect(srcs).toContain('/flags/denmark.jpg')
+    expect(srcs).toContain('/flags/czech_republic.jpg')
+    expect(srcs).toContain('/flags/croatia.jpg')
+    expect(srcs).toContain('/flags/finland.jpg')
+    expect(srcs).toContain('/flags/romania.jpg')
     expect(srcs).toContain('/flags/japan.jpg')
     expect(srcs).toContain('/flags/south_korea.jpg')
     expect(srcs).toContain('/flags/china.jpg')

@@ -30,19 +30,101 @@ _LESSON_TYPES: tuple[str, ...] = get_args(LessonType)
 _LANG_MODULES: dict[str, str] = {
     "en-GB": "app.data.en_GB.curriculum",
     "en-US": "app.data.en_US.curriculum",
+    "cs": "app.data.cs.curriculum",
+    "da": "app.data.da.curriculum",
     "de": "app.data.de.curriculum",
     "es": "app.data.es.curriculum",
+    "fi": "app.data.fi.curriculum",
     "fr": "app.data.fr.curriculum",
+    "hr": "app.data.hr.curriculum",
     "it": "app.data.it.curriculum",
+    "pl": "app.data.pl.curriculum",
+    "nl": "app.data.nl.curriculum",
+    "ro": "app.data.ro.curriculum",
+    "ru": "app.data.ru.curriculum",
+    "sv": "app.data.sv.curriculum",
     "ja": "app.data.ja.curriculum",
     "ko": "app.data.ko.curriculum",
     "pt": "app.data.pt.curriculum",
+    "pt-BR": "app.data.pt_BR.curriculum",
     "zh": "app.data.zh.curriculum",
 }
 
 _CACHE: dict[str, object] = {}
 
 _I18N = {
+    "ro-RO": {
+        "lesson_title": "{title} – Lecția {n}",
+        "test_unit_title": "Test final de nivel {level}",
+        "test_title": "Test final de nivel {level}",
+        "test_objectives": [
+            "Recapitulează gramatica și vocabularul acestui nivel",
+            "Susține testul final și evaluează următorul pas în învățare",
+        ],
+    },
+    "fi-FI": {
+        "lesson_title": "{title} – Oppitunti {n}",
+        "test_unit_title": "Tason {level} lopputesti",
+        "test_title": "Tason {level} lopputesti",
+        "test_objectives": [
+            "Kertaa tason kielioppi ja sanasto",
+            "Tee lopputesti ja arvioi seuraava askel opinnoissasi",
+        ],
+    },
+    "hr-HR": {
+        "lesson_title": "{title} – Lekcija {n}",
+        "test_unit_title": "Završni test razine {level}",
+        "test_title": "Završni test razine {level}",
+        "test_objectives": [
+            "Ponoviti gramatiku i vokabular ove razine",
+            "Riješiti završni test i procijeniti sljedeći korak u učenju",
+        ],
+    },
+    "cs-CZ": {
+        "lesson_title": "{title} – Lekce {n}",
+        "test_unit_title": "Závěrečný test úrovně {level}",
+        "test_title": "Závěrečný test úrovně {level}",
+        "test_objectives": [
+            "Zopakovat gramatiku a slovní zásobu této úrovně",
+            "Absolvovat závěrečný test a posoudit další krok ve studiu",
+        ],
+    },
+    "da-DK": {
+        "lesson_title": "{title} – Lektion {n}",
+        "test_unit_title": "Afsluttende prøve på niveau {level}",
+        "test_title": "Afsluttende prøve på niveau {level}",
+        "test_objectives": [
+            "Repetér niveauets grammatik og ordforråd",
+            "Tag niveauprøven for at vurdere dit næste skridt i læringen",
+        ],
+    },
+    "sv-SE": {
+        "lesson_title": "{title} – Lektion {n}",
+        "test_unit_title": "Avslutande prov för nivå {level}",
+        "test_title": "Avslutande prov för nivå {level}",
+        "test_objectives": [
+            "Repetera nivåns grammatik och ordförråd",
+            "Gör nivåprovet för att bedöma nästa steg i ditt lärande",
+        ],
+    },
+    "ru-RU": {
+        "lesson_title": "{title} — Урок {n}",
+        "test_unit_title": "Итоговый тест уровня {level}",
+        "test_title": "Итоговый тест уровня {level}",
+        "test_objectives": [
+            "Повторить грамматику и лексику этого уровня",
+            "Пройти итоговый тест для перехода на следующий уровень",
+        ],
+    },
+    "nl-NL": {
+        "lesson_title": "{title} - Les {n}",
+        "test_unit_title": "Eindtoets niveau {level}",
+        "test_title": "Eindtoets niveau {level}",
+        "test_objectives": [
+            "Herhaal de grammatica en woordenschat van dit niveau",
+            "Maak de eindtoets om je volgende leerstap te bepalen",
+        ],
+    },
     "en-GB": {
         "lesson_title": "{title} - Lesson {n}",
         "test_unit_title": "Level {level} Completion Test",
@@ -77,6 +159,24 @@ _I18N = {
         "test_objectives": [
             "Ripassare tutti gli argomenti di grammatica di questo livello",
             "Completare la valutazione per sbloccare il livello successivo",
+        ],
+    },
+    "pl-PL": {
+        "lesson_title": "{title} - Lekcja {n}",
+        "test_unit_title": "Test poziomu {level}",
+        "test_title": "Test poziomu {level}",
+        "test_objectives": [
+            "Powtórz wszystkie zagadnienia gramatyczne z tego poziomu",
+            "Ukończ test, aby odblokować kolejny poziom",
+        ],
+    },
+    "pt-BR": {
+        "lesson_title": "{title} - Lição {n}",
+        "test_unit_title": "Avaliação de nível {level}",
+        "test_title": "Avaliação de nível {level}",
+        "test_objectives": [
+            "Revisar todos os tópicos de gramática deste nível",
+            "Concluir a avaliação para desbloquear o próximo nível",
         ],
     },
     "pt-PT": {
