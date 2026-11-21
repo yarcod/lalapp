@@ -1,5 +1,6 @@
 import asyncio
 
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
 import app.home.models  # noqa: F401  — registers the home tables in Base.metadata
@@ -10,6 +11,7 @@ from app.core.database import Base
 
 target_metadata = Base.metadata
 VERSION_TABLE = "alembic_version_home"
+MIGRATION_LOCK = 0x46_4C_48_4D  # "FLHM": one home migration run at a time across workers
 
 
 def include_object(object, name, type_, reflected, compare_to):  # noqa: ANN001, A002
@@ -41,6 +43,10 @@ def do_run_migrations(connection):
         include_object=include_object,
     )
     with context.begin_transaction():
+        if connection.dialect.name == "postgresql":
+            # Every uvicorn worker runs the home migrations at startup; serialise them so a
+            # fresh database does not see two workers create the version table at once.
+            connection.execute(text("SELECT pg_advisory_xact_lock(:key)"), {"key": MIGRATION_LOCK})
         context.run_migrations()
 
 
