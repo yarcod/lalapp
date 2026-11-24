@@ -20,7 +20,12 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.home.game_prompts import detective_prompt, sentence_order_prompt, vocabulary_pairs_prompt
+from app.home.game_prompts import (
+    detective_prompt,
+    detective_review_spec,
+    sentence_order_prompt,
+    vocabulary_pairs_prompt,
+)
 from app.home.game_schemas import (
     DetectiveDraft,
     DetectiveDraftContent,
@@ -248,8 +253,11 @@ async def generate_content(
         session.context,
     )
     prompt = prompt_builder(*prompt_args)
-    # The reviewer sees the kept five, so its specification must ask for five.
-    review_spec = prompt_builder(*prompt_args, count="five")
+    # The reviewer audits the five kept items in their final format.
+    if prompt_builder is detective_prompt:
+        review_spec = detective_review_spec(*prompt_args)
+    else:
+        review_spec = prompt_builder(*prompt_args, count="five")
     permitted = {s["source_id"] for s in session.context["sources"]}
     recent = session.context.get("recent_sentences", [])
     rejection = ""

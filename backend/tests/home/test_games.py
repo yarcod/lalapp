@@ -204,3 +204,18 @@ async def test_review_specification_asks_for_the_kept_five(monkeypatch, game_typ
     assert "exactly eight" in draft_prompt
     assert "exactly eight" not in review_prompt
     assert "exactly five" in review_prompt.split("SPECIFICATION:")[1]
+
+
+async def test_detective_review_specification_describes_the_built_format(monkeypatch):
+    # Drafts use wrong_part/correct_part; the app builds fragments and indices from them, so the
+    # reviewer must audit against the built format or it rejects every candidate's structure.
+    mock = AsyncMock(side_effect=[draft_content(), DetectiveReview(valid=True, reason="ok")])
+    monkeypatch.setattr(games.llm_adapter, "structured_output", mock)
+    with use_learner(HomeLearner(is_child=True)):
+        await games.generate_content(generation_request(), 1e12)
+    spec = mock.call_args_list[1].args[0][0]["content"].split("SPECIFICATION:")[1]
+    spec = spec.split("CANDIDATE:")[0]
+    assert '"error_index"' in spec
+    assert "wrong_part" not in spec
+    assert "do not return fragments or indices" not in spec
+    assert child_instruction() in spec
