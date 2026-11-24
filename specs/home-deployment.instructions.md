@@ -12,7 +12,8 @@ fork. Where this spec and an upstream spec disagree about a home feature, this s
 ## Layout
 
 - `backend/app/home/`: home backend code (context, profile, prompts, chat, conversation, provisional
-  turns, spoken lines, games, game stock, speech session, settings, models, installer).
+  turns, spoken lines, games, game stock, speech session, settings, models, installer, local LLM
+  message order).
 - `backend/app/home/SEAMS.md`: the list of upstream files the fork modifies, read by the sync report.
 - `backend/alembic_home/` and `backend/alembic_home.ini`: the home migration history.
 - `backend/tests/home/`: home tests, including `test_upstream_seams.py`.
@@ -315,8 +316,11 @@ Backend:
   upstream never imports home code.
 - `backend/app/services/games.py`: `create_game` delegates to `start_from_stock` in stock mode and may
   return no session.
-- `backend/app/services/llm_adapter.py`: reasoning effort, `max_tokens`, 503 as unavailable and the
-  merged prefilled assistant turn. These run inside the tool-stream fallbacks and continuations, so no
+- `backend/app/services/llm_adapter.py`: reasoning effort, `max_tokens`, 503 as unavailable, the
+  merged prefilled assistant turn, and `local_chat_messages` (`app/home/llm_messages.py`) on the
+  Ollama path: the local chat template rejects a system message that is not first and a request
+  without a user message, so all system text is merged into one leading system message and a short
+  user trigger is added when no user message exists (as upstream's Anthropic path does). These run inside the tool-stream fallbacks and continuations, so no
   seam exists and a small patch stays.
 - `backend/app/services/tts_service.py`: sends the language field. A subclass would copy
   `synthesize`, so a small patch stays.
