@@ -184,3 +184,23 @@ def test_upstream_prompts_unchanged():
     from app.services.prompts.games import detective_prompt
 
     assert "exactly five" in detective_prompt("en-GB", "sv", "A1", "review", {})
+
+
+@pytest.mark.parametrize(
+    ("game_type", "source", "draft"),
+    [
+        ("detective", "grammar:present-simple", lambda s: draft_content(s)),
+        ("sentence-order", "grammar:present-simple", lambda s: order_draft(s)),
+        ("vocabulary-pairs", "vocabulary:test", lambda s: pairs_draft(s)),
+    ],
+)
+async def test_review_specification_asks_for_the_kept_five(monkeypatch, game_type, source, draft):
+    # The model drafts eight items but the app keeps five: a reviewer told "eight" rejects them all.
+    mock = AsyncMock(side_effect=[draft(source), DetectiveReview(valid=True, reason="ok")])
+    monkeypatch.setattr(games.llm_adapter, "structured_output", mock)
+    await games.generate_content(generation_request(game_type, source), 1e12)
+    draft_prompt = mock.call_args_list[0].args[0][0]["content"]
+    review_prompt = mock.call_args_list[1].args[0][0]["content"]
+    assert "exactly eight" in draft_prompt
+    assert "exactly eight" not in review_prompt
+    assert "exactly five" in review_prompt.split("SPECIFICATION:")[1]

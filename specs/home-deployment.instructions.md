@@ -201,7 +201,8 @@ Generation (home game prompts in `app/home/game_prompts.py`, schemas in `game_sc
   (Vocabulary Pairs needs five distinct nonempty terms and meanings; salvage deduplicates both).
 - Items citing unpermitted sources or repeating a recent sentence are dropped. A separate structured
   LLM review checks validity, unique correction, language, level and source scope; at most two
-  candidates are generated.
+  candidates are generated. The review's specification is the same prompt built for five items
+  (`count="five"`), because it audits the five kept items.
 
 Serving (`POST /api/games/{game_type}` in stock mode):
 

@@ -240,13 +240,16 @@ async def generate_content(
         draft_schema = VocabularyPairsDraftContent
         build = VocabularyPair.model_validate
         keys = lambda c: (_norm(c.term), _norm(c.meaning))  # noqa: E731
-    prompt = prompt_builder(
+    prompt_args = (
         session.target_language,
         session.native_language,
         session.level,
         session.mode,
         session.context,
     )
+    prompt = prompt_builder(*prompt_args)
+    # The reviewer sees the kept five, so its specification must ask for five.
+    review_spec = prompt_builder(*prompt_args, count="five")
     permitted = {s["source_id"] for s in session.context["sources"]}
     recent = session.context.get("recent_sentences", [])
     rejection = ""
@@ -270,7 +273,7 @@ async def generate_content(
             continue
         content = schema(challenges=challenges)
         review = await llm_adapter.structured_output(
-            [{"role": "system", "content": review_builder(prompt, content.model_dump())}],
+            [{"role": "system", "content": review_builder(review_spec, content.model_dump())}],
             DetectiveReview,
             deadline=deadline,
         )
