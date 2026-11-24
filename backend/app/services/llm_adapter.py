@@ -815,9 +815,9 @@ class LLMAdapter:
         if reasoning_effort and self.provider == "ollama":
             extra["reasoning_effort"] = reasoning_effort
         if self.provider == "ollama":
-            from app.home.llm_messages import local_chat_messages
+            from app.home.llm_messages import local_chat_request
 
-            messages = local_chat_messages(messages)
+            messages, extra = local_chat_request(messages, extra)
         if max_tokens:
             extra["max_tokens"] = max_tokens
         if tools:

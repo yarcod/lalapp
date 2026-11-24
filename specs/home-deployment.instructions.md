@@ -32,6 +32,10 @@ upstream settings.
 - `VOICE_REASONING_EFFORT` (default `low`; empty omits it): reasoning effort for local voice replies.
   It is sent only to the local Ollama path and only on the full-LLM tier, never on the shared small
   tier.
+- `GAME_REASONING_EFFORT` (default `medium`; empty omits it) and `GAME_MAX_TOKENS` (default `32768`;
+  0 omits it): reasoning effort and output budget for every local LLM call made by the stock job.
+  Stock generation runs on the full model, whose context is far larger than ninfer's default output
+  limit of 8192 tokens, and a game prompt with unbounded thinking used all 8192 without answering.
 - `HOME_GAME_STOCK` (default `false`): enables stock mode. Stock mode runs only when
   `HOME_GAME_STOCK` is true and `LLM_PROVIDER` is `ollama`; otherwise upstream's on-demand game
   generation is used and the stock loop does not start.
@@ -182,6 +186,8 @@ Refill (`app/home/game_stock.py`):
   goes stale. A stale item is replaced once; replacements do not count toward the cap. Surplus stale
   items in an already full bucket are marked replaced.
 - The stock job runs as the item's learner (`use_learner`), so the child flag applies to generation.
+- The stock job wraps generation in `generation_options` (`app/home/llm_messages.py`) with the game
+  thinking budget from Settings; calls outside that block send no extra options.
 
 Generation (home game prompts in `app/home/game_prompts.py`, schemas in `game_schemas.py`):
 
@@ -317,8 +323,9 @@ Backend:
 - `backend/app/services/games.py`: `create_game` delegates to `start_from_stock` in stock mode and may
   return no session.
 - `backend/app/services/llm_adapter.py`: reasoning effort, `max_tokens`, 503 as unavailable, the
-  merged prefilled assistant turn, and `local_chat_messages` (`app/home/llm_messages.py`) on the
-  Ollama path: the local chat template rejects a system message that is not first and a request
+  merged prefilled assistant turn, and `local_chat_request` (`app/home/llm_messages.py`) on the
+  Ollama path. It adds the options of an enclosing `generation_options` block that the call did not
+  set itself, and reorders messages: the local chat template rejects a system message that is not first and a request
   without a user message, so all system text is merged into one leading system message and a short
   user trigger is added when no user message exists (as upstream's Anthropic path does). These run inside the tool-stream fallbacks and continuations, so no
   seam exists and a small patch stays.

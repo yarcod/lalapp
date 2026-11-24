@@ -11,6 +11,7 @@ from app.core.config import settings
 from app.home import game_stock
 from app.home import games as home_games
 from app.home.context import current_learner
+from app.home.llm_messages import local_generation_options
 from app.home.models import HomeGameStock, HomeProfile
 from app.home.prompts import child_instruction
 from app.home.settings import home_settings
@@ -97,6 +98,24 @@ async def test_child_flag_stored_and_passed(db_session, test_user_with_plan, gat
     await game_stock.refill_once(db_session)
     assert seen and all(seen)
     assert (await db_session.scalars(select(HomeGameStock))).first().is_child is True
+
+
+async def test_stock_generation_uses_game_thinking_budget(
+    db_session, test_user_with_plan, gateway, generate, monkeypatch
+):
+    monkeypatch.setattr(home_settings, "GAME_REASONING_EFFORT", "medium")
+    monkeypatch.setattr(home_settings, "GAME_MAX_TOKENS", 32768)
+    seen = []
+
+    async def record(*_args, **_kwargs):
+        seen.append(local_generation_options())
+        return content()
+
+    generate.side_effect = record
+    await game_stock.refill_once(db_session)
+    assert seen and all(o == {"reasoning_effort": "medium", "max_tokens": 32768} for o in seen)
+    # Nothing outside the stock job gets the game budget.
+    assert local_generation_options() == {}
 
 
 @pytest.mark.parametrize("is_child", [True, None])

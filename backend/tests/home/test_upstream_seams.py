@@ -161,7 +161,7 @@ def test_get_current_user_hook_present() -> None:
         ("app.routers.games", "stock_empty_response("),
         ("app.services.games", "start_from_stock("),
         ("app.services.games", "stock_mode()"),
-        ("app.services.llm_adapter", "local_chat_messages("),
+        ("app.services.llm_adapter", "local_chat_request("),
     ],
 )
 def test_hook_lines_present(module_name: str, call: str) -> None:

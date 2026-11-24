@@ -6,7 +6,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.home.llm_messages import local_chat_messages
+from app.home.llm_messages import (
+    generation_options,
+    local_chat_messages,
+    local_chat_request,
+)
 from app.services.prompts.common import ANTHROPIC_SYSTEM_ONLY_TRIGGER, JSON_ONLY_INSTRUCTION
 from tests.test_llm_adapter import _make_ollama_settings
 
@@ -106,3 +110,44 @@ async def test_deepseek_messages_are_left_alone(monkeypatch) -> None:
     ) as create:
         await adapter.chat([{"role": "system", "content": "Only system"}])
     assert create.await_args.kwargs["messages"] == [{"role": "system", "content": "Only system"}]
+
+
+def test_request_has_no_extra_options_by_default() -> None:
+    messages = [{"role": "user", "content": "Hi"}]
+    assert local_chat_request(messages, {"stream_options": 1}) == (messages, {"stream_options": 1})
+
+
+def test_generation_options_fill_the_request_inside_the_block() -> None:
+    messages = [{"role": "user", "content": "Hi"}]
+    with generation_options(reasoning_effort="medium", max_tokens=32768):
+        _, extra = local_chat_request(messages, {})
+    assert extra == {"reasoning_effort": "medium", "max_tokens": 32768}
+    assert local_chat_request(messages, {})[1] == {}
+
+
+def test_explicit_call_options_win_and_empty_values_are_skipped() -> None:
+    with generation_options(reasoning_effort="", max_tokens=32768):
+        _, extra = local_chat_request([], {"max_tokens": 24})
+    assert extra == {"max_tokens": 24}
+
+
+@pytest.mark.asyncio
+async def test_generation_options_reach_ollama(monkeypatch) -> None:
+    _make_ollama_settings(monkeypatch)
+
+    from app.services.llm_adapter import LLMAdapter
+
+    msg = MagicMock()
+    msg.content = "ok"
+    response = MagicMock()
+    response.choices = [MagicMock()]
+    response.choices[0].message = msg
+
+    adapter = LLMAdapter()
+    with patch.object(
+        adapter.client.chat.completions, "create", new_callable=AsyncMock, return_value=response
+    ) as create:
+        with generation_options(reasoning_effort="medium", max_tokens=32768):
+            await adapter.chat([{"role": "user", "content": "Hi"}])
+    assert create.await_args.kwargs["reasoning_effort"] == "medium"
+    assert create.await_args.kwargs["max_tokens"] == 32768

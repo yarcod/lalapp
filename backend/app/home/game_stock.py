@@ -15,6 +15,7 @@ from app.core.config import settings
 from app.core.database import engine
 from app.home.context import load_learner, use_learner
 from app.home.games import GenerationRequest, generate_content
+from app.home.llm_messages import generation_options
 from app.home.models import HomeGameStock
 from app.home.settings import home_settings
 from app.home.speech_session import _gateway
@@ -126,6 +127,14 @@ def bucket_cooling(bucket: Bucket) -> bool:
     return _now() < bucket_cooldowns.get(bucket_key(bucket), 0.0)
 
 
+def game_generation_options():  # noqa: ANN201
+    """The full model's thinking budget for stock games, which nobody waits for."""
+    return generation_options(
+        reasoning_effort=home_settings.GAME_REASONING_EFFORT,
+        max_tokens=home_settings.GAME_MAX_TOKENS,
+    )
+
+
 MADE, SKIPPED, STOP = "made", "skipped", "stop"
 
 
@@ -164,7 +173,7 @@ async def generate_item(db: AsyncSession, bucket: Bucket, *, replacement: bool) 
     await db.commit()
     try:
         deadline = asyncio.get_running_loop().time() + GENERATION_TIMEOUT_SECONDS
-        with use_learner(learner):
+        with use_learner(learner), game_generation_options():
             async with asyncio.timeout_at(deadline):
                 content = await generate_while_off(request, deadline)
     except Exception:
